@@ -55,7 +55,8 @@ final class PhotoRankingStore: ObservableObject {
                 tags: result.tags,
                 thumbnailFilename: filename,
                 fingerprint: fingerprint,
-                usedVisionAesthetics: result.usedVisionAesthetics
+                usedVisionAesthetics: result.usedVisionAesthetics,
+                scoreVersion: PhotoRankingEntry.currentScoreVersion
             )
 
             entries.append(entry)
