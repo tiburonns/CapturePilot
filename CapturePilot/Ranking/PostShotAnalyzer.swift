@@ -130,7 +130,7 @@ final class PostShotAnalyzer {
         do {
             try handler.perform([request])
             let values = (request.results ?? []).compactMap {
-                $0.faceCaptureQuality?.doubleValue
+                $0.faceCaptureQuality.map(Double.init)
             }
             guard let best = values.max() else { return nil }
             return min(100, max(0, best * 100))
