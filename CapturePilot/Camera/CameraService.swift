@@ -134,8 +134,9 @@ final class CameraService: NSObject, ObservableObject {
             session.addOutput(videoOutput)
         }
 
-        if let connection = videoOutput.connection(with: .video), connection.isVideoOrientationSupported {
-            connection.videoOrientation = .portrait
+        if let connection = videoOutput.connection(with: .video),
+           connection.isVideoRotationAngleSupported(90) {
+            connection.videoRotationAngle = 90
         }
 
         DispatchQueue.main.async {
