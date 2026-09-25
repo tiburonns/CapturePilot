@@ -58,17 +58,30 @@ For each lens:
 
 ### Coach
 
-Test all eight scene modes.
+Test all eight scene modes and record false positives, false negatives, and time-to-stable-message.
 
-- [ ] Horizon guidance reacts to tilt.
-- [ ] Bright/dark thresholds behave sensibly.
-- [ ] Person/headroom behavior works in Portrait.
-- [ ] Architecture reacts to symmetry/vanishing geometry.
-- [ ] Automotive/Street reacts to clear converging/leading lines.
-- [ ] Macro reacts to detail and golden-point placement.
-- [ ] Landscape reacts to horizon/golden-triangle/lines.
-- [ ] Night does not simply flag every dark scene as invalid.
-- [ ] Suggestions remain stabilized.
+- [ ] Coach remains responsive without reacting to every preview frame.
+- [ ] A new recommendation does not publish after only one transient analysis.
+- [ ] Horizon guidance reacts to controlled tilt.
+- [ ] Architecture/Landscape use visibly stricter leveling than general modes.
+- [ ] Highlight warning reacts to controlled clipping.
+- [ ] General-mode darkness warning behaves sensibly.
+- [ ] Night does not simply flag every normally dark scene as invalid.
+- [ ] Face/person detection drives Portrait headroom behavior.
+- [ ] Attention saliency gives plausible subject placement when no person is present.
+- [ ] Rule-of-thirds guidance changes direction appropriately around all four intersections.
+- [ ] Architecture reacts to clear symmetry and converging geometry.
+- [ ] Architecture does not report a confident vanishing point in obviously unsuitable scenes too often.
+- [ ] Automotive reacts to clear leading lines / negative space.
+- [ ] Street reacts to leading lines / negative space.
+- [ ] Macro low-detail scenes produce refine-focus/stability guidance.
+- [ ] Macro golden-point placement can produce positive guidance.
+- [ ] Landscape reacts to golden-triangle/leading-line geometry.
+- [ ] General strong-symmetry and strong-line thresholds behave plausibly.
+- [ ] Teaching shows secondary reasoning and geometry overlays without changing the underlying Balanced decision unexpectedly.
+- [ ] Subtle suppresses continuous composition coaching after capture-critical checks pass.
+- [ ] Coach/geometry stays aligned across every supported orientation and physical lens.
+- [ ] Coach + Peaking + professional scopes remain thermally acceptable in an extended device test.
 
 ### Composition overlays
 
@@ -201,17 +214,30 @@ Para cada lente:
 
 ### Coach
 
-Prueba los ocho modos.
+Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo hasta mensaje estable.
 
-- [ ] Horizonte.
-- [ ] Luces/sombras.
-- [ ] Persona/headroom en Retrato.
-- [ ] Simetría/punto de fuga en Arquitectura.
-- [ ] Líneas claras en Automotriz/Calle.
-- [ ] Detalle/punto áureo en Macro.
-- [ ] Horizonte/triángulo/líneas en Paisaje.
-- [ ] Noche no considera automáticamente inválida toda escena oscura.
-- [ ] Mensajes estables.
+- [ ] El Coach responde sin reaccionar a cada frame.
+- [ ] Una recomendación nueva no se publica por un solo análisis transitorio.
+- [ ] Horizonte responde a inclinación controlada.
+- [ ] Arquitectura/Paisaje nivelan de forma más estricta que los modos generales.
+- [ ] Aviso de luces responde a clipping controlado.
+- [ ] Oscuridad en modo General se comporta de forma razonable.
+- [ ] Noche no considera automáticamente inválida una escena normalmente oscura.
+- [ ] Rostro/persona controla headroom en Retrato.
+- [ ] Saliencia produce una ubicación plausible cuando no hay persona.
+- [ ] Tercios cambia correctamente izquierda/derecha/arriba/abajo alrededor de las cuatro intersecciones.
+- [ ] Arquitectura responde a simetría y convergencia claras.
+- [ ] Arquitectura no inventa puntos de fuga con demasiada frecuencia en escenas no aptas.
+- [ ] Automotriz responde a líneas/espacio negativo.
+- [ ] Calle responde a líneas/espacio negativo.
+- [ ] Macro con poco detalle recomienda refinar enfoque/estabilizar.
+- [ ] Macro cerca de punto áureo puede producir guía positiva.
+- [ ] Paisaje responde a triángulo áureo/líneas.
+- [ ] Umbrales de simetría/líneas en General son razonables.
+- [ ] Didáctico muestra razonamiento/overlays extra sin cambiar inesperadamente la decisión base de Equilibrado.
+- [ ] Sutil deja de dar composición continua tras superar checks críticos.
+- [ ] Coach/geometría se mantiene alineado en orientaciones y lentes físicas.
+- [ ] Coach + Peaking + scopes mantienen carga térmica aceptable en prueba prolongada.
 
 ### Guías
 

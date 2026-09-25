@@ -62,7 +62,9 @@ See [Professional monitoring](docs/MONITORING.md) for the signal path and limita
 
 ### Composition coach
 
-All analysis is on-device.
+All analysis is on-device. The Coach is deterministic and explainable: it combines Vision, sampled luminance, and geometric heuristics, then applies a scene-specific priority tree. It does not produce an aesthetic score.
+
+See [Coach system](docs/COACH.md) for the current signal pipeline, thresholds, scene priorities, stabilization behavior, and validation limits.
 
 Current signals include:
 
@@ -218,7 +220,9 @@ Consulta [Monitoreo profesional](docs/MONITORING.md) para conocer la ruta de se�
 
 ### Coach de composición
 
-Todo el análisis ocurre en el dispositivo.
+Todo el análisis ocurre en el dispositivo. El Coach es determinista y explicable: combina Vision, luminancia muestreada y heurísticas geométricas, y después aplica una jerarquía de prioridades según la escena. No genera un score estético.
+
+Consulta [Sistema del Coach](docs/COACH.md) para ver el pipeline actual, umbrales, prioridades por escena, estabilización y límites de validación.
 
 Se analizan:
 
@@ -322,6 +326,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ## Documentation / Documentación
 
 - [Architecture / Arquitectura](docs/ARCHITECTURE.md)
+- [Coach / Coach](docs/COACH.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)
