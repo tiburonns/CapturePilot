@@ -26,65 +26,55 @@ final class CoachEngine {
             return
         }
 
-        CVPixelBufferRetain(pixelBuffer)
-        visionQueue.async { [weak self] in
-            guard let self else {
-                CVPixelBufferRelease(pixelBuffer)
-                return
+        defer { isProcessing = false }
+
+        var state = CoachState()
+        analyzeLuminance(pixelBuffer, state: &state)
+
+        let faceRequest = VNDetectFaceRectanglesRequest()
+        let humanRequest = VNDetectHumanRectanglesRequest()
+        humanRequest.upperBodyOnly = false
+        let horizonRequest = VNDetectHorizonRequest()
+        let saliencyRequest = VNGenerateAttentionBasedSaliencyImageRequest()
+
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+        do {
+            try handler.perform([faceRequest, humanRequest, horizonRequest, saliencyRequest])
+
+            if let horizon = horizonRequest.results?.first as? VNHorizonObservation {
+                state.horizonAngleDegrees = Double(horizon.angle) * 180 / .pi
             }
-            defer {
-                CVPixelBufferRelease(pixelBuffer)
-                self.isProcessing = false
+
+            if let face = faceRequest.results?.first {
+                state.subjectRect = face.boundingBox
+                state.hasPerson = true
+                state.hasSubject = true
+            } else if let human = humanRequest.results?.first {
+                state.subjectRect = human.boundingBox
+                state.hasPerson = true
+                state.hasSubject = true
             }
 
-            var state = CoachState()
-            self.analyzeLuminance(pixelBuffer, state: &state)
-
-            let faceRequest = VNDetectFaceRectanglesRequest()
-            let humanRequest = VNDetectHumanRectanglesRequest()
-            humanRequest.upperBodyOnly = false
-            let horizonRequest = VNDetectHorizonRequest()
-            let saliencyRequest = VNGenerateAttentionBasedSaliencyImageRequest()
-
-            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .right, options: [:])
-            do {
-                try handler.perform([faceRequest, humanRequest, horizonRequest, saliencyRequest])
-
-                if let horizon = horizonRequest.results?.first as? VNHorizonObservation {
-                    state.horizonAngleDegrees = Double(horizon.angle) * 180 / .pi
+            if let saliency = saliencyRequest.results?.first as? VNSaliencyImageObservation,
+               let salient = saliency.salientObjects,
+               let strongest = salient.max(by: { $0.confidence < $1.confidence }) {
+                state.saliencyCenter = CGPoint(x: strongest.boundingBox.midX, y: strongest.boundingBox.midY)
+                state.hasSubject = true
+                if state.subjectRect == nil {
+                    state.subjectRect = strongest.boundingBox
                 }
-
-                if let face = faceRequest.results?.first {
-                    state.subjectRect = face.boundingBox
-                    state.hasPerson = true
-                    state.hasSubject = true
-                } else if let human = humanRequest.results?.first {
-                    state.subjectRect = human.boundingBox
-                    state.hasPerson = true
-                    state.hasSubject = true
-                }
-
-                if let saliency = saliencyRequest.results?.first as? VNSaliencyImageObservation,
-                   let salient = saliency.salientObjects,
-                   let strongest = salient.max(by: { $0.confidence < $1.confidence }) {
-                    state.saliencyCenter = CGPoint(x: strongest.boundingBox.midX, y: strongest.boundingBox.midY)
-                    state.hasSubject = true
-                    if state.subjectRect == nil {
-                        state.subjectRect = strongest.boundingBox
-                    }
-                } else if let rect = state.subjectRect {
-                    state.saliencyCenter = CGPoint(x: rect.midX, y: rect.midY)
-                }
-            } catch {
-                // Luminance feedback remains available if a Vision request fails for a frame.
+            } else if let rect = state.subjectRect {
+                state.saliencyCenter = CGPoint(x: rect.midX, y: rect.midY)
             }
+        } catch {
+            // Luminance feedback remains available if a Vision request fails for a frame.
+        }
 
-            self.chooseGuidance(state: &state, intensity: intensity)
-            self.stabilizeMessage(state: &state)
+        chooseGuidance(state: &state, intensity: intensity)
+        stabilizeMessage(state: &state)
 
-            DispatchQueue.main.async {
-                self.onUpdate?(state)
-            }
+        DispatchQueue.main.async { [weak self] in
+            self?.onUpdate?(state)
         }
     }
 
