@@ -234,22 +234,28 @@ struct SettingsView: View {
                     )
                     .disabled(lutLibrary.entries.isEmpty)
 
-                    if let folder = lutLibrary.folderDisplayName {
-                        LabeledContent(settings.text(.lutLibrary), value: folder)
+                    LabeledContent(
+                        settings.text(.lutLibrary),
+                        value: lutLibrary.localFolderName
+                    )
 
-                        LabeledContent(
+                    if let folder = lutLibrary.folderDisplayName {
+                        LabeledContent(settings.text(.externalLUTFolder), value: folder)
+                    }
+
+                    LabeledContent(
                             settings.text(.lutCount),
                             value: "\(lutLibrary.entries.count)"
-                        )
+                    )
 
-                        if lutLibrary.invalidFileCount > 0 {
+                    if lutLibrary.invalidFileCount > 0 {
                             LabeledContent(
                                 settings.text(.invalidLUTCount),
                                 value: "\(lutLibrary.invalidFileCount)"
                             )
-                        }
+                    }
 
-                        Picker(
+                    Picker(
                             settings.text(.activeLUT),
                             selection: Binding<String?>(
                                 get: { lutLibrary.activeEntryID },
@@ -271,11 +277,16 @@ struct SettingsView: View {
                             Text(settings.text(.noLUT)).tag(Optional<String>.none)
 
                             ForEach(lutLibrary.entries) { entry in
-                                Text(entry.displayName)
-                                    .tag(Optional(entry.id))
+                                Text(
+                                    entry.source == .capturePilot
+                                        ? "\(entry.displayName) · CapturePilot"
+                                        : "\(entry.displayName) · \(settings.text(.externalLUTFolder))"
+                                )
+                                .tag(Optional(entry.id))
                             }
                         }
 
+                    if lutLibrary.folderDisplayName != nil {
                         HStack {
                             Button(settings.text(.changeLUTFolder)) {
                                 showingLUTFolderPicker = true
@@ -288,13 +299,14 @@ struct SettingsView: View {
                             }
                         }
 
-                        Button(role: .destructive) {
-                            lutLibrary.clearFolder()
-                        } label: {
-                            Label(
-                                settings.text(.removeLUTFolder),
-                                systemImage: "folder.badge.minus"
-                            )
+                            Button(role: .destructive) {
+                                lutLibrary.clearFolder()
+                            } label: {
+                                Label(
+                                    settings.text(.removeLUTFolder),
+                                    systemImage: "folder.badge.minus"
+                                )
+                            }
                         }
                     } else {
                         Button {
