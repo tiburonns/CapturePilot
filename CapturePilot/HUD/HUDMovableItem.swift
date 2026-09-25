@@ -7,10 +7,24 @@ struct HUDMovableItem<Content: View>: View {
     let item: HUDItem
     let safeRect: CGRect
     let isLandscape: Bool
-    @ViewBuilder let content: () -> Content
+    let content: () -> Content
 
     @State private var itemSize = CGSize(width: 44, height: 44)
     @State private var dragTranslation: CGSize = .zero
+
+    init(
+        store: HUDLayoutStore,
+        item: HUDItem,
+        safeRect: CGRect,
+        isLandscape: Bool,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self._store = ObservedObject(wrappedValue: store)
+        self.item = item
+        self.safeRect = safeRect
+        self.isLandscape = isLandscape
+        self.content = content
+    }
 
     var body: some View {
         Group {
@@ -65,8 +79,8 @@ struct HUDMovableItem<Content: View>: View {
     private var basePoint: CGPoint {
         let point = store.point(for: item, isLandscape: isLandscape)
         return CGPoint(
-            x: safeRect.minX + safeRect.width * point.x,
-            y: safeRect.minY + safeRect.height * point.y
+            x: safeRect.minX + safeRect.width * CGFloat(point.x),
+            y: safeRect.minY + safeRect.height * CGFloat(point.y)
         )
     }
 
@@ -93,8 +107,12 @@ struct HUDMovableItem<Content: View>: View {
                 )
 
                 let normalized = HUDNormalizedPoint(
-                    x: safeRect.width > 0 ? (finalPoint.x - safeRect.minX) / safeRect.width : 0.5,
-                    y: safeRect.height > 0 ? (finalPoint.y - safeRect.minY) / safeRect.height : 0.5
+                    x: safeRect.width > 0
+                        ? Double((finalPoint.x - safeRect.minX) / safeRect.width)
+                        : 0.5,
+                    y: safeRect.height > 0
+                        ? Double((finalPoint.y - safeRect.minY) / safeRect.height)
+                        : 0.5
                 )
 
                 store.setPoint(normalized, for: item, isLandscape: isLandscape)
