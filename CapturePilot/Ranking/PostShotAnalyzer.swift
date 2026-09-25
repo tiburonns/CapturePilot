@@ -330,7 +330,7 @@ final class PostShotAnalyzer {
         }
 
         if category == .portrait, let faceQuality, faceQuality < 55 {
-            result.append(.reduceHeadroom)
+            result.append(.improvePortraitQuality)
         }
 
         switch category {
