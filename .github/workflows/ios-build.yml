@@ -6,12 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Xcode version
         run: xcodebuild -version
