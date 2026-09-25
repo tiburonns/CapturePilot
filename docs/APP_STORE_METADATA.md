@@ -5,7 +5,7 @@
 **Name:** CapturePilot
 
 **Beta Description:**  
-CapturePilot is a free, ad-free iPhone camera with professional manual controls and an on-device photography coach. The current beta includes capability-gated HEIF/HEVC, JPEG, Bayer RAW and Apple ProRAW, hardware-derived photo resolutions, physical lens switching, manual exposure/focus/white balance, Focus Peaking, customizable HUD, adaptive orientation, composition guides, leading-line/symmetry/vanishing-point/negative-space analysis, and scene-specific coaching for Portrait, Architecture, Automotive, Macro, Street, Landscape and Night.
+CapturePilot is a free, ad-free iPhone camera with professional manual controls and an on-device photography coach. The current beta adds adjustable Zebra exposure warnings and an RGB preview histogram with channel clipping indicators. The current beta includes capability-gated HEIF/HEVC, JPEG, Bayer RAW and Apple ProRAW, hardware-derived photo resolutions, physical lens switching, manual exposure/focus/white balance, Focus Peaking, customizable HUD, adaptive orientation, composition guides, leading-line/symmetry/vanishing-point/negative-space analysis, and scene-specific coaching for Portrait, Architecture, Automotive, Macro, Street, Landscape and Night.
 
 **What to Test:**  
 Test the resolutions and formats that your device actually exposes, physical lens switching, manual controls, orientation/session recovery, HUD persistence, Focus Peaking alignment, all composition guides, and each scene coach. Include iPhone model and iOS version in reports.
