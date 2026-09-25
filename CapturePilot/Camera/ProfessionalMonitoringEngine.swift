@@ -31,11 +31,11 @@ struct HistogramSnapshot: Equatable {
     )
 
     var hasHighlightClipping: Bool {
-        max(redHighlightClipRatio, greenHighlightClipRatio, blueHighlightClipRatio) > 0.002
+        ([redHighlightClipRatio, greenHighlightClipRatio, blueHighlightClipRatio].max() ?? 0) > 0.002
     }
 
     var hasShadowClipping: Bool {
-        max(redShadowClipRatio, greenShadowClipRatio, blueShadowClipRatio) > 0.01
+        ([redShadowClipRatio, greenShadowClipRatio, blueShadowClipRatio].max() ?? 0) > 0.01
     }
 }
 
@@ -195,13 +195,13 @@ final class ProfessionalMonitoringEngine {
 
         guard sampleCount > 0 else { return .empty }
 
-        let globalMaximum = max(
+        let globalMaximum = [
             1,
             redCounts.max() ?? 1,
             greenCounts.max() ?? 1,
             blueCounts.max() ?? 1,
             lumaCounts.max() ?? 1
-        )
+        ].max() ?? 1
 
         func normalize(_ values: [Int]) -> [Double] {
             values.map { Double($0) / Double(globalMaximum) }
