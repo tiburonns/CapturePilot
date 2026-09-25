@@ -1,4 +1,5 @@
 import AVFoundation
+import ImageIO
 import Photos
 import SwiftUI
 
@@ -953,6 +954,13 @@ final class CameraService: NSObject, ObservableObject {
     func capturePhoto(lut: LUTCube? = nil) {
         let requestedFormat = photoFormat
         let quickShareMP = selectedShareJPEGMegapixels
+
+        DispatchQueue.main.async {
+            self.lastSaveSucceeded = nil
+            if requestedFormat != .rawPlusJPEG {
+                self.lastShareJPEGURL = nil
+            }
+        }
 
         sessionQueue.async { [weak self] in
             guard let self else { return }
