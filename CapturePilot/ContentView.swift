@@ -584,23 +584,54 @@ struct ContentView: View {
 
     private var formatMenu: some View {
         Menu {
+            Button {
+                settings.rawShareEnabled.toggle()
+            } label: {
+                Label(
+                    settings.text(.rawShare),
+                    systemImage: settings.rawShareEnabled
+                        ? "checkmark.circle.fill"
+                        : "circle"
+                )
+            }
+            .disabled(!camera.supportsRawShareWorkflow)
+
+            Divider()
+
             ForEach(camera.availablePhotoFormats) { format in
                 Button(format.shortLabel) {
+                    settings.rawShareEnabled = false
                     camera.photoFormat = format
                 }
             }
         } label: {
-            Text(camera.photoFormat.shortLabel)
-                .font(.caption.weight(.bold))
-                .frame(width: 64, height: 44)
-                .background(.ultraThinMaterial, in: Capsule())
+            Text(
+                settings.rawShareEnabled
+                    ? "RAW+JPG"
+                    : camera.photoFormat.shortLabel
+            )
+            .font(.caption.weight(.bold))
+            .frame(width: 72, height: 44)
+            .foregroundStyle(
+                settings.rawShareEnabled && !camera.supportsRawShareWorkflow
+                    ? Color.orange
+                    : Color.white
+            )
+            .background(.ultraThinMaterial, in: Capsule())
         }
+        .accessibilityLabel(
+            settings.rawShareEnabled
+                ? settings.text(.rawShare)
+                : settings.text(.photoFormat)
+        )
     }
 
     private var shutterButton: some View {
         Button {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            camera.capturePhoto()
+            camera.capturePhoto(
+                rawShareConfiguration: settings.rawShareConfiguration
+            )
         } label: {
             ZStack {
                 Circle()
@@ -611,7 +642,11 @@ struct ContentView: View {
                     .frame(width: 62, height: 62)
             }
         }
-        .disabled(!camera.isConfigured || camera.sessionInterrupted)
+        .disabled(
+            !camera.isConfigured
+            || camera.sessionInterrupted
+            || (settings.rawShareEnabled && !camera.supportsRawShareWorkflow)
+        )
         .accessibilityLabel(settings.text(.capture))
     }
 
@@ -652,17 +687,40 @@ struct ContentView: View {
     @ViewBuilder
     private var saveStatusOverlay: some View {
         if let saved = camera.lastSaveSucceeded {
-            Text(settings.text(saved ? .saved : .saveFailed))
-                .font(.subheadline.weight(.semibold))
+            HStack(spacing: 10) {
+                Text(settings.text(saved ? .saved : .saveFailed))
+                    .font(.subheadline.weight(.semibold))
+
+                if saved, let shareURL = camera.lastShareJPEGURL {
+                    ShareLink(item: shareURL) {
+                        Label(
+                            settings.text(.shareJPEG),
+                            systemImage: "square.and.arrow.up"
+                        )
+                        .font(.caption.weight(.semibold))
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial, in: Capsule())
+            .safeAreaPadding(.top, 8)
+            .transition(.opacity)
+            .task(id: saved) {
+                try? await Task.sleep(
+                    for: .seconds(camera.lastShareJPEGURL == nil ? 1.5 : 6)
+                )
+                camera.lastSaveSucceeded = nil
+            }
+        } else if settings.rawShareEnabled && !camera.supportsRawShareWorkflow {
+            Text(settings.text(.rawShareUnavailable))
+                .font(.caption.weight(.semibold))
+                .multilineTextAlignment(.center)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(.ultraThinMaterial, in: Capsule())
                 .safeAreaPadding(.top, 8)
-                .transition(.opacity)
-                .task(id: saved) {
-                    try? await Task.sleep(for: .seconds(1.5))
-                    camera.lastSaveSucceeded = nil
-                }
+                .padding(.horizontal, 20)
         }
     }
 
