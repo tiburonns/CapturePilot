@@ -8,9 +8,12 @@ final class FocusPeakingEngine {
 
     private var lastProcessTime: CFTimeInterval = 0
     private let minimumInterval: CFTimeInterval = 0.12
-    private let edgeThreshold = 54
 
-    func process(pixelBuffer: CVPixelBuffer) {
+    func process(
+        pixelBuffer: CVPixelBuffer,
+        threshold: Int,
+        color: (UInt8, UInt8, UInt8)
+    ) {
         let now = CACurrentMediaTime()
         guard now - lastProcessTime >= minimumInterval else { return }
         lastProcessTime = now
@@ -33,6 +36,7 @@ final class FocusPeakingEngine {
         var rgba = [UInt8](repeating: 0, count: outputWidth * outputHeight * 4)
 
         guard outputWidth > 2, outputHeight > 2 else { return }
+        let clampedThreshold = min(max(threshold, 20), 140)
 
         for outputY in 1..<(outputHeight - 1) {
             let sourceY = min(sourceHeight - 2, outputY * sampleStep)
@@ -47,12 +51,12 @@ final class FocusPeakingEngine {
                 let down = Int(luma[(sourceY + 1) * sourceBytesPerRow + sourceX])
 
                 let magnitude = abs(right - left) + abs(down - up)
-                guard magnitude >= edgeThreshold else { continue }
+                guard magnitude >= clampedThreshold else { continue }
 
                 let index = (outputY * outputWidth + outputX) * 4
-                rgba[index] = 255
-                rgba[index + 1] = 80
-                rgba[index + 2] = 30
+                rgba[index] = color.0
+                rgba[index + 1] = color.1
+                rgba[index + 2] = color.2
                 rgba[index + 3] = 235
             }
         }
