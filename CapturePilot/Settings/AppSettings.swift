@@ -28,6 +28,7 @@ final class AppSettings: ObservableObject {
         static let grid = "settings.grid"
         static let coachIntensity = "settings.coachIntensity"
         static let sceneCoach = "settings.sceneCoach"
+        static let zebraLevel = "settings.monitoring.zebraLevel"
     }
 
     @Published var language: Language {
@@ -44,6 +45,10 @@ final class AppSettings: ObservableObject {
 
     @Published var sceneCoach: SceneCoach {
         didSet { UserDefaults.standard.set(sceneCoach.rawValue, forKey: Key.sceneCoach) }
+    }
+
+    @Published var zebraLevel: Double {
+        didSet { UserDefaults.standard.set(zebraLevel, forKey: Key.zebraLevel) }
     }
 
     @Published var allowLandscape: Bool {
@@ -66,6 +71,10 @@ final class AppSettings: ObservableObject {
         grid = Grid(rawValue: defaults.string(forKey: Key.grid) ?? "") ?? .thirds
         coachIntensity = CoachIntensity(rawValue: defaults.string(forKey: Key.coachIntensity) ?? "") ?? .balanced
         sceneCoach = SceneCoach(rawValue: defaults.string(forKey: Key.sceneCoach) ?? "") ?? .general
+        let savedZebra = defaults.object(forKey: Key.zebraLevel) != nil
+            ? defaults.double(forKey: Key.zebraLevel)
+            : 95
+        zebraLevel = min(max(savedZebra, 75), 100)
         allowLandscape = Self.boolValue(
             defaults,
             key: OrientationPolicy.landscapeKey,
@@ -147,6 +156,7 @@ enum LocalizedKey: Hashable {
     case hud, customizeHUD, hudDetail, hudElements, resetHUD, required
     case focusPeaking, focusPeakingQuick, lenses, metrics, photoFormat
     case shutterButton, gridButton, proControls
+    case monitoring, zebra, zebraLevel, zebraDetail, histogram, histogramRGB, histogramDetail
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -200,7 +210,12 @@ enum LocalizedKey: Hashable {
             .focusPeakingQuick: "Acceso rápido Focus Peaking",
             .lenses: "Lentes", .metrics: "Métricas", .photoFormat: "Formato",
             .shutterButton: "Disparador", .gridButton: "Botón de guía",
-            .proControls: "Controles Pro"
+            .proControls: "Controles Pro",
+            .monitoring: "Monitoreo", .zebra: "Cebras",
+            .zebraLevel: "Nivel de cebra",
+            .zebraDetail: "Marca con líneas diagonales las zonas que alcanzan o superan el nivel seleccionado.",
+            .histogram: "Histograma", .histogramRGB: "Histograma RGB",
+            .histogramDetail: "Histograma RGB del preview YCbCr. Sirve para exposición y clipping; no representa el histograma del archivo RAW final."
         ]
 
         let en: [LocalizedKey: String] = [
@@ -254,7 +269,12 @@ enum LocalizedKey: Hashable {
             .focusPeakingQuick: "Focus Peaking quick access",
             .lenses: "Lenses", .metrics: "Metrics", .photoFormat: "Format",
             .shutterButton: "Shutter", .gridButton: "Guide button",
-            .proControls: "Pro controls"
+            .proControls: "Pro controls",
+            .monitoring: "Monitoring", .zebra: "Zebras",
+            .zebraLevel: "Zebra level",
+            .zebraDetail: "Draws diagonal lines over areas that reach or exceed the selected level.",
+            .histogram: "Histogram", .histogramRGB: "RGB histogram",
+            .histogramDetail: "RGB histogram derived from the YCbCr preview stream. It is useful for exposure and clipping, but is not the final RAW-file histogram."
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
