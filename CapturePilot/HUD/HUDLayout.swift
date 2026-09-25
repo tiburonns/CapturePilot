@@ -14,6 +14,13 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
     case focusPeaking
     case zebra
     case histogram
+    case falseColor
+    case waveform
+    case rgbParade
+    case vectorscope
+    case afaeLock
+    case clippingWarnings
+    case frameGuide
 
     var id: String { rawValue }
 
@@ -41,6 +48,13 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
         case .focusPeaking: return .focusPeakingQuick
         case .zebra: return .zebra
         case .histogram: return .histogramRGB
+        case .falseColor: return .falseColor
+        case .waveform: return .waveform
+        case .rgbParade: return .rgbParade
+        case .vectorscope: return .vectorscope
+        case .afaeLock: return .afaeLock
+        case .clippingWarnings: return .clippingWarnings
+        case .frameGuide: return .frameGuide
         }
     }
 }
@@ -159,9 +173,16 @@ final class HUDLayoutStore: ObservableObject {
             .photoFormat: config(portrait: (0.12, 0.92), landscape: (0.18, 0.87)),
             .shutter: config(portrait: (0.50, 0.91), landscape: (0.50, 0.84)),
             .grid: config(portrait: (0.88, 0.92), landscape: (0.82, 0.87)),
-            .focusPeaking: config(false, portrait: (0.94, 0.46), landscape: (0.96, 0.43)),
-            .zebra: config(portrait: (0.92, 0.57), landscape: (0.95, 0.58)),
-            .histogram: config(portrait: (0.72, 0.80), landscape: (0.77, 0.72))
+            .focusPeaking: config(false, portrait: (0.94, 0.42), landscape: (0.96, 0.38)),
+            .zebra: config(portrait: (0.90, 0.52), landscape: (0.95, 0.52)),
+            .histogram: config(portrait: (0.72, 0.80), landscape: (0.77, 0.72)),
+            .falseColor: config(false, portrait: (0.91, 0.62), landscape: (0.94, 0.64)),
+            .waveform: config(false, portrait: (0.28, 0.79), landscape: (0.24, 0.72)),
+            .rgbParade: config(false, portrait: (0.28, 0.68), landscape: (0.24, 0.54)),
+            .vectorscope: config(false, portrait: (0.77, 0.66), landscape: (0.78, 0.52)),
+            .afaeLock: config(false, portrait: (0.08, 0.50), landscape: (0.06, 0.48)),
+            .clippingWarnings: config(false, portrait: (0.50, 0.82), landscape: (0.50, 0.76)),
+            .frameGuide: config(false, portrait: (0.10, 0.82), landscape: (0.10, 0.75))
         ]
     }
 }
