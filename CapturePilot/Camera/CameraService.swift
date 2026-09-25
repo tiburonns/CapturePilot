@@ -26,6 +26,7 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var supportsManualExposure = false
     @Published private(set) var supportsManualFocus = false
     @Published private(set) var supportsManualWhiteBalance = false
+    @Published private(set) var supportsAFAELock = false
     @Published private(set) var supportsHEVC = false
     @Published private(set) var supportsProRAW = false
 
@@ -590,6 +591,9 @@ final class CameraService: NSObject, ObservableObject {
         supportsManualExposure = device.isExposureModeSupported(.custom)
         supportsManualFocus = device.isFocusModeSupported(.locked)
         supportsManualWhiteBalance = device.isWhiteBalanceModeSupported(.locked)
+        supportsAFAELock =
+            device.isFocusModeSupported(.locked)
+            && device.isExposureModeSupported(.locked)
     }
 
     func focus(at point: CGPoint) {
@@ -637,7 +641,10 @@ final class CameraService: NSObject, ObservableObject {
 
     func lockAFAE(at point: CGPoint?) {
         sessionQueue.async { [weak self] in
-            guard let self, let device = self.currentInput?.device else { return }
+            guard let self,
+                  let device = self.currentInput?.device,
+                  device.isFocusModeSupported(.locked),
+                  device.isExposureModeSupported(.locked) else { return }
 
             self.afaeLockGeneration += 1
             let generation = self.afaeLockGeneration
