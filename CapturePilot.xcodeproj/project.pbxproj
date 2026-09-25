@@ -31,6 +31,9 @@
 		E10000000000000000000001 /* FrameGuideOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* FrameGuideOverlay.swift */; };
 		E10000000000000000000002 /* ClippingWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* ClippingWarningView.swift */; };
 		F10000000000000000000001 /* RawShareProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* RawShareProcessor.swift */; };
+		G10000000000000000000001 /* LUTLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = G20000000000000000000001 /* LUTLibraryStore.swift */; };
+		G10000000000000000000002 /* LUTRecommendationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = G20000000000000000000002 /* LUTRecommendationEngine.swift */; };
+		G10000000000000000000003 /* LUTRecommendationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = G20000000000000000000003 /* LUTRecommendationView.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
@@ -62,6 +65,9 @@
 		E20000000000000000000001 /* FrameGuideOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGuideOverlay.swift; sourceTree = "<group>"; };
 		E20000000000000000000002 /* ClippingWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClippingWarningView.swift; sourceTree = "<group>"; };
 		F20000000000000000000001 /* RawShareProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RawShareProcessor.swift; sourceTree = "<group>"; };
+		G20000000000000000000001 /* LUTLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LUTLibraryStore.swift; sourceTree = "<group>"; };
+		G20000000000000000000002 /* LUTRecommendationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LUTRecommendationEngine.swift; sourceTree = "<group>"; };
+		G20000000000000000000003 /* LUTRecommendationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LUTRecommendationView.swift; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -112,6 +118,7 @@
 		069DCBAB5960938F95C1E96A /* Coach */ = { isa = PBXGroup; children = (
 				5813792A309756B1DB2CC9A8 /* CoachModels.swift */,
 				3F490EE1A5A4D5FCEB4E2B89 /* CoachEngine.swift */,
+				G20000000000000000000002 /* LUTRecommendationEngine.swift */,
 			); path = Coach; sourceTree = "<group>"; };
 		88189ACCA3913C501CCC3799 /* UI */ = { isa = PBXGroup; children = (
 				437A370E3E1FC5AD561E15C5 /* CompositionOverlay.swift */,
@@ -124,11 +131,13 @@
 				D20000000000000000000002 /* FalseColorOverlay.swift */,
 				E20000000000000000000001 /* FrameGuideOverlay.swift */,
 				E20000000000000000000002 /* ClippingWarningView.swift */,
+				G20000000000000000000003 /* LUTRecommendationView.swift */,
 			); path = UI; sourceTree = "<group>"; };
 		96D5947C9C1BE3D117F9A0E7 /* Settings */ = { isa = PBXGroup; children = (
 				EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */,
 				030D4107D1F77988159FDEEB /* SettingsView.swift */,
 				B20000000000000000000001 /* OrientationPolicy.swift */,
+				G20000000000000000000001 /* LUTLibraryStore.swift */,
 			); path = Settings; sourceTree = "<group>"; };
 		B30000000000000000000001 /* HUD */ = {
 			isa = PBXGroup;
@@ -223,6 +232,9 @@
 				E10000000000000000000001 /* FrameGuideOverlay.swift in Sources */,
 				E10000000000000000000002 /* ClippingWarningView.swift in Sources */,
 				F10000000000000000000001 /* RawShareProcessor.swift in Sources */,
+				G10000000000000000000001 /* LUTLibraryStore.swift in Sources */,
+				G10000000000000000000002 /* LUTRecommendationEngine.swift in Sources */,
+				G10000000000000000000003 /* LUTRecommendationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,11 +247,11 @@
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 6;
+			CURRENT_PROJECT_VERSION = 7;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.6.0;
+			MARKETING_VERSION = 0.7.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;
@@ -250,11 +262,11 @@
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 6;
+			CURRENT_PROJECT_VERSION = 7;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.6.0;
+			MARKETING_VERSION = 0.7.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;
