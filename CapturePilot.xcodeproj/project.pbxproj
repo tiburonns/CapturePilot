@@ -19,7 +19,8 @@
 		7B1CB62AC5CBB340E523A278 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */; };
 		B47620DCAAE3A086799472E8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030D4107D1F77988159FDEEB /* SettingsView.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
-		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };\n\t\tA10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
+		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
+		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,7 +37,8 @@
 		EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		030D4107D1F77988159FDEEB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };\n\t\tA20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A20000000000000000000003 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AEF63687048485D45524643C /* CapturePilot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CapturePilot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -66,6 +68,7 @@
 				96D5947C9C1BE3D117F9A0E7 /* Settings */,
 				442440819FFC8BBD4010CCFB /* Info.plist */,
 				A20000000000000000000001 /* PrivacyInfo.xcprivacy */,
+				A20000000000000000000004 /* Assets.xcassets */,
 				A30000000000000000000001 /* InfoPlist.strings */,
 			);
 			path = CapturePilot;
@@ -138,7 +141,8 @@
 /* Begin PBXResourcesBuildPhase section */
 		C52ABA055DA4D0050382EB56 /* Resources */ = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
 				A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */,
-				A10000000000000000000002 /* InfoPlist.strings in Resources */,\n\t\t\t\tA10000000000000000000003 /* Assets.xcassets in Resources */,
+				A10000000000000000000002 /* InfoPlist.strings in Resources */,
+				A10000000000000000000003 /* Assets.xcassets in Resources */,
 			); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
@@ -168,7 +172,9 @@
 		5E8ACABCCBE1DB5D311988C9 /* Debug */ = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; ENABLE_TESTABILITY = YES; GCC_OPTIMIZATION_LEVEL = 0; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
 		F84FD35CA8548076F2B51EDF /* Release */ = { isa = XCBuildConfiguration; buildSettings = { CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
 		53797DE442FCF2C62405D6BD /* Debug */ = { isa = XCBuildConfiguration; buildSettings = {
-			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;\n\t\t\tASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;\n\t\t\tCODE_SIGN_STYLE = Automatic;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 2;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
@@ -181,7 +187,9 @@
 			TARGETED_DEVICE_FAMILY = 1;
 		}; name = Debug; };
 		C015BAAA3C846BD82DBAB3CE /* Release */ = { isa = XCBuildConfiguration; buildSettings = {
-			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;\n\t\t\tASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;\n\t\t\tCODE_SIGN_STYLE = Automatic;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 2;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
