@@ -1,4 +1,3 @@
-import AuthenticationServices
 import SwiftUI
 
 struct SocialCompetitionView: View {
@@ -8,6 +7,7 @@ struct SocialCompetitionView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var friendUsername = ""
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -15,7 +15,7 @@ struct SocialCompetitionView: View {
                 if let profile = social.profile {
                     signedIn(profile)
                 } else {
-                    signIn
+                    enableSocial
                 }
             }
             .navigationTitle(localized("Friends", "Amigos"))
@@ -27,46 +27,65 @@ struct SocialCompetitionView: View {
             .task {
                 await social.restoreIfPossible()
             }
+            .alert(
+                localized("Delete social profile?", "¿Eliminar perfil social?"),
+                isPresented: $showingDeleteConfirmation
+            ) {
+                Button(localized("Cancel", "Cancelar"), role: .cancel) { }
+                Button(localized("Delete", "Eliminar"), role: .destructive) {
+                    Task { await social.deleteSocialProfile() }
+                }
+            } message: {
+                Text(localized(
+                    "CapturePilot will delete your synced profile, shared scores, and friend connections it can remove. Your local photo rankings remain on this device.",
+                    "CapturePilot eliminará tu perfil sincronizado, scores compartidos y relaciones de amistad que pueda borrar. Tu ranking local de fotos permanecerá en este dispositivo."
+                ))
+            }
         }
         .preferredColorScheme(.dark)
     }
 
-    private var signIn: some View {
+    private var enableSocial: some View {
         VStack(spacing: 18) {
             Image(systemName: "person.2.badge.gearshape")
                 .font(.system(size: 54))
+
             Text(localized(
-                "Sign in to create your private CapturePilot identity.",
-                "Inicia sesión para crear tu identidad privada de CapturePilot."
+                "Friends rankings use your signed-in iCloud account to create a private CapturePilot identity.",
+                "El ranking de amigos usa la cuenta de iCloud iniciada en el dispositivo para crear una identidad privada de CapturePilot."
             ))
             .multilineTextAlignment(.center)
-            .foregroundStyle(.secondary)
-
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = []
-            } onCompletion: { result in
-                guard case .success(let authorization) = result,
-                      let credential = authorization.credential
-                        as? ASAuthorizationAppleIDCredential else {
-                    return
-                }
-
-                Task {
-                    await social.handleAppleCredential(credential)
-                }
-            }
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 48)
-            .padding(.horizontal, 28)
 
             Text(localized(
-                "CapturePilot receives a private Apple user identifier, not your Apple ID password. Your automatic username is derived from that identifier.",
-                "CapturePilot recibe un identificador privado de usuario de Apple, no tu contraseña de Apple ID. El nombre automático se deriva de ese identificador."
+                "CapturePilot never receives your Apple Account email or password. It derives an automatic Pilot username from CloudKit's private user record identifier.",
+                "CapturePilot nunca recibe el correo ni la contraseña de tu cuenta Apple. El usuario Pilot se deriva del identificador privado que CloudKit asigna a esta app."
             ))
             .font(.footnote)
             .foregroundStyle(.secondary)
-            .padding(.horizontal)
             .multilineTextAlignment(.center)
+
+            Button {
+                Task { await social.enableSocial() }
+            } label: {
+                Label(
+                    localized("Enable Friends Rankings", "Activar ranking de amigos"),
+                    systemImage: "icloud.and.arrow.up"
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 24)
+
+            if social.isBusy {
+                ProgressView()
+            }
+
+            if let error = social.errorDescription {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding()
     }
@@ -98,15 +117,15 @@ struct SocialCompetitionView: View {
                 )
 
                 Text(localized(
-                    "Only username, category, score, and capture date are synced. Photos remain private on this version.",
-                    "Sólo se sincronizan usuario, categoría, score y fecha de captura. Las fotos permanecen privadas en esta versión."
+                    "Only the Pilot username, category, score, and capture date are synced. Photos and ranking thumbnails stay on this device.",
+                    "Sólo se sincronizan usuario Pilot, categoría, score y fecha de captura. Las fotos y miniaturas del ranking permanecen en este dispositivo."
                 ))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             }
 
             Section(localized("Add friend", "Agregar amigo")) {
-                TextField("Pilot-XXXXXXXXXX", text: $friendUsername)
+                TextField("PILOT-XXXXXXXXXX", text: $friendUsername)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
 
@@ -170,7 +189,10 @@ struct SocialCompetitionView: View {
                     ))
                     .foregroundStyle(.secondary)
                 } else {
-                    ForEach(Array(social.leaderboard.prefix(50).enumerated()), id: \.element.id) { index, item in
+                    ForEach(
+                        Array(social.leaderboard.prefix(50).enumerated()),
+                        id: \.element.id
+                    ) { index, item in
                         HStack {
                             Text("#\(index + 1)")
                                 .font(.caption.bold())
@@ -210,12 +232,24 @@ struct SocialCompetitionView: View {
                         await social.refresh()
                     }
                 }
+            }
 
+            Section(localized("Privacy", "Privacidad")) {
                 Button(role: .destructive) {
-                    social.signOutLocal()
+                    showingDeleteConfirmation = true
                 } label: {
-                    Text(localized("Sign out on this device", "Cerrar sesión en este dispositivo"))
+                    Text(localized(
+                        "Delete social profile",
+                        "Eliminar perfil social"
+                    ))
                 }
+
+                Text(localized(
+                    "Deleting the social profile does not delete your local photos or local Rankings database.",
+                    "Eliminar el perfil social no borra tus fotos ni la base local de Ranking."
+                ))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             }
 
             Section {
@@ -243,7 +277,17 @@ struct SocialCompetitionView: View {
         if raw == "overall" {
             return localized("Overall", "General")
         }
-        return raw.capitalized
+
+        switch PhotoCategory(rawValue: raw) {
+        case .portrait: return localized("Portrait", "Retrato")
+        case .architecture: return localized("Architecture", "Arquitectura")
+        case .automotive: return localized("Automotive", "Automotriz")
+        case .macro: return "Macro"
+        case .street: return localized("Street", "Calle")
+        case .landscape: return localized("Landscape", "Paisaje")
+        case .night: return localized("Night", "Noche")
+        case .general, .none: return localized("General", "General")
+        }
     }
 
     private func localized(_ english: String, _ spanish: String) -> String {
