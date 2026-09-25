@@ -240,51 +240,54 @@ struct SettingsView: View {
                     )
 
                     if let folder = lutLibrary.folderDisplayName {
-                        LabeledContent(settings.text(.externalLUTFolder), value: folder)
+                        LabeledContent(
+                            settings.text(.externalLUTFolder),
+                            value: folder
+                        )
                     }
 
                     LabeledContent(
-                            settings.text(.lutCount),
-                            value: "\(lutLibrary.entries.count)"
+                        settings.text(.lutCount),
+                        value: "\(lutLibrary.entries.count)"
                     )
 
                     if lutLibrary.invalidFileCount > 0 {
-                            LabeledContent(
-                                settings.text(.invalidLUTCount),
-                                value: "\(lutLibrary.invalidFileCount)"
-                            )
+                        LabeledContent(
+                            settings.text(.invalidLUTCount),
+                            value: "\(lutLibrary.invalidFileCount)"
+                        )
                     }
 
                     Picker(
-                            settings.text(.activeLUT),
-                            selection: Binding<String?>(
-                                get: { lutLibrary.activeEntryID },
-                                set: { newID in
-                                    do {
-                                        if let newID,
-                                           let entry = lutLibrary.entry(withID: newID) {
-                                            try lutLibrary.activate(entry)
-                                            settings.lutEnabled = true
-                                        } else {
-                                            lutLibrary.clearActiveLUT()
-                                        }
-                                    } catch {
-                                        lutImportError = error.localizedDescription
+                        settings.text(.activeLUT),
+                        selection: Binding<String?>(
+                            get: { lutLibrary.activeEntryID },
+                            set: { newID in
+                                do {
+                                    if let newID,
+                                       let entry = lutLibrary.entry(withID: newID) {
+                                        try lutLibrary.activate(entry)
+                                        settings.lutEnabled = true
+                                    } else {
+                                        lutLibrary.clearActiveLUT()
                                     }
+                                } catch {
+                                    lutImportError = error.localizedDescription
                                 }
-                            )
-                        ) {
-                            Text(settings.text(.noLUT)).tag(Optional<String>.none)
-
-                            ForEach(lutLibrary.entries) { entry in
-                                Text(
-                                    entry.source == .capturePilot
-                                        ? "\(entry.displayName) · CapturePilot"
-                                        : "\(entry.displayName) · \(settings.text(.externalLUTFolder))"
-                                )
-                                .tag(Optional(entry.id))
                             }
+                        )
+                    ) {
+                        Text(settings.text(.noLUT)).tag(Optional<String>.none)
+
+                        ForEach(lutLibrary.entries) { entry in
+                            Text(
+                                entry.source == .capturePilot
+                                    ? "\(entry.displayName) · CapturePilot"
+                                    : "\(entry.displayName) · \(settings.text(.externalLUTFolder))"
+                            )
+                            .tag(Optional(entry.id))
                         }
+                    }
 
                     if lutLibrary.folderDisplayName != nil {
                         HStack {
@@ -299,23 +302,30 @@ struct SettingsView: View {
                             }
                         }
 
-                            Button(role: .destructive) {
-                                lutLibrary.clearFolder()
-                            } label: {
-                                Label(
-                                    settings.text(.removeLUTFolder),
-                                    systemImage: "folder.badge.minus"
-                                )
-                            }
-                        }
-                    } else {
-                        Button {
-                            showingLUTFolderPicker = true
+                        Button(role: .destructive) {
+                            lutLibrary.clearFolder()
                         } label: {
                             Label(
-                                settings.text(.chooseLUTFolder),
-                                systemImage: "folder.badge.plus"
+                                settings.text(.removeLUTFolder),
+                                systemImage: "folder.badge.minus"
                             )
+                        }
+                    } else {
+                        HStack {
+                            Button {
+                                showingLUTFolderPicker = true
+                            } label: {
+                                Label(
+                                    settings.text(.chooseLUTFolder),
+                                    systemImage: "folder.badge.plus"
+                                )
+                            }
+
+                            Spacer()
+
+                            Button(settings.text(.rescanLUTs)) {
+                                lutLibrary.refresh()
+                            }
                         }
                     }
 
