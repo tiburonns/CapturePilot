@@ -624,6 +624,8 @@ struct ContentView: View {
             return settings.coachIntensity != .subtle
         case .lenses:
             return !camera.availableLenses.isEmpty
+        case .afaeLock:
+            return camera.supportsAFAELock
         default:
             return true
         }
