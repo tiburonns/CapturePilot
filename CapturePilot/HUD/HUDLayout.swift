@@ -12,6 +12,8 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
     case shutter
     case grid
     case focusPeaking
+    case zebra
+    case histogram
 
     var id: String { rawValue }
 
@@ -37,6 +39,8 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
         case .shutter: return .shutterButton
         case .grid: return .gridButton
         case .focusPeaking: return .focusPeakingQuick
+        case .zebra: return .zebra
+        case .histogram: return .histogramRGB
         }
     }
 }
@@ -155,7 +159,9 @@ final class HUDLayoutStore: ObservableObject {
             .photoFormat: config(portrait: (0.12, 0.92), landscape: (0.18, 0.87)),
             .shutter: config(portrait: (0.50, 0.91), landscape: (0.50, 0.84)),
             .grid: config(portrait: (0.88, 0.92), landscape: (0.82, 0.87)),
-            .focusPeaking: config(false, portrait: (0.94, 0.50), landscape: (0.96, 0.50))
+            .focusPeaking: config(false, portrait: (0.94, 0.46), landscape: (0.96, 0.43)),
+            .zebra: config(portrait: (0.92, 0.57), landscape: (0.95, 0.58)),
+            .histogram: config(portrait: (0.72, 0.80), landscape: (0.77, 0.72))
         ]
     }
 }

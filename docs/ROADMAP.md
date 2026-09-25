@@ -50,6 +50,18 @@ A checked source item means implementation exists and the project compiles. It d
 - [x] Golden triangle overlay/guidance.
 - [x] General/Portrait/Architecture/Automotive/Macro/Street/Landscape/Night coach modes.
 
+### 0.4 — Professional monitoring
+
+- [x] Adjustable Zebra overlay.
+- [x] Zebra range 75–100%.
+- [x] Quick Zebra HUD control and presets.
+- [x] RGB preview histogram.
+- [x] Per-channel clipping indicators.
+- [x] Expand/collapse histogram interaction.
+- [x] Movable/hideable Zebra and Histogram HUD elements.
+- [ ] Validate Zebra threshold accuracy on physical devices.
+- [ ] Validate histogram alignment/performance in all orientations and lenses.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -67,8 +79,6 @@ A checked source item means implementation exists and the project compiles. It d
 
 ### Future
 
-- [ ] Zebra overlay.
-- [ ] Real-time histogram.
 - [ ] Bracketing.
 - [ ] AF/AE lock gesture/control.
 - [ ] Metadata inspection.
@@ -128,6 +138,18 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [x] Triángulo áureo.
 - [x] Coaches General/Retrato/Arquitectura/Automotriz/Macro/Calle/Paisaje/Noche.
 
+### 0.4 — Monitoreo profesional
+
+- [x] Overlay de cebras ajustable.
+- [x] Rango 75–100%.
+- [x] Control rápido y presets de cebra.
+- [x] Histograma RGB del preview.
+- [x] Indicadores de clipping por canal.
+- [x] Vista compacta/ampliada.
+- [x] Zebra e Histograma movibles/ocultables en HUD.
+- [ ] Validar umbral real de Zebra en hardware.
+- [ ] Validar rendimiento/alineación del histograma en orientaciones/lentes.
+
 ### Gates pendientes
 
 - [ ] Validar 12/24/48 MP y dimensiones de archivos en hardware.
@@ -145,8 +167,6 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 
 ### Futuro
 
-- [ ] Zebras.
-- [ ] Histograma.
 - [ ] Bracketing.
 - [ ] AF/AE Lock.
 - [ ] Inspector de metadata.

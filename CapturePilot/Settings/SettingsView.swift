@@ -68,6 +68,32 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    HStack {
+                        Text(settings.text(.zebraLevel))
+                        Spacer()
+                        Text("\(Int(settings.zebraLevel.rounded()))%")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Slider(
+                        value: $settings.zebraLevel,
+                        in: 75...100,
+                        step: 1
+                    )
+
+                    Text(settings.text(.zebraDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Text(settings.text(.histogramDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.monitoring))
+                }
+
                 Section(settings.text(.privacy)) {
                     Text(settings.text(.privacyDetail))
                         .font(.footnote)
@@ -91,8 +117,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "3"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.4.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "4"
         return "\(version) (\(build))"
     }
 }

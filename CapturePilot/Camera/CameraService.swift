@@ -6,6 +6,7 @@ final class CameraService: NSObject, ObservableObject {
     let session = AVCaptureSession()
     let coach = CoachEngine()
     let focusPeaking = FocusPeakingEngine()
+    let monitoring = ProfessionalMonitoringEngine()
 
     @Published private(set) var isConfigured = false
     @Published private(set) var permissionDenied = false
@@ -49,6 +50,9 @@ final class CameraService: NSObject, ObservableObject {
     @Published var lastSaveSucceeded: Bool? = nil
     @Published private(set) var isFocusPeakingEnabled = false
     @Published private(set) var focusPeakingImage: CGImage? = nil
+    @Published private(set) var isZebraEnabled = false
+    @Published private(set) var zebraImage: CGImage? = nil
+    @Published private(set) var histogramSnapshot: HistogramSnapshot = .empty
 
     private let sessionQueue = DispatchQueue(label: "CapturePilot.CameraSession", qos: .userInitiated)
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
@@ -60,6 +64,9 @@ final class CameraService: NSObject, ObservableObject {
     private var coachIntensity: AppSettings.CoachIntensity = .balanced
     private var coachScene: AppSettings.SceneCoach = .general
     private var focusPeakingRequested = false
+    private var zebraRequested = false
+    private var histogramRequested = false
+    private var zebraLevel: Double = 95
     private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
@@ -75,6 +82,15 @@ final class CameraService: NSObject, ObservableObject {
         focusPeaking.onUpdate = { [weak self] image in
             guard let self, self.isFocusPeakingEnabled else { return }
             self.focusPeakingImage = image
+        }
+
+        monitoring.onZebraUpdate = { [weak self] image in
+            guard let self, self.isZebraEnabled else { return }
+            self.zebraImage = image
+        }
+
+        monitoring.onHistogramUpdate = { [weak self] snapshot in
+            self?.histogramSnapshot = snapshot
         }
 
         registerSessionObservers()
@@ -124,6 +140,34 @@ final class CameraService: NSObject, ObservableObject {
 
     func setCoachScene(_ scene: AppSettings.SceneCoach) {
         videoQueue.async { [weak self] in self?.coachScene = scene }
+    }
+
+    func toggleZebra() {
+        setZebraEnabled(!isZebraEnabled)
+    }
+
+    func setZebraEnabled(_ enabled: Bool) {
+        isZebraEnabled = enabled
+        if !enabled {
+            zebraImage = nil
+        }
+
+        videoQueue.async { [weak self] in
+            self?.zebraRequested = enabled
+        }
+    }
+
+    func setZebraLevel(_ value: Double) {
+        let clamped = min(max(value, 75), 100)
+        videoQueue.async { [weak self] in
+            self?.zebraLevel = clamped
+        }
+    }
+
+    func setHistogramEnabled(_ enabled: Bool) {
+        videoQueue.async { [weak self] in
+            self?.histogramRequested = enabled
+        }
     }
 
     func toggleFocusPeaking() {
@@ -728,9 +772,19 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        if focusPeakingRequested,
-           let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-            focusPeaking.process(pixelBuffer: pixelBuffer)
+        if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            if focusPeakingRequested {
+                focusPeaking.process(pixelBuffer: pixelBuffer)
+            }
+
+            if zebraRequested || histogramRequested {
+                monitoring.process(
+                    pixelBuffer: pixelBuffer,
+                    zebraEnabled: zebraRequested,
+                    zebraLevel: zebraLevel,
+                    histogramEnabled: histogramRequested
+                )
+            }
         }
 
         coach.process(

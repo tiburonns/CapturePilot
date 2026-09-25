@@ -1,5 +1,27 @@
 # Changelog / Registro de cambios
 
+## 0.4.0 — Professional monitoring / Monitoreo profesional
+
+### English
+- Adjustable Zebra overlay with 75–100% threshold.
+- HUD Zebra quick toggle plus exposure-level presets.
+- RGB histogram derived from the live YCbCr preview stream.
+- Per-channel highlight/shadow clipping indicators.
+- Tap-to-expand histogram.
+- Zebra and Histogram integrated into the movable/hideable HUD.
+- Monitoring work is gated so hidden/inactive tools do not continuously process frames.
+- Version/build 0.4.0 (4).
+
+### Español
+- Cebras ajustables entre 75–100%.
+- Control rápido HUD y presets de exposición.
+- Histograma RGB derivado del preview YCbCr.
+- Indicadores de clipping por canal.
+- Histograma ampliable con un toque.
+- Zebra e Histograma integrados al HUD movible/ocultable.
+- El procesamiento se detiene cuando las herramientas no están activas/visibles.
+- Versión/build 0.4.0 (4).
+
 ## 0.3.0 — Pro capture, geometry coaching, orientation and HUD
 
 ### English

@@ -41,6 +41,15 @@
 - [ ] Rotate while Pro controls are open.
 - [ ] Rotation disabled in Settings is respected.
 
+#### Professional monitoring
+
+- [ ] Zebra overlay matches the exact preview crop.
+- [ ] Zebra quick control remains reachable after HUD customization.
+- [ ] Compact histogram remains entirely inside the safe area.
+- [ ] Expanded histogram clamps inside the safe area.
+- [ ] Histogram can be moved in portrait and landscape independently.
+- [ ] Histogram expansion does not make Settings/Shutter unreachable.
+
 #### Dynamic Type
 
 - [ ] Default.
@@ -93,6 +102,15 @@ Source inspection cannot certify these physical checks.
 - [ ] Rotar después de cambiar lente.
 - [ ] Rotar con controles Pro abiertos.
 - [ ] Ajustes de orientación se respetan.
+
+#### Monitoreo profesional
+
+- [ ] Cebras coinciden con el crop del preview.
+- [ ] Control Zebra sigue alcanzable tras personalizar HUD.
+- [ ] Histograma compacto permanece dentro del área segura.
+- [ ] Histograma ampliado se mantiene dentro del área segura.
+- [ ] Posición independiente vertical/horizontal.
+- [ ] Expandirlo no vuelve inaccesibles Ajustes/Disparador.
 
 #### Dynamic Type
 
