@@ -43,6 +43,7 @@ struct CubeLUT {
     let title: String?
     let dimension: Int
     let cubeData: Data
+    private let values: [SIMD3<Float>]
 
     init(url: URL) throws {
         let raw = try Data(contentsOf: url)
@@ -164,9 +165,23 @@ struct CubeLUT {
 
         self.title = title
         self.dimension = dimension
+        self.values = values
         self.cubeData = rgba.withUnsafeBufferPointer { buffer in
             Data(buffer: buffer)
         }
+    }
+
+    func sample(r: Double, g: Double, b: Double) -> SIMD3<Float> {
+        let maximum = max(1, dimension - 1)
+        let ri = min(max(Int((r * Double(maximum)).rounded()), 0), maximum)
+        let gi = min(max(Int((g * Double(maximum)).rounded()), 0), maximum)
+        let bi = min(max(Int((b * Double(maximum)).rounded()), 0), maximum)
+
+        let index = bi * dimension * dimension + gi * dimension + ri
+        guard values.indices.contains(index) else {
+            return SIMD3<Float>(Float(r), Float(g), Float(b))
+        }
+        return values[index]
     }
 }
 
