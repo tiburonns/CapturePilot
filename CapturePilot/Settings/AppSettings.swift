@@ -177,6 +177,28 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    func peakingColorName(_ color: PeakingColor) -> String {
+        switch color {
+        case .red: text(.colorRed)
+        case .green: text(.colorGreen)
+        case .blue: text(.colorBlue)
+        case .yellow: text(.colorYellow)
+        case .cyan: text(.colorCyan)
+        case .white: text(.colorWhite)
+        }
+    }
+
+    func frameGuideName(_ guide: FrameGuide) -> String {
+        switch guide {
+        case .none: text(.off)
+        case .square: text(.frameSquare)
+        case .fourThree: text(.frameFourThree)
+        case .threeTwo: text(.frameThreeTwo)
+        case .sixteenNine: text(.frameSixteenNine)
+        case .cinema239: text(.frameCinema239)
+        }
+    }
+
     var languageBadge: String {
         switch language {
         case .system: "AUTO"
@@ -229,6 +251,7 @@ enum LocalizedKey: Hashable {
     case clippingWarnings, shadowsClipped, highlightsClipped
     case frameGuide, frameGuideDetail, frameSquare, frameFourThree, frameThreeTwo
     case frameSixteenNine, frameCinema239
+    case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -305,7 +328,9 @@ enum LocalizedKey: Hashable {
             .frameGuideDetail: "Previsualiza proporciones de recorte para fotografía sin cambiar la resolución del archivo capturado.",
             .frameSquare: "1:1 Cuadrado", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
-            .frameCinema239: "2.39:1"
+            .frameCinema239: "2.39:1",
+            .colorRed: "Rojo", .colorGreen: "Verde", .colorBlue: "Azul",
+            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -382,7 +407,9 @@ enum LocalizedKey: Hashable {
             .frameGuideDetail: "Preview photographic crop ratios without changing the captured file resolution.",
             .frameSquare: "1:1 Square", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
-            .frameCinema239: "2.39:1"
+            .frameCinema239: "2.39:1",
+            .colorRed: "Red", .colorGreen: "Green", .colorBlue: "Blue",
+            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
