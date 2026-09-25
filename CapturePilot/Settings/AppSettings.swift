@@ -69,6 +69,7 @@ final class AppSettings: ObservableObject {
         static let lutEnabled = "settings.rawShare.lutEnabled"
         static let lutIntensity = "settings.rawShare.lutIntensity"
         static let lutDisplayName = "settings.rawShare.lutDisplayName"
+        static let lutCoachRecommendations = "settings.rawShare.lutCoachRecommendations"
     }
 
     @Published var language: Language {
@@ -136,6 +137,15 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(lutDisplayName, forKey: Key.lutDisplayName) }
     }
 
+    @Published var lutCoachRecommendations: Bool {
+        didSet {
+            UserDefaults.standard.set(
+                lutCoachRecommendations,
+                forKey: Key.lutCoachRecommendations
+            )
+        }
+    }
+
     @Published var allowLandscape: Bool {
         didSet {
             UserDefaults.standard.set(allowLandscape, forKey: OrientationPolicy.landscapeKey)
@@ -199,6 +209,11 @@ final class AppSettings: ObservableObject {
             : 1
         lutIntensity = min(max(savedLUTIntensity, 0), 1)
         lutDisplayName = defaults.string(forKey: Key.lutDisplayName)
+        lutCoachRecommendations = Self.boolValue(
+            defaults,
+            key: Key.lutCoachRecommendations,
+            defaultValue: true
+        )
 
         allowLandscape = Self.boolValue(
             defaults,
@@ -248,12 +263,16 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    var rawShareConfiguration: RawShareCaptureConfiguration? {
+    func rawShareConfiguration(
+        libraryLUTURL: URL? = nil
+    ) -> RawShareCaptureConfiguration? {
         guard rawShareEnabled else { return nil }
+
+        let lutURL = libraryLUTURL ?? selectedLUTURL
 
         return RawShareCaptureConfiguration(
             targetMegapixels: shareJPEGResolution.rawValue,
-            lutURL: lutEnabled ? selectedLUTURL : nil,
+            lutURL: lutEnabled ? lutURL : nil,
             lutIntensity: lutEnabled ? lutIntensity : 0
         )
     }
@@ -374,6 +393,12 @@ enum LocalizedKey: Hashable {
     case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
     case rawShare, rawShareDetail, rawShareUnavailable, shareJPEGResolution
     case lut, importLUT, removeLUT, lutIntensity, noLUT, shareJPEG, shareReady
+    case lutLibrary, chooseLUTFolder, changeLUTFolder, removeLUTFolder, rescanLUTs
+    case lutFolderDetail, activeLUT, lutCount, invalidLUTCount
+    case lutCoachRecommendations, recommendedLUT, applyLUT, lutActive
+    case lutReasonPortrait, lutReasonHighlights, lutReasonShadows, lutReasonNight
+    case lutReasonLandscape, lutReasonArchitecture, lutReasonAutomotive
+    case lutReasonStreet, lutReasonMacro, lutReasonGeneral
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -460,7 +485,28 @@ enum LocalizedKey: Hashable {
             .lut: "LUT", .importLUT: "Importar LUT .cube",
             .removeLUT: "Eliminar LUT", .lutIntensity: "Intensidad del LUT",
             .noLUT: "Sin LUT", .shareJPEG: "JPEG para compartir",
-            .shareReady: "JPEG listo para compartir"
+            .shareReady: "JPEG listo para compartir",
+            .lutLibrary: "Biblioteca de LUTs",
+            .chooseLUTFolder: "Elegir carpeta de LUTs",
+            .changeLUTFolder: "Cambiar carpeta",
+            .removeLUTFolder: "Desconectar carpeta",
+            .rescanLUTs: "Actualizar biblioteca",
+            .lutFolderDetail: "Selecciona una carpeta una vez. CapturePilot detecta archivos .cube dentro de ella y subcarpetas mientras la app está activa.",
+            .activeLUT: "LUT activo", .lutCount: "LUTs detectados",
+            .invalidLUTCount: "LUTs omitidos",
+            .lutCoachRecommendations: "Sugerencias de LUT del Coach",
+            .recommendedLUT: "LUT sugerido", .applyLUT: "Usar LUT",
+            .lutActive: "LUT activo",
+            .lutReasonPortrait: "Look cálido/suave compatible con retrato.",
+            .lutReasonHighlights: "Prioriza un look que comprime mejor las luces.",
+            .lutReasonShadows: "Prioriza un look que conserva o levanta sombras.",
+            .lutReasonNight: "Favorece sombras legibles y luces controladas.",
+            .lutReasonLandscape: "Favorece color y contraste para paisaje.",
+            .lutReasonArchitecture: "Favorece contraste con color relativamente neutro.",
+            .lutReasonAutomotive: "Favorece contraste y separación de color.",
+            .lutReasonStreet: "Favorece estructura y contraste para calle.",
+            .lutReasonMacro: "Favorece separación de color y microcontraste.",
+            .lutReasonGeneral: "Look equilibrado para la escena actual."
         ]
 
         let en: [LocalizedKey: String] = [
@@ -547,7 +593,28 @@ enum LocalizedKey: Hashable {
             .lut: "LUT", .importLUT: "Import .cube LUT",
             .removeLUT: "Remove LUT", .lutIntensity: "LUT intensity",
             .noLUT: "No LUT", .shareJPEG: "Share JPEG",
-            .shareReady: "JPEG ready to share"
+            .shareReady: "JPEG ready to share",
+            .lutLibrary: "LUT Library",
+            .chooseLUTFolder: "Choose LUT folder",
+            .changeLUTFolder: "Change folder",
+            .removeLUTFolder: "Disconnect folder",
+            .rescanLUTs: "Refresh library",
+            .lutFolderDetail: "Choose a folder once. CapturePilot detects .cube files inside it and subfolders while the app is active.",
+            .activeLUT: "Active LUT", .lutCount: "Detected LUTs",
+            .invalidLUTCount: "Skipped LUTs",
+            .lutCoachRecommendations: "Coach LUT suggestions",
+            .recommendedLUT: "Suggested LUT", .applyLUT: "Use LUT",
+            .lutActive: "LUT active",
+            .lutReasonPortrait: "Warm/soft profile suited to portrait.",
+            .lutReasonHighlights: "Prioritizes a look that controls highlights.",
+            .lutReasonShadows: "Prioritizes a look that preserves or lifts shadows.",
+            .lutReasonNight: "Favors readable shadows and controlled highlights.",
+            .lutReasonLandscape: "Favors color and contrast for landscape.",
+            .lutReasonArchitecture: "Favors contrast with relatively neutral color.",
+            .lutReasonAutomotive: "Favors contrast and color separation.",
+            .lutReasonStreet: "Favors structure and contrast for street.",
+            .lutReasonMacro: "Favors color separation and microcontrast.",
+            .lutReasonGeneral: "Balanced look for the current scene."
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
