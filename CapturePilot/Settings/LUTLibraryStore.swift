@@ -394,13 +394,13 @@ enum LUTProfileAnalyzer {
             1
         )
 
-        let saturatedSamples: [(SIMD3<Float>, Double)] = [
-            (lut.sample(r: 0.82, g: 0.18, b: 0.18), 0.64),
-            (lut.sample(r: 0.18, g: 0.82, b: 0.18), 0.64),
-            (lut.sample(r: 0.18, g: 0.18, b: 0.82), 0.64)
+        let saturatedSamples: [SIMD3<Float>] = [
+            lut.sample(r: 0.82, g: 0.18, b: 0.18),
+            lut.sample(r: 0.18, g: 0.82, b: 0.18),
+            lut.sample(r: 0.18, g: 0.18, b: 0.82)
         ]
 
-        let outputSaturation = saturatedSamples.map { sample, _ in
+        let outputSaturation = saturatedSamples.map { sample in
             let maximum = max(sample.x, max(sample.y, sample.z))
             let minimum = min(sample.x, min(sample.y, sample.z))
             return Double(maximum - minimum)
