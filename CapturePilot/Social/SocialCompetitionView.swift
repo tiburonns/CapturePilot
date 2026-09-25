@@ -7,6 +7,7 @@ struct SocialCompetitionView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var friendUsername = ""
+    @State private var leaderboardCategory = "overall"
     @State private var showingDeleteConfirmation = false
 
     var body: some View {
@@ -57,8 +58,8 @@ struct SocialCompetitionView: View {
             .multilineTextAlignment(.center)
 
             Text(localized(
-                "CapturePilot never receives your Apple Account email or password. It derives an automatic Pilot username from CloudKit's private user record identifier.",
-                "CapturePilot nunca recibe el correo ni la contraseña de tu cuenta Apple. El usuario Pilot se deriva del identificador privado que CloudKit asigna a esta app."
+                "CapturePilot never receives your Apple Account email or password. It stores a random private social identity in your iCloud private database and derives the Pilot username from that identity.",
+                "CapturePilot nunca recibe el correo ni la contraseña de tu cuenta Apple. Guarda una identidad social aleatoria en tu base privada de iCloud y deriva de ella el usuario Pilot."
             ))
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -182,7 +183,20 @@ struct SocialCompetitionView: View {
             }
 
             Section(localized("Friends leaderboard", "Ranking de amigos")) {
-                if social.leaderboard.isEmpty {
+                Picker(
+                    localized("Category", "Categoría"),
+                    selection: $leaderboardCategory
+                ) {
+                    Text(localized("Overall", "General")).tag("overall")
+                    ForEach(PhotoCategory.allCases) { category in
+                        Text(categoryDisplayName(category)).tag(category.rawValue)
+                    }
+                }
+
+                let visibleScores = social.leaderboard
+                    .filter { $0.category == leaderboardCategory }
+
+                if visibleScores.isEmpty {
                     Text(localized(
                         "No shared scores yet.",
                         "Aún no hay scores compartidos."
@@ -190,7 +204,7 @@ struct SocialCompetitionView: View {
                     .foregroundStyle(.secondary)
                 } else {
                     ForEach(
-                        Array(social.leaderboard.prefix(50).enumerated()),
+                        Array(visibleScores.prefix(50).enumerated()),
                         id: \.element.id
                     ) { index, item in
                         HStack {
@@ -270,6 +284,19 @@ struct SocialCompetitionView: View {
         .onChange(of: rankingStore.entries) { _, entries in
             guard social.shareScores else { return }
             Task { await social.syncBestScores(entries: entries) }
+        }
+    }
+
+    private func categoryDisplayName(_ category: PhotoCategory) -> String {
+        switch category {
+        case .general: return localized("General", "General")
+        case .portrait: return localized("Portrait", "Retrato")
+        case .architecture: return localized("Architecture", "Arquitectura")
+        case .automotive: return localized("Automotive", "Automotriz")
+        case .macro: return "Macro"
+        case .street: return localized("Street", "Calle")
+        case .landscape: return localized("Landscape", "Paisaje")
+        case .night: return localized("Night", "Noche")
         }
     }
 
