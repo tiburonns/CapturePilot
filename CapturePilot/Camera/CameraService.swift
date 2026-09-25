@@ -99,9 +99,12 @@ final class CameraService: NSObject, ObservableObject {
         var rawData: Data?
         var processedData: Data?
         let configuration: RawShareCaptureConfiguration
+        let sceneHint: PhotoCategory
     }
 
     private var pendingRawShareCaptures: [Int64: PendingRawShareCapture] = [:]
+    private var rankingSceneByCaptureID: [Int64: PhotoCategory] = [:]
+    private var rankingHandler: ((Data, PhotoCategory?) -> Void)?
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var captureRotationObservation: NSKeyValueObservation?
@@ -191,6 +194,12 @@ final class CameraService: NSObject, ObservableObject {
 
     func setCoachScene(_ scene: AppSettings.SceneCoach) {
         videoQueue.async { [weak self] in self?.coachScene = scene }
+    }
+
+    func setRankingHandler(
+        _ handler: @escaping (Data, PhotoCategory?) -> Void
+    ) {
+        rankingHandler = handler
     }
 
     func toggleZebra() {
@@ -883,9 +892,11 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func capturePhoto(
-        rawShareConfiguration: RawShareCaptureConfiguration? = nil
+        rawShareConfiguration: RawShareCaptureConfiguration? = nil,
+        rankingScene: AppSettings.SceneCoach = .general
     ) {
         let requestedFormat = photoFormat
+        let rankingCategory = PhotoCategory(rawValue: rankingScene.rawValue) ?? .general
 
         DispatchQueue.main.async { [weak self] in
             self?.lastSaveSucceeded = nil
@@ -921,7 +932,8 @@ final class CameraService: NSObject, ObservableObject {
                         PendingRawShareCapture(
                             rawData: nil,
                             processedData: nil,
-                            configuration: rawShareConfiguration
+                            configuration: rawShareConfiguration,
+                            sceneHint: rankingCategory
                         )
                 }
 
@@ -975,6 +987,11 @@ final class CameraService: NSObject, ObservableObject {
 
             settings.photoQualityPrioritization = .quality
             settings.flashMode = .off
+
+            self.photoProcessingQueue.sync {
+                self.rankingSceneByCaptureID[settings.uniqueID] = rankingCategory
+            }
+
             self.photoOutput.capturePhoto(with: settings, delegate: self)
         }
     }
@@ -1002,7 +1019,8 @@ final class CameraService: NSObject, ObservableObject {
     private func processCompletedRawShareCapture(
         rawData: Data,
         processedData: Data,
-        configuration: RawShareCaptureConfiguration
+        configuration: RawShareCaptureConfiguration,
+        sceneHint: PhotoCategory
     ) {
         do {
             let result = try rawShareProcessor.process(
@@ -1010,6 +1028,7 @@ final class CameraService: NSObject, ObservableObject {
                 configuration: configuration
             )
             let shareURL = try writeTemporaryShareJPEG(result.data)
+            rankingHandler?(result.data, sceneHint)
 
             DispatchQueue.main.async {
                 self.lastShareJPEGURL = shareURL
@@ -1240,6 +1259,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
         if error != nil {
             photoProcessingQueue.async { [weak self] in
                 self?.pendingRawShareCaptures.removeValue(forKey: uniqueID)
+                self?.rankingSceneByCaptureID.removeValue(forKey: uniqueID)
             }
             DispatchQueue.main.async { self.lastSaveSucceeded = false }
             return
@@ -1255,6 +1275,10 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
         }
 
         guard isPendingRawShare else {
+            let sceneHint = photoProcessingQueue.sync {
+                rankingSceneByCaptureID.removeValue(forKey: uniqueID)
+            }
+            rankingHandler?(data, sceneHint)
             savePhotoData(data)
             return
         }
@@ -1275,7 +1299,8 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
                 self.processCompletedRawShareCapture(
                     rawData: rawData,
                     processedData: processedData,
-                    configuration: pending.configuration
+                    configuration: pending.configuration,
+                    sceneHint: pending.sceneHint
                 )
             } else {
                 self.pendingRawShareCaptures[uniqueID] = pending
