@@ -401,8 +401,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.7.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "7"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.8.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "8"
         return "\(version) (\(build))"
     }
 }
