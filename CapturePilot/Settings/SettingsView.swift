@@ -1,7 +1,10 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @State private var showingLUTImporter = false
+    @State private var lutImportError: String?
     @EnvironmentObject private var hud: HUDLayoutStore
     @Environment(\.dismiss) private var dismiss
 
@@ -157,6 +160,66 @@ struct SettingsView: View {
                     Text(settings.text(.monitoring))
                 }
 
+                Section {
+                    Toggle(settings.text(.rawShare), isOn: $settings.rawShareEnabled)
+
+                    Picker(
+                        settings.text(.shareJPEGResolution),
+                        selection: $settings.shareJPEGResolution
+                    ) {
+                        ForEach(AppSettings.ShareJPEGResolution.allCases) { resolution in
+                            Text(resolution.label).tag(resolution)
+                        }
+                    }
+                    .disabled(!settings.rawShareEnabled)
+
+                    Toggle(settings.text(.lut), isOn: $settings.lutEnabled)
+                        .disabled(
+                            !settings.rawShareEnabled
+                            || settings.selectedLUTURL == nil
+                        )
+
+                    if let name = settings.lutDisplayName {
+                        LabeledContent(settings.text(.lut), value: name)
+
+                        HStack {
+                            Text(settings.text(.lutIntensity))
+                            Spacer()
+                            Text("\(Int((settings.lutIntensity * 100).rounded()))%")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(
+                            value: $settings.lutIntensity,
+                            in: 0...1,
+                            step: 0.05
+                        )
+                        .disabled(!settings.rawShareEnabled || !settings.lutEnabled)
+
+                        Button(role: .destructive) {
+                            settings.removeLUT()
+                        } label: {
+                            Label(settings.text(.removeLUT), systemImage: "trash")
+                        }
+                    } else {
+                        Text(settings.text(.noLUT))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button {
+                        showingLUTImporter = true
+                    } label: {
+                        Label(settings.text(.importLUT), systemImage: "square.and.arrow.down")
+                    }
+
+                    Text(settings.text(.rawShareDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.rawShare))
+                }
+
                 Section(settings.text(.privacy)) {
                     Text(settings.text(.privacyDetail))
                         .font(.footnote)
@@ -177,11 +240,34 @@ struct SettingsView: View {
                 }
             }
         }
+        .fileImporter(
+            isPresented: $showingLUTImporter,
+            allowedContentTypes: [.data],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first else { return }
+                try settings.importLUT(from: url)
+            } catch {
+                lutImportError = error.localizedDescription
+            }
+        }
+        .alert(
+            settings.text(.lut),
+            isPresented: Binding(
+                get: { lutImportError != nil },
+                set: { if !$0 { lutImportError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { lutImportError = nil }
+        } message: {
+            Text(lutImportError ?? "")
+        }
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.5.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "5"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.6.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "6"
         return "\(version) (\(build))"
     }
 }

@@ -7,7 +7,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El coach prioriza sugerencias prácticas; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
 
-> **Current main / main actual: 0.5.0 (5).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.6.0 (6).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -27,6 +27,16 @@ CapturePilot es una cámara gratuita y sin anuncios para iOS que combina control
 - Every capture explicitly sets `AVCapturePhotoSettings.maxPhotoDimensions`.
 - Add-only save to Photos.
 - Tap-to-focus and tap-to-meter.
+
+### RAW + Share JPEG
+
+CapturePilot can now request RAW/ProRAW plus a processed JPEG from the same AVFoundation photo capture when the active camera configuration exposes RAW and approximately 48 MP-class maximum photo dimensions.
+
+The RAW remains untouched. The processed companion can be exported as a 12/24/48 MP target JPEG, optionally using an imported 3D `.cube` LUT with adjustable intensity. CapturePilot never upscales the share copy.
+
+The processed JPEG is available directly through the iOS Share Sheet after a successful save. Photos pairing is attempted as JPEG primary + RAW alternate, with a two-asset fallback.
+
+See [RAW + Share JPEG](docs/RAW_SHARE_WORKFLOW.md) for capability rules and validation limits.
 
 ### Professional controls
 
@@ -160,7 +170,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.5.0 (5)**.
+- Current version/build: **0.6.0 (6)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -185,6 +195,16 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - Cada captura configura explícitamente `AVCapturePhotoSettings.maxPhotoDimensions`.
 - Guardado add-only en Fotos.
 - Tap-to-focus y medición al tocar.
+
+### RAW + JPEG para compartir
+
+CapturePilot puede solicitar RAW/ProRAW y un JPEG procesado desde el mismo disparo AVFoundation cuando la cámara activa expone RAW y dimensiones máximas de clase aproximada 48 MP.
+
+El RAW permanece intacto. El companion procesado puede exportarse con objetivo 12/24/48 MP y un LUT 3D `.cube` opcional con intensidad ajustable. CapturePilot nunca hace upscale del JPEG.
+
+Después de guardar, el JPEG queda disponible directamente en Share Sheet. Fotos intenta conservar JPEG principal + RAW alternativo; si no acepta la combinación, se guardan dos assets.
+
+Consulta [RAW + JPEG para compartir](docs/RAW_SHARE_WORKFLOW.md).
 
 ### Controles profesionales
 
@@ -318,7 +338,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.5.0 (5)**.
+- Versión/build actual: **0.6.0 (6)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.
@@ -327,6 +347,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 
 - [Architecture / Arquitectura](docs/ARCHITECTURE.md)
 - [Coach / Coach](docs/COACH.md)
+- [RAW + Share JPEG / RAW + JPEG](docs/RAW_SHARE_WORKFLOW.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)

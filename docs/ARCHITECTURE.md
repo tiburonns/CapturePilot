@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.5.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.6.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -28,6 +28,27 @@ The app selects the physical rear camera, then searches that device's formats fo
 This is capability-driven. CapturePilot does not synthesize a 48 MP option on hardware that does not expose one.
 
 Apple ProRAW is enabled only after the output reports `isAppleProRAWSupported`. HEIF is exposed only when `availablePhotoCodecTypes` contains HEVC.
+
+### RAW + Share JPEG pipeline
+
+When enabled and capability-gated, CapturePilot creates one `AVCapturePhotoSettings` request containing a RAW pixel format plus a JPEG processed format. The request uses the active format's maximum valid `maxPhotoDimensions`.
+
+`AVCapturePhotoCaptureDelegate` can receive both results from the same request. `AVCapturePhoto.isRawPhoto` separates the RAW result from the processed companion. The pair is accumulated by settings unique ID before post-processing.
+
+Only the processed companion enters `RawShareProcessor`:
+
+```text
+processed companion → orientation → optional CIColorCube LUT
+                    → optional intensity blend
+                    → Lanczos downsample
+                    → sRGB JPEG
+```
+
+The RAW data bypasses Core Image entirely.
+
+Photos import first attempts JPEG `.photo` + RAW `.alternatePhoto`. A separate-assets fallback protects the capture if Photos rejects the pair.
+
+See [RAW_SHARE_WORKFLOW.md](RAW_SHARE_WORKFLOW.md).
 
 ### Lens model
 
@@ -113,7 +134,7 @@ No frame leaves the process in the current source. Coach analysis, Hough-style g
 
 ## Español
 
-CapturePilot 0.5.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.6.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 
@@ -139,6 +160,18 @@ Para cada cámara física trasera se busca el formato con mayor `supportedMaxPho
 CapturePilot no inventa una opción de 48 MP si el hardware/formato no la reporta.
 
 ProRAW sólo se habilita cuando `isAppleProRAWSupported` lo permite. HEIF sólo aparece cuando HEVC está en `availablePhotoCodecTypes`.
+
+### Pipeline RAW + JPEG
+
+Cuando el modo está activo y las capabilities lo permiten, CapturePilot crea un único `AVCapturePhotoSettings` con RAW + JPEG processed y solicita las dimensiones máximas válidas del formato activo.
+
+El delegate recibe ambos resultados del mismo request. `isRawPhoto` distingue RAW del companion procesado y ambos se agrupan por unique ID.
+
+Sólo el JPEG pasa por `RawShareProcessor`: orientación, LUT opcional, intensidad, Lanczos y exportación sRGB. El RAW nunca entra al pipeline de LUT.
+
+Fotos intenta JPEG `.photo` + RAW `.alternatePhoto`; existe fallback a assets separados.
+
+Consulta [RAW_SHARE_WORKFLOW.md](RAW_SHARE_WORKFLOW.md).
 
 ### Lentes
 

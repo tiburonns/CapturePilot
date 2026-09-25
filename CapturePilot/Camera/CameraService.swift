@@ -29,6 +29,10 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var supportsAFAELock = false
     @Published private(set) var supportsHEVC = false
     @Published private(set) var supportsProRAW = false
+    @Published private(set) var supportsRawShareWorkflow = false
+    @Published private(set) var lastShareJPEGURL: URL?
+    @Published private(set) var lastShareJPEGDimensions: CGSize?
+    @Published private(set) var lastShareLUTName: String?
 
     @Published var exposureBias: Float = 0
     @Published private(set) var minExposureBias: Float = -2
@@ -65,6 +69,11 @@ final class CameraService: NSObject, ObservableObject {
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
     private let photoOutput = AVCapturePhotoOutput()
     private let videoOutput = AVCaptureVideoDataOutput()
+    private let rawShareProcessor = RawShareProcessor()
+    private let photoProcessingQueue = DispatchQueue(
+        label: "CapturePilot.PhotoProcessing",
+        qos: .userInitiated
+    )
 
     private var currentInput: AVCaptureDeviceInput?
     private var observerTokens: [NSObjectProtocol] = []
@@ -84,6 +93,15 @@ final class CameraService: NSObject, ObservableObject {
     private var peakingColor: (UInt8, UInt8, UInt8) = (255, 80, 30)
     private var afaeLockGeneration = 0
     private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
+    private var rawShareMaxDimensions = CMVideoDimensions(width: 0, height: 0)
+
+    private struct PendingRawShareCapture {
+        var rawData: Data?
+        var processedData: Data?
+        let configuration: RawShareCaptureConfiguration
+    }
+
+    private var pendingRawShareCaptures: [Int64: PendingRawShareCapture] = [:]
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var captureRotationObservation: NSKeyValueObservation?
@@ -519,6 +537,9 @@ final class CameraService: NSObject, ObservableObject {
 
         if let maximum = supportedDimensions.last {
             photoOutput.maxPhotoDimensions = maximum
+            rawShareMaxDimensions = maximum
+        } else {
+            rawShareMaxDimensions = CMVideoDimensions(width: 0, height: 0)
         }
 
         photoOutput.isAppleProRAWEnabled = photoOutput.isAppleProRAWSupported
@@ -557,6 +578,11 @@ final class CameraService: NSObject, ObservableObject {
         if hasProRAW { formats.append(.proRAW) }
 
         let selectedID = "\(captureDimensions.width)x\(captureDimensions.height)"
+        let maxMegapixels = resolutions.last?.megapixels ?? 0
+        let rawShareSupported =
+            (hasBayer || hasProRAW)
+            && maxMegapixels >= 40
+            && self.photoOutput.availablePhotoCodecTypes.contains(.jpeg)
 
         DispatchQueue.main.async {
             self.availableResolutions = resolutions
@@ -564,6 +590,7 @@ final class CameraService: NSObject, ObservableObject {
             self.availablePhotoFormats = formats
             self.supportsHEVC = hevc
             self.supportsProRAW = hasProRAW
+            self.supportsRawShareWorkflow = rawShareSupported
             if !formats.contains(self.photoFormat) {
                 self.photoFormat = hevc ? .heif : .jpeg
             }
@@ -855,11 +882,52 @@ final class CameraService: NSObject, ObservableObject {
         }
     }
 
-    func capturePhoto() {
+    func capturePhoto(
+        rawShareConfiguration: RawShareCaptureConfiguration? = nil
+    ) {
         let requestedFormat = photoFormat
+
+        DispatchQueue.main.async { [weak self] in
+            self?.lastSaveSucceeded = nil
+            self?.clearShareJPEG()
+        }
 
         sessionQueue.async { [weak self] in
             guard let self else { return }
+
+            if let rawShareConfiguration {
+                let rawSharePixels =
+                    Int64(self.rawShareMaxDimensions.width)
+                    * Int64(self.rawShareMaxDimensions.height)
+
+                guard rawSharePixels >= 40_000_000,
+                      self.photoOutput.availablePhotoCodecTypes.contains(.jpeg),
+                      let rawType = self.preferredRawSharePixelFormat() else {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                    return
+                }
+
+                let settings = AVCapturePhotoSettings(
+                    rawPixelFormatType: rawType,
+                    processedFormat: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+                )
+                settings.maxPhotoDimensions = self.rawShareMaxDimensions
+                settings.photoQualityPrioritization = .quality
+                settings.flashMode = .off
+                settings.isAutoStillImageStabilizationEnabled = false
+
+                self.photoProcessingQueue.sync {
+                    self.pendingRawShareCaptures[settings.uniqueID] =
+                        PendingRawShareCapture(
+                            rawData: nil,
+                            processedData: nil,
+                            configuration: rawShareConfiguration
+                        )
+                }
+
+                self.photoOutput.capturePhoto(with: settings, delegate: self)
+                return
+            }
 
             let settings: AVCapturePhotoSettings
 
@@ -908,6 +976,133 @@ final class CameraService: NSObject, ObservableObject {
             settings.photoQualityPrioritization = .quality
             settings.flashMode = .off
             self.photoOutput.capturePhoto(with: settings, delegate: self)
+        }
+    }
+
+    private func preferredRawSharePixelFormat() -> OSType? {
+        let types = photoOutput.availableRawPhotoPixelFormatTypes
+
+        if photoOutput.isAppleProRAWEnabled,
+           let proRAW = types.first(where: AVCapturePhotoOutput.isAppleProRAWPixelFormat) {
+            return proRAW
+        }
+
+        return types.first(where: AVCapturePhotoOutput.isBayerRAWPixelFormat)
+    }
+
+    private func clearShareJPEG() {
+        if let url = lastShareJPEGURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        lastShareJPEGURL = nil
+        lastShareJPEGDimensions = nil
+        lastShareLUTName = nil
+    }
+
+    private func processCompletedRawShareCapture(
+        rawData: Data,
+        processedData: Data,
+        configuration: RawShareCaptureConfiguration
+    ) {
+        do {
+            let result = try rawShareProcessor.process(
+                processedPhotoData: processedData,
+                configuration: configuration
+            )
+            let shareURL = try writeTemporaryShareJPEG(result.data)
+
+            DispatchQueue.main.async {
+                self.lastShareJPEGURL = shareURL
+                self.lastShareJPEGDimensions = CGSize(
+                    width: result.width,
+                    height: result.height
+                )
+                self.lastShareLUTName = result.appliedLUTName
+            }
+
+            saveRawShareAsset(
+                rawData: rawData,
+                jpegData: result.data
+            )
+        } catch {
+            DispatchQueue.main.async {
+                self.runtimeErrorDescription = error.localizedDescription
+                self.lastSaveSucceeded = false
+            }
+        }
+    }
+
+    private func writeTemporaryShareJPEG(_ data: Data) throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CapturePilotShare", isDirectory: true)
+
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+
+        let url = directory.appendingPathComponent(
+            "CapturePilot-Share-\(UUID().uuidString).jpg"
+        )
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
+    private func saveRawShareAsset(
+        rawData: Data,
+        jpegData: Data
+    ) {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
+            guard let self else { return }
+
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                return
+            }
+
+            PHPhotoLibrary.shared().performChanges {
+                let request = PHAssetCreationRequest.forAsset()
+
+                let jpegOptions = PHAssetResourceCreationOptions()
+                jpegOptions.originalFilename = "CapturePilot-Share.jpg"
+                request.addResource(
+                    with: .photo,
+                    data: jpegData,
+                    options: jpegOptions
+                )
+
+                let rawOptions = PHAssetResourceCreationOptions()
+                rawOptions.originalFilename = "CapturePilot-RAW.dng"
+                request.addResource(
+                    with: .alternatePhoto,
+                    data: rawData,
+                    options: rawOptions
+                )
+            } completionHandler: { success, _ in
+                if success {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = true }
+                } else {
+                    self.saveRawShareAsSeparateAssets(
+                        rawData: rawData,
+                        jpegData: jpegData
+                    )
+                }
+            }
+        }
+    }
+
+    private func saveRawShareAsSeparateAssets(
+        rawData: Data,
+        jpegData: Data
+    ) {
+        PHPhotoLibrary.shared().performChanges {
+            let jpegRequest = PHAssetCreationRequest.forAsset()
+            jpegRequest.addResource(with: .photo, data: jpegData, options: nil)
+
+            let rawRequest = PHAssetCreationRequest.forAsset()
+            rawRequest.addResource(with: .photo, data: rawData, options: nil)
+        } completionHandler: { [weak self] success, _ in
+            DispatchQueue.main.async { self?.lastSaveSucceeded = success }
         }
     }
 
@@ -1040,11 +1235,51 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
-        guard error == nil, let data = photo.fileDataRepresentation() else {
+        let uniqueID = photo.resolvedSettings.uniqueID
+
+        if error != nil {
+            photoProcessingQueue.async { [weak self] in
+                self?.pendingRawShareCaptures.removeValue(forKey: uniqueID)
+            }
             DispatchQueue.main.async { self.lastSaveSucceeded = false }
             return
         }
 
-        savePhotoData(data)
+        guard let data = photo.fileDataRepresentation() else {
+            DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            return
+        }
+
+        let isPendingRawShare = photoProcessingQueue.sync {
+            pendingRawShareCaptures[uniqueID] != nil
+        }
+
+        guard isPendingRawShare else {
+            savePhotoData(data)
+            return
+        }
+
+        photoProcessingQueue.async { [weak self] in
+            guard let self,
+                  var pending = self.pendingRawShareCaptures[uniqueID] else { return }
+
+            if photo.isRawPhoto {
+                pending.rawData = data
+            } else {
+                pending.processedData = data
+            }
+
+            if let rawData = pending.rawData,
+               let processedData = pending.processedData {
+                self.pendingRawShareCaptures.removeValue(forKey: uniqueID)
+                self.processCompletedRawShareCapture(
+                    rawData: rawData,
+                    processedData: processedData,
+                    configuration: pending.configuration
+                )
+            } else {
+                self.pendingRawShareCaptures[uniqueID] = pending
+            }
+        }
     }
 }
