@@ -282,9 +282,9 @@ final class AppSettings: ObservableObject {
 
         let temporaryURL = directory.appendingPathComponent("validation.cube")
         try data.write(to: temporaryURL, options: .atomic)
-        _ = try CubeLUT(url: temporaryURL)
-        try? FileManager.default.removeItem(at: temporaryURL)
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
 
+        _ = try CubeLUT(url: temporaryURL)
         try data.write(to: Self.lutStorageURL, options: .atomic)
         lutDisplayName = sourceURL.deletingPathExtension().lastPathComponent
         lutEnabled = true
