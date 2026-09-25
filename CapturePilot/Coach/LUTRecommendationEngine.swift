@@ -103,7 +103,7 @@ enum LUTRecommendationEngine {
             return (
                 max(profile.contrast, 0) * 0.60
                     + max(profile.saturation, 0) * 0.36
-                    - max(profile.shadowLift, 0.65) * 0.08,
+                    - max(profile.shadowLift - 0.65, 0) * 0.08,
                 .automotive
             )
         case .macro:
