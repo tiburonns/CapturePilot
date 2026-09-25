@@ -15,6 +15,9 @@ struct ContentView: View {
     @State private var rgbParadeExpanded = false
     @State private var vectorscopeExpanded = false
     @State private var lutActionError: String?
+    @State private var stableLUTRecommendation: LUTRecommendation?
+    @State private var pendingLUTRecommendation: LUTRecommendation?
+    @State private var pendingLUTRecommendationCount = 0
 
     var body: some View {
         ZStack {
@@ -37,6 +40,7 @@ struct ContentView: View {
             applyMonitoringSettings()
             syncMonitoringHUD()
             lutLibrary.startMonitoring()
+            updateLUTRecommendation()
             camera.resumeIfPossible()
             OrientationPolicy.applyCurrentPolicy()
         }
@@ -60,9 +64,23 @@ struct ContentView: View {
         }
         .onChange(of: settings.coachIntensity) { _, value in
             camera.setCoachIntensity(value)
+            updateLUTRecommendation()
         }
         .onChange(of: settings.sceneCoach) { _, value in
             camera.setCoachScene(value)
+            resetAndUpdateLUTRecommendation()
+        }
+        .onChange(of: camera.coachState) { _, _ in
+            updateLUTRecommendation()
+        }
+        .onChange(of: lutLibrary.entries) { _, _ in
+            resetAndUpdateLUTRecommendation()
+        }
+        .onChange(of: settings.rawShareEnabled) { _, _ in
+            resetAndUpdateLUTRecommendation()
+        }
+        .onChange(of: settings.lutCoachRecommendations) { _, _ in
+            resetAndUpdateLUTRecommendation()
         }
         .onChange(of: settings.zebraLevel) { _, value in
             if settings.dualZebra, settings.zebraLowLevel > value {
@@ -246,7 +264,7 @@ struct ContentView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 320)
 
-                if let recommendation = currentLUTRecommendation {
+                if let recommendation = stableLUTRecommendation {
                     LUTRecommendationView(
                         recommendation: recommendation,
                         isActive: lutLibrary.activeEntryID == recommendation.entryID
@@ -824,7 +842,7 @@ struct ContentView: View {
         }
     }
 
-    private var currentLUTRecommendation: LUTRecommendation? {
+    private func makeLUTRecommendation() -> LUTRecommendation? {
         guard settings.rawShareEnabled,
               settings.lutCoachRecommendations,
               settings.coachIntensity != .subtle,
@@ -837,6 +855,44 @@ struct ContentView: View {
             scene: settings.sceneCoach,
             state: camera.coachState
         )
+    }
+
+    private func updateLUTRecommendation() {
+        guard let candidate = makeLUTRecommendation() else {
+            stableLUTRecommendation = nil
+            pendingLUTRecommendation = nil
+            pendingLUTRecommendationCount = 0
+            return
+        }
+
+        if stableLUTRecommendation?.entryID == candidate.entryID,
+           stableLUTRecommendation?.reason == candidate.reason {
+            stableLUTRecommendation = candidate
+            pendingLUTRecommendation = nil
+            pendingLUTRecommendationCount = 0
+            return
+        }
+
+        if pendingLUTRecommendation?.entryID == candidate.entryID,
+           pendingLUTRecommendation?.reason == candidate.reason {
+            pendingLUTRecommendationCount += 1
+        } else {
+            pendingLUTRecommendation = candidate
+            pendingLUTRecommendationCount = 1
+        }
+
+        if pendingLUTRecommendationCount >= 2 {
+            stableLUTRecommendation = candidate
+            pendingLUTRecommendation = nil
+            pendingLUTRecommendationCount = 0
+        }
+    }
+
+    private func resetAndUpdateLUTRecommendation() {
+        stableLUTRecommendation = nil
+        pendingLUTRecommendation = nil
+        pendingLUTRecommendationCount = 0
+        updateLUTRecommendation()
     }
 
     private func applyLUTRecommendation(_ recommendation: LUTRecommendation) {
