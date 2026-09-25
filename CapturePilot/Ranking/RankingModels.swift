@@ -46,6 +46,7 @@ struct CoachScoreBreakdown: Codable, Hashable {
 }
 
 struct PhotoRankingEntry: Identifiable, Codable, Hashable {
+    static let currentScoreVersion = 1
     let id: UUID
     let createdAt: Date
     let source: RankingSource
@@ -56,6 +57,7 @@ struct PhotoRankingEntry: Identifiable, Codable, Hashable {
     let thumbnailFilename: String
     let fingerprint: String
     let usedVisionAesthetics: Bool
+    let scoreVersion: Int
 
     var coachScore: Double { score.overall }
 }
