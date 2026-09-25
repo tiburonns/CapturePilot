@@ -10,10 +10,26 @@ struct HistogramView: View {
                 .fill(.black.opacity(0.66))
 
             Canvas { context, size in
-                drawChannel(snapshot.luma, color: .white.opacity(0.20), in: &context, size: size)
-                drawChannel(snapshot.red, color: .red.opacity(0.86), in: &context, size: size)
-                drawChannel(snapshot.green, color: .green.opacity(0.82), in: &context, size: size)
-                drawChannel(snapshot.blue, color: .blue.opacity(0.90), in: &context, size: size)
+                context.stroke(
+                    channelPath(snapshot.luma, size: size),
+                    with: .color(.white.opacity(0.20)),
+                    lineWidth: isExpanded ? 1.2 : 0.8
+                )
+                context.stroke(
+                    channelPath(snapshot.red, size: size),
+                    with: .color(.red.opacity(0.86)),
+                    lineWidth: isExpanded ? 1.35 : 0.9
+                )
+                context.stroke(
+                    channelPath(snapshot.green, size: size),
+                    with: .color(.green.opacity(0.82)),
+                    lineWidth: isExpanded ? 1.35 : 0.9
+                )
+                context.stroke(
+                    channelPath(snapshot.blue, size: size),
+                    with: .color(.blue.opacity(0.90)),
+                    lineWidth: isExpanded ? 1.35 : 0.9
+                )
             }
             .padding(.horizontal, 6)
             .padding(.top, 20)
@@ -79,13 +95,8 @@ struct HistogramView: View {
             .foregroundStyle(active ? color : .secondary)
     }
 
-    private func drawChannel(
-        _ values: [Double],
-        color: Color,
-        in context: inout GraphicsContext,
-        size: CGSize
-    ) {
-        guard values.count > 1 else { return }
+    private func channelPath(_ values: [Double], size: CGSize) -> Path {
+        guard values.count > 1 else { return Path() }
 
         var path = Path()
         for index in values.indices {
@@ -99,10 +110,7 @@ struct HistogramView: View {
             }
         }
 
-        context.stroke(
-            path,
-            with: .color(color),
-            lineWidth: isExpanded ? 1.35 : 0.9
-        )
+        return path
     }
+
 }
