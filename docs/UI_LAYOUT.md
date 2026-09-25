@@ -1,39 +1,105 @@
-# Full-screen, Orientation & HUD Validation / Validación de pantalla, orientación y HUD
+# Full-screen UI Validation / Validación de pantalla completa
 
-## Source behavior / Comportamiento implementado
+## English
 
-- Camera preview and composition/peaking overlays fill the display.
-- Interactive HUD items are positioned relative to a safe-area rectangle.
-- Each item's measured size is included when clamping drag positions.
-- Portrait and landscape store different normalized coordinates.
-- Upside-down portrait uses the portrait layout with the new safe-area geometry.
-- Landscape supports both physical directions when enabled.
-- Settings and Shutter remain recoverable and cannot be hidden.
-- Focus Peaking quick access is optional and defaults to hidden.
+### Source guarantees
 
-## Dynamic Island
-- [ ] No draggable element can be left beneath the island.
-- [ ] Rotating from portrait to landscape keeps every visible element reachable.
-- [ ] Returning to portrait restores the portrait layout rather than the landscape layout.
-- [ ] Upside-down portrait respects the opposite safe-area geometry.
+- Preview, composition guides, and Focus Peaking can extend edge-to-edge.
+- Functional HUD items are positioned relative to a calculated safe rectangle.
+- HUD drag clamps account for each item's measured size.
+- Portrait and landscape positions persist independently.
+- Settings and shutter cannot be hidden.
+- Lens selector scrolls horizontally.
+- Standard portrait is always available; landscape and upside-down can be disabled.
+- Preview rotation follows `AVCaptureDevice.RotationCoordinator`.
+- Capture/video-data rotation uses a separate RotationCoordinator path.
 
-## Small/notched iPhone
-- [ ] Lens selector remains movable/reachable.
-- [ ] Coach bubble can be placed without clipping.
-- [ ] Editor toolbar remains on-screen in portrait and landscape.
-- [ ] Manual Pro controls do not make the HUD unrecoverable.
+### Physical matrix
 
-## HUD editing
-- [ ] Drag starts without triggering the element's normal action.
-- [ ] Drag ends inside the safe area even after a fast throw.
-- [ ] Hidden elements can be restored from Elements menu.
-- [ ] Reset produces usable portrait and landscape defaults.
+#### Dynamic Island
 
-## Focus Peaking
-- [ ] Overlay uses exactly the camera preview area.
-- [ ] Overlay rotation follows the camera in all enabled orientations.
-- [ ] Quick button never relies on viewfinder long-press.
+- [ ] No control overlaps the island in portrait.
+- [ ] Landscape controls remain reachable.
+- [ ] Coach bubble does not become permanently clipped.
+- [ ] Scene selector and language controls remain usable.
+- [ ] Peaking overlay lines up with the viewfinder.
 
-## Important
+#### Notched/smaller iPhone
 
-CI verifies compilation, not physical geometry. These checks remain open until tested on hardware.
+- [ ] Every required HUD control can be reached.
+- [ ] Pro controls do not cover the shutter.
+- [ ] Lens selector remains scrollable.
+- [ ] HUD editing cannot drag required controls outside the safe area.
+
+#### Orientation
+
+- [ ] Portrait → landscape left.
+- [ ] Portrait → landscape right.
+- [ ] Portrait → upside-down.
+- [ ] Rotate while Focus Peaking is enabled.
+- [ ] Rotate after switching lenses.
+- [ ] Rotate while Pro controls are open.
+- [ ] Rotation disabled in Settings is respected.
+
+#### Dynamic Type
+
+- [ ] Default.
+- [ ] One larger accessibility size.
+- [ ] English.
+- [ ] Spanish.
+- [ ] HUD customization toolbar remains reachable.
+
+Source inspection cannot certify these physical checks.
+
+---
+
+## Español
+
+### Garantías del código
+
+- Preview, guías y Focus Peaking pueden ocupar toda la pantalla.
+- Los controles del HUD se colocan respecto a un rectángulo seguro.
+- El clamp considera el tamaño medido de cada elemento.
+- Vertical y horizontal guardan posiciones distintas.
+- Ajustes y disparador no se pueden ocultar.
+- El selector de lentes puede desplazarse.
+- Vertical normal siempre existe; horizontal y vertical invertido pueden desactivarse.
+- El preview usa `RotationCoordinator`.
+- Captura/video-data usan una ruta de rotación separada.
+
+### Matriz física
+
+#### Dynamic Island
+
+- [ ] Ningún control se superpone en vertical.
+- [ ] En horizontal todos siguen accesibles.
+- [ ] Coach no queda recortado.
+- [ ] Escena e idioma son utilizables.
+- [ ] Peaking coincide con el preview.
+
+#### iPhone pequeño/notch
+
+- [ ] Controles obligatorios alcanzables.
+- [ ] Pro no cubre el disparador.
+- [ ] Lentes desplazables.
+- [ ] Edición HUD no permite sacar controles obligatorios.
+
+#### Orientación
+
+- [ ] Vertical → horizontal izquierda.
+- [ ] Vertical → horizontal derecha.
+- [ ] Vertical → invertido.
+- [ ] Rotar con Peaking activo.
+- [ ] Rotar después de cambiar lente.
+- [ ] Rotar con controles Pro abiertos.
+- [ ] Ajustes de orientación se respetan.
+
+#### Dynamic Type
+
+- [ ] Tamaño normal.
+- [ ] Un tamaño grande de accesibilidad.
+- [ ] Inglés.
+- [ ] Español.
+- [ ] Toolbar de HUD accesible.
+
+Estas pruebas no pueden certificarse sólo leyendo el código.

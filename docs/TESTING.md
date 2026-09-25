@@ -1,95 +1,208 @@
-# Device Test Checklist / Lista de prueba en dispositivo
+# Device Test Checklist / Lista de pruebas físicas
 
-Record iPhone model, iOS version, Xcode version and CapturePilot version/build.
+## English
 
-## 1. Build / Inicio
-- [ ] Release builds with Xcode 26 or later.
-- [ ] App installs and launches.
-- [ ] Camera/Photos permission flows work.
+Record device, iOS, Xcode, CapturePilot version/build, and console errors.
 
-## 2. Orientation / Orientación
+### Build and permissions
 
-With Landscape ON and Upside-down ON:
-- [ ] Portrait works.
-- [ ] Portrait upside-down rotates and remains usable.
-- [ ] Landscape left works.
-- [ ] Landscape right works.
-- [ ] Preview remains correctly oriented after each rotation.
-- [ ] Captured JPEG/HEIF is stored with correct orientation.
-- [ ] RAW capture, when exposed, has correct orientation metadata/content.
+- [ ] Release installs and launches.
+- [ ] Camera permission is localized.
+- [ ] Deny → recovery screen works.
+- [ ] Open Settings, grant Camera, return: preview recovers without relaunching the app.
+- [ ] Photos add-only permission is localized.
 
-Disable Landscape:
-- [ ] Device no longer settles into landscape UI.
-- [ ] If currently landscape, returning to an allowed orientation is handled cleanly.
+### Session lifecycle
 
-Disable Upside-down:
-- [ ] Device no longer settles into upside-down portrait.
-- [ ] Standard portrait remains available in every setting combination.
+- [ ] Background → foreground restores the camera.
+- [ ] Lock/unlock restores the camera.
+- [ ] Temporary camera interruption displays status and recovers.
+- [ ] Media-services reset path does not leave the shutter permanently disabled.
+- [ ] No duplicate session inputs/outputs after repeated resume cycles.
 
-## 3. HUD editor / Editor HUD
-- [ ] Settings > Customize HUD returns to camera in edit mode.
-- [ ] Every HUD item can be dragged.
-- [ ] Elements cannot be dragged under Dynamic Island/notch.
-- [ ] Elements cannot be dragged under Home Indicator unsafe area.
-- [ ] Portrait positions persist after relaunch.
-- [ ] Landscape positions persist independently.
-- [ ] Rotating does not overwrite the other layout.
-- [ ] Optional elements can be hidden.
-- [ ] Hidden elements appear as editable ghosts while editing.
-- [ ] Settings cannot be hidden.
-- [ ] Shutter cannot be hidden.
-- [ ] Reset HUD restores defaults.
-- [ ] Normal control actions do not fire while dragging/editing.
+### Lenses
 
-## 4. Focus Peaking
-- [ ] Enable Focus Peaking quick access from HUD editor.
-- [ ] Quick button appears near its saved edge position.
-- [ ] One tap enables peaking; second tap disables it.
-- [ ] No long press is required.
-- [ ] Tap-to-focus continues to work independently when not editing.
-- [ ] Peaking overlay aligns with the preview in portrait.
-- [ ] Peaking overlay aligns in both landscape directions.
-- [ ] Peaking overlay aligns upside-down.
-- [ ] High-detail/in-focus edges receive substantially more highlighting than smooth/out-of-focus regions.
-- [ ] Enabling peaking does not cause unacceptable camera stutter or thermal load during a short smoke test.
+- [ ] 0.5× appears only if a physical Ultra Wide exists.
+- [ ] Wide works.
+- [ ] Tele appears only when a physical telephoto exists.
+- [ ] Labels are sensible for the hardware.
+- [ ] Switching lenses does not freeze.
+- [ ] Rotation remains correct after switching.
+- [ ] Manual-control availability refreshes after switching.
 
-## 5. Existing camera regression
-- [ ] 0.5× only when available.
-- [ ] 1× works.
-- [ ] Tele only when available.
-- [ ] HEIF saves.
-- [ ] JPEG saves.
-- [ ] RAW appears/saves only when supported.
-- [ ] EV/ISO/shutter work.
-- [ ] AF/manual focus work.
-- [ ] AWB/manual white balance work.
-- [ ] Coach remains stable.
+### Resolution / formats
 
-## 6. Language / Idioma
-- [ ] AUTO/System.
-- [ ] English.
-- [ ] Español.
-- [ ] New Orientation and HUD labels change language immediately.
-- [ ] Language persists.
+For each lens:
 
-## 7. TestFlight gate
-- [ ] Simulator Release CI passes.
-- [ ] iPhoneOS Release CI passes.
-- [ ] Product > Archive succeeds signed.
-- [ ] Validate App succeeds.
-- [ ] Internal TestFlight build processes and installs.
-- [ ] Physical smoke test passes before external beta.
+- [ ] Record every displayed resolution.
+- [ ] Confirm 12 MP only appears when a matching supported dimension exists.
+- [ ] Confirm 24 MP only appears when supported.
+- [ ] Confirm 48 MP only appears when supported.
+- [ ] Capture each displayed resolution and inspect actual pixel dimensions.
+- [ ] HEIF appears only when HEVC is supported.
+- [ ] HEIF produces a valid HEIF/HEVC-backed asset.
+- [ ] JPEG produces a valid JPEG asset.
+- [ ] Bayer RAW appears only when a Bayer RAW pixel format exists.
+- [ ] RAW saves a readable DNG/RAW asset.
+- [ ] ProRAW appears only on supported configurations.
+- [ ] ProRAW saves a readable Apple ProRAW asset.
 
-## Report format
+### Manual controls
 
-Device:
-iOS:
-Xcode:
-CapturePilot version/build:
-Orientation settings:
-Build result:
-Failed item:
-Expected:
-Observed:
-Console error:
-Screenshot/video:
+- [ ] Unsupported controls are absent.
+- [ ] EV changes exposure.
+- [ ] Manual ISO/shutter works where advertised.
+- [ ] AF ↔ manual focus works.
+- [ ] AWB ↔ manual WB works.
+- [ ] Tap-to-focus resets manual focus/exposure cleanly.
+
+### Coach
+
+Test all eight scene modes.
+
+- [ ] Horizon guidance reacts to tilt.
+- [ ] Bright/dark thresholds behave sensibly.
+- [ ] Person/headroom behavior works in Portrait.
+- [ ] Architecture reacts to symmetry/vanishing geometry.
+- [ ] Automotive/Street reacts to clear converging/leading lines.
+- [ ] Macro reacts to detail and golden-point placement.
+- [ ] Landscape reacts to horizon/golden-triangle/lines.
+- [ ] Night does not simply flag every dark scene as invalid.
+- [ ] Suggestions remain stabilized.
+
+### Composition overlays
+
+- [ ] Thirds.
+- [ ] Golden ratio.
+- [ ] Golden spiral.
+- [ ] Golden triangle.
+- [ ] Crosshair.
+- [ ] Level.
+- [ ] Teaching-mode leading-line overlay aligns approximately with visible geometry.
+- [ ] Vanishing-point marker does not appear wildly off-screen during ordinary use.
+
+### Orientation/HUD/Focus Peaking
+
+- [ ] Portrait.
+- [ ] Landscape left/right.
+- [ ] Upside-down portrait.
+- [ ] Disable Landscape works.
+- [ ] Disable Upside-down works.
+- [ ] HUD positions persist separately by orientation.
+- [ ] HUD elements remain inside safe areas.
+- [ ] Focus Peaking button can be shown/hidden.
+- [ ] Peaking aligns with the preview in every orientation/lens.
+- [ ] Entering HUD edit disables active peaking.
+
+### Release
+
+- [ ] Product > Archive.
+- [ ] Validate App.
+- [ ] Version/build is 0.3.0 (3).
+- [ ] App Store Connect processes the binary.
+- [ ] Internal TestFlight install launches and captures.
+- [ ] Crash-free smoke test.
+
+---
+
+## Español
+
+Registra dispositivo, iOS, Xcode, versión/build y errores de consola.
+
+### Build y permisos
+
+- [ ] Release instala y abre.
+- [ ] Permiso de cámara localizado.
+- [ ] Negar permiso muestra recuperación.
+- [ ] Abrir Ajustes, conceder Cámara y volver recupera el preview sin reiniciar la app.
+- [ ] Permiso add-only de Fotos localizado.
+
+### Ciclo de sesión
+
+- [ ] Background → foreground recupera la cámara.
+- [ ] Bloquear/desbloquear recupera la cámara.
+- [ ] Una interrupción temporal muestra estado y termina recuperándose.
+- [ ] Un reset de media services no deja el disparador inutilizable.
+- [ ] Reanudar repetidamente no duplica inputs/outputs.
+
+### Lentes
+
+- [ ] 0.5× sólo aparece con Ultra Wide física.
+- [ ] Wide funciona.
+- [ ] Tele sólo aparece con telefoto física.
+- [ ] Las etiquetas tienen sentido para el hardware.
+- [ ] Cambiar de lente no congela.
+- [ ] La rotación sigue correcta.
+- [ ] Las capabilities manuales se actualizan.
+
+### Resolución y formatos
+
+Para cada lente:
+
+- [ ] Registra todas las resoluciones mostradas.
+- [ ] 12 MP sólo aparece si existe una dimensión equivalente.
+- [ ] 24 MP sólo aparece si está soportada.
+- [ ] 48 MP sólo aparece si está soportada.
+- [ ] Captura cada resolución y verifica dimensiones reales.
+- [ ] HEIF sólo aparece cuando HEVC está soportado.
+- [ ] HEIF crea un asset válido.
+- [ ] JPEG crea un asset válido.
+- [ ] Bayer RAW sólo aparece con pixel format Bayer.
+- [ ] RAW produce un archivo legible.
+- [ ] ProRAW sólo aparece en configuraciones compatibles.
+- [ ] ProRAW produce Apple ProRAW legible.
+
+### Controles manuales
+
+- [ ] Controles no soportados no aparecen.
+- [ ] EV funciona.
+- [ ] ISO/obturación manual funcionan donde se anuncian.
+- [ ] AF ↔ manual focus.
+- [ ] AWB ↔ WB manual.
+- [ ] Tap-to-focus restablece estados manuales correctamente.
+
+### Coach
+
+Prueba los ocho modos.
+
+- [ ] Horizonte.
+- [ ] Luces/sombras.
+- [ ] Persona/headroom en Retrato.
+- [ ] Simetría/punto de fuga en Arquitectura.
+- [ ] Líneas claras en Automotriz/Calle.
+- [ ] Detalle/punto áureo en Macro.
+- [ ] Horizonte/triángulo/líneas en Paisaje.
+- [ ] Noche no considera automáticamente inválida toda escena oscura.
+- [ ] Mensajes estables.
+
+### Guías
+
+- [ ] Tercios.
+- [ ] Proporción áurea.
+- [ ] Espiral áurea.
+- [ ] Triángulo áureo.
+- [ ] Cruz.
+- [ ] Nivel.
+- [ ] Líneas detectadas aproximadamente alineadas en modo Didáctico.
+- [ ] Punto de fuga razonable.
+
+### Orientación/HUD/Peaking
+
+- [ ] Vertical.
+- [ ] Horizontal izquierda/derecha.
+- [ ] Vertical invertido.
+- [ ] Interruptores de orientación funcionan.
+- [ ] HUD guarda posiciones independientes.
+- [ ] Elementos no salen del área segura.
+- [ ] Botón Peaking visible/oculto.
+- [ ] Peaking se alinea en todas las orientaciones/lentes.
+- [ ] Editar HUD desactiva Peaking.
+
+### Publicación
+
+- [ ] Archive.
+- [ ] Validate App.
+- [ ] 0.3.0 (3).
+- [ ] App Store Connect procesa.
+- [ ] TestFlight interno.
+- [ ] Smoke test sin crashes.

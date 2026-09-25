@@ -2,101 +2,186 @@
 
 ## English
 
-CapturePilot 0.3.0 separates camera capture, analysis, HUD state, app settings and presentation.
+CapturePilot 0.3.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+
+### Capture pipeline
 
 ```text
-CapturePilot
-├── Camera
-│   ├── CameraModels.swift
-│   ├── CameraPreview.swift
-│   ├── CameraService.swift
-│   └── FocusPeakingEngine.swift
-├── Coach
-│   ├── CoachModels.swift
-│   └── CoachEngine.swift
-├── HUD
-│   ├── HUDLayout.swift
-│   └── HUDMovableItem.swift
-├── Settings
-│   ├── AppSettings.swift
-│   ├── OrientationPolicy.swift
-│   └── SettingsView.swift
-├── UI
-│   ├── CoachBubble.swift
-│   ├── CompositionOverlay.swift
-│   ├── FocusPeakingOverlay.swift
-│   └── ManualControlsView.swift
-├── ContentView.swift
-└── CapturePilotApp.swift
+AVCaptureDevice
+      ↓
+maximum-resolution active Format
+      ↓
+AVCapturePhotoOutput
+  ├─ maxPhotoDimensions = active format maximum
+  ├─ HEIF/HEVC when available
+  ├─ JPEG
+  ├─ Bayer RAW when available
+  └─ Apple ProRAW when supported/enabled
+      ↓
+AVCapturePhotoSettings.maxPhotoDimensions
+      ↓
+Photos add-only save
 ```
+
+The app selects the physical rear camera, then searches that device's formats for the highest `supportedMaxPhotoDimensions`. The output is configured with that maximum before normal capture. Per-shot resolution comes from the active format's valid dimension list.
+
+This is capability-driven. CapturePilot does not synthesize a 48 MP option on hardware that does not expose one.
+
+Apple ProRAW is enabled only after the output reports `isAppleProRAWSupported`. HEIF is exposed only when `availablePhotoCodecTypes` contains HEVC.
+
+### Lens model
+
+Rear cameras are discovered through `AVCaptureDevice.DiscoverySession`. Each physical device keeps its unique ID. The UI derives an approximate optical scale from field of view relative to the Wide camera, avoiding the old generic Tele label.
+
+Switching lenses:
+
+1. stops the running session briefly;
+2. replaces the device input;
+3. selects the best still-photo format for the new physical camera;
+4. refreshes maximum dimensions, RAW/ProRAW/HEVC, and manual-control capabilities;
+5. refreshes AVFoundation rotation coordination;
+6. restarts the session if it was previously running.
+
+### Manual controls
+
+The service publishes capability flags for EV, custom exposure, locked focus, and locked white balance. `ManualControlsView` only renders controls that the active device can execute.
+
+### Frame analysis
+
+The video-data output is shared by:
+
+- `CoachEngine`;
+- `FocusPeakingEngine`.
+
+The coach combines Vision requests with lightweight local luminance/geometry analysis.
+
+The geometric analyzer downsamples the luminance plane, estimates vertical symmetry, samples edge energy, and builds a compact Hough-style representation. Strong line candidates can produce leading-line strength and a vanishing-point estimate. Subject area and edge density contribute to negative-space/detail signals.
+
+These values are heuristics intended for coaching.
+
+### Scene coaches
+
+The selected scene mode changes recommendation priority, not the underlying truth of the image:
+
+- General: broad balance.
+- Portrait: person/headroom/thirds.
+- Architecture: horizon/symmetry/vanishing geometry.
+- Automotive: leading lines/negative space/subject placement.
+- Macro: local detail plus golden-point placement.
+- Street: leading lines/negative space/thirds.
+- Landscape: horizon/golden-triangle/leading geometry.
+- Night: exposure thresholds, highlights, stability, and lines.
+
+### Golden geometry
+
+The overlay supports thirds, golden ratio, golden spiral, golden triangle, crosshair, and level. Subject position is also compared with golden strong points so these modes can influence coaching rather than existing only as decorative lines.
 
 ### Orientation
 
-The Info.plist advertises portrait, portrait upside-down and both landscape orientations. `OrientationPolicy` then restricts the runtime mask using the user's Landscape and Upside-down settings while always retaining standard portrait.
+The Info.plist advertises portrait, upside-down portrait, and both landscape orientations. `OrientationPolicy` applies the user's runtime restrictions.
 
-When the preference changes, the app asks connected window scenes to refresh their supported orientations and requests compatible scene geometry.
+`AVCaptureDevice.RotationCoordinator` independently updates preview and capture/video-output rotation.
 
-AVFoundation rotation is separate from interface rotation. `AVCaptureDevice.RotationCoordinator` supplies the angle for both preview and capture/video-data connections so the camera stream can remain level across orientation changes.
+### Session lifecycle
+
+`ContentView` responds to SwiftUI `scenePhase`.
+
+`CameraService` observes:
+
+- `AVCaptureSession.wasInterruptedNotification`;
+- `AVCaptureSession.interruptionEndedNotification`;
+- `AVCaptureSession.runtimeErrorNotification`.
+
+Camera authorization is rechecked on resume. A media-services reset triggers a recovery attempt.
 
 ### HUD
 
-`HUDLayoutStore` persists a normalized position for every HUD item. Each item has:
-- visibility;
-- portrait coordinates;
-- landscape coordinates.
+`HUDLayoutStore` persists visibility and normalized portrait/landscape coordinates for each HUD item. `HUDMovableItem` clamps the complete control to the safe rectangle.
 
-Coordinates are relative to the current safe rectangle rather than raw pixels. This allows a saved layout to adapt to different screen sizes and cutouts.
+The scene selector is a HUD item alongside Pro controls, language, lenses, coach, metrics, format, shutter, guide, Settings, and Focus Peaking.
 
-`HUDMovableItem` measures its own view size and clamps its center so the item remains inside the safe area. While editing, functional controls stop receiving their normal tap behavior and the wrapper owns the drag gesture.
+### Privacy
 
-Settings and the shutter are intentionally non-hideable. This is a recovery constraint: the user can freely customize the rest of the HUD without creating a camera UI that cannot reach Settings or capture a photo.
-
-### Focus Peaking
-
-`FocusPeakingEngine` only runs when requested. It reads the Y/luminance plane of the existing video-data output, calculates local horizontal/vertical gradients on a downsampled grid, and emits a transparent red/orange CGImage for pixels above the edge threshold.
-
-This is an edge-contrast focus aid. It is not documented as an absolute physical focus-confidence measurement.
-
-The overlay is rendered independently from the camera preview. The optional HUD button toggles it with a tap, leaving the viewfinder free of a long-press peaking gesture.
-
-### Camera and coach
-
-`CameraService` owns AVFoundation, photo capture, manual controls, rotation coordination, coach delivery and optional peaking delivery. Frames remain on the existing serial video-output queue.
-
-`CoachEngine` continues to use Vision and sampled luminance for composition/technical guidance.
-
-### Persistence/privacy
-
-Language, grid, coach mode, orientation switches and HUD layout are all app-local preferences stored with UserDefaults. They remain covered by the existing Privacy Manifest CA92.1 declaration.
-
-No new network service, account, tracking, analytics or cloud upload was added in 0.3.0.
+No frame leaves the process in the current source. Camera analysis, Hough-style geometry, Vision, and Focus Peaking all run locally.
 
 ---
 
 ## Español
 
-CapturePilot 0.3.0 separa captura, análisis, estado del HUD, ajustes y presentación.
+CapturePilot 0.3.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
-### Orientación
+### Pipeline de captura
 
-Info.plist permite vertical normal, vertical invertido y ambas orientaciones horizontales. `OrientationPolicy` restringe en ejecución las orientaciones según los interruptores del usuario, manteniendo siempre vertical normal.
+```text
+AVCaptureDevice
+      ↓
+Format de máxima resolución
+      ↓
+AVCapturePhotoOutput
+  ├─ maxPhotoDimensions = máximo válido
+  ├─ HEIF/HEVC si existe
+  ├─ JPEG
+  ├─ Bayer RAW si existe
+  └─ Apple ProRAW si es compatible
+      ↓
+AVCapturePhotoSettings.maxPhotoDimensions
+      ↓
+Guardado add-only en Fotos
+```
 
-AVFoundation utiliza `AVCaptureDevice.RotationCoordinator` para ajustar preview y conexiones de captura independientemente de la rotación de la interfaz.
+Para cada cámara física trasera se busca el formato con mayor `supportedMaxPhotoDimensions`. El máximo del output se configura con una dimensión válida del formato activo y cada disparo especifica explícitamente su dimensión.
+
+CapturePilot no inventa una opción de 48 MP si el hardware/formato no la reporta.
+
+ProRAW sólo se habilita cuando `isAppleProRAWSupported` lo permite. HEIF sólo aparece cuando HEVC está en `availablePhotoCodecTypes`.
+
+### Lentes
+
+Las cámaras traseras se descubren con `AVCaptureDevice.DiscoverySession` y conservan su ID físico. El factor aproximado de cada lente se calcula desde su campo de visión respecto al Wide.
+
+Al cambiar de lente se reemplaza el input, se selecciona el mejor formato de foto, se recalculan resoluciones/RAW/ProRAW/HEVC/controles manuales, se renueva la coordinación de rotación y se reinicia la sesión si estaba activa.
+
+### Controles manuales
+
+El servicio publica capacidades reales para EV, exposición custom, focus locked y white balance locked. La UI sólo presenta controles que el dispositivo activo puede ejecutar.
+
+### Análisis
+
+`CoachEngine` y `FocusPeakingEngine` comparten los frames del video-data output.
+
+El coach combina Vision con análisis local del plano de luminancia. El analizador geométrico reduce la imagen, estima simetría, energía de bordes y una representación compacta tipo Hough. De ahí obtiene líneas guía, fuerza de convergencia y estimación de punto de fuga. Área del sujeto y densidad de bordes alimentan espacio negativo y detalle.
+
+Son heurísticas fotográficas, no mediciones infalibles.
+
+### Coaches de escena
+
+- General: equilibrio global.
+- Retrato: persona/headroom/tercios.
+- Arquitectura: horizonte/simetría/punto de fuga.
+- Automotriz: líneas/espacio negativo/sujeto.
+- Macro: detalle y puntos áureos.
+- Calle: líneas/espacio negativo/tercios.
+- Paisaje: horizonte/triángulo áureo/líneas.
+- Noche: exposición, altas luces, estabilidad y geometría.
+
+### Geometría áurea
+
+El overlay incluye tercios, proporción áurea, espiral áurea, triángulo áureo, cruz y nivel. La posición del sujeto también se compara contra puntos áureos para que las guías tengan efecto sobre el coach.
+
+### Orientación y ciclo de sesión
+
+Info.plist permite vertical, vertical invertido y horizontal. `OrientationPolicy` aplica las preferencias.
+
+`RotationCoordinator` actualiza preview y captura de forma independiente.
+
+La vista responde a `scenePhase` y el servicio observa interrupción, fin de interrupción y runtime errors de `AVCaptureSession`. Al volver al foreground se vuelve a comprobar el permiso.
 
 ### HUD
 
-`HUDLayoutStore` guarda visibilidad y coordenadas normalizadas para cada elemento, con posiciones independientes para vertical y horizontal.
+`HUDLayoutStore` guarda visibilidad y coordenadas normalizadas separadas por orientación. Todos los elementos se mantienen dentro del área segura.
 
-`HUDMovableItem` mide el tamaño de cada control y limita el arrastre para que permanezca dentro del área segura. Durante edición, los controles no ejecutan su acción normal.
+El selector de escena pasa a ser un elemento más del HUD.
 
-Ajustes y disparador no se pueden ocultar para garantizar que siempre exista una ruta de recuperación.
+### Privacidad
 
-### Focus Peaking
-
-`FocusPeakingEngine` procesa únicamente cuando está activado. Usa el plano de luminancia, calcula gradientes locales y genera un overlay transparente rojo/naranja para bordes de alto contraste.
-
-Es una ayuda de enfoque basada en contraste de bordes, no una medición absoluta del plano focal.
-
-### Persistencia/privacidad
-
-Idioma, guía, coach, orientación y layout HUD se almacenan localmente con UserDefaults. No se agregó red, cuenta, tracking, analítica ni subida a la nube.
+Los frames no salen del proceso. Vision, coach, análisis geométrico y Focus Peaking funcionan localmente.

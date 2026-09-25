@@ -2,40 +2,68 @@
 
 ## English
 
-CapturePilot's current source does not create an account, serve ads, include third-party analytics, or upload camera frames to a CapturePilot server.
+CapturePilot does not create an account, serve ads, include third-party analytics, or upload camera frames to a CapturePilot server.
 
-### Protected resources used
+### Protected resources
 
-- Camera: live viewfinder, local coach analysis, photo capture.
-- Photo Library add-only: save a captured photo.
+- Camera: live viewfinder, local coach/geometric analysis, Focus Peaking, and photo capture.
+- Photo Library add-only: save photos explicitly captured by the user.
 
-### Privacy Manifest
+### Local processing
+
+The following run on-device:
+
+- Vision face/person/saliency/horizon requests;
+- luminance and clipping sampling;
+- leading-line / symmetry / vanishing-point / negative-space heuristics;
+- Focus Peaking edge analysis.
+
+No networking dependency is required for these features.
+
+### Local preferences
+
+UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, and HUD layout.
 
 `PrivacyInfo.xcprivacy` declares:
 
 - Tracking: false.
 - Tracking domains: none.
 - Collected data types: none.
-- Required Reason API: UserDefaults with reason `CA92.1`, used only for app-local settings such as language, grid, and coach intensity.
+- Required Reason API: UserDefaults / CA92.1.
 
-If a future feature introduces networking, analytics, crash SDKs, cloud AI, accounts, or additional Required Reason APIs, this document and the manifest must be updated before release.
+If networking, accounts, analytics, crash SDKs, cloud AI, or additional Required Reason APIs are added later, this document and the manifest must be reviewed before release.
+
+---
 
 ## Español
 
-El código actual de CapturePilot no crea cuentas, no sirve publicidad, no incluye analítica de terceros y no sube frames de cámara a un servidor de CapturePilot.
+CapturePilot no crea cuenta, no sirve publicidad, no incluye analítica de terceros y no sube frames de cámara a un servidor de CapturePilot.
 
-### Recursos protegidos utilizados
+### Recursos protegidos
 
-- Cámara: visor, análisis local del coach y captura.
-- Fototeca con permiso solo para agregar: guardar fotografías capturadas.
+- Cámara: visor, coach/análisis geométrico local, Focus Peaking y captura.
+- Fototeca add-only: guardar fotos tomadas explícitamente por la persona.
 
-### Privacy Manifest
+### Procesamiento local
+
+Se ejecutan localmente:
+
+- Vision para rostro/persona/saliencia/horizonte;
+- luminancia y clipping;
+- líneas/simetría/punto de fuga/espacio negativo;
+- Focus Peaking.
+
+No requieren una dependencia de red.
+
+### Preferencias
+
+UserDefaults conserva idioma, guía, intensidad/escena del coach, orientación y HUD.
 
 `PrivacyInfo.xcprivacy` declara:
 
 - Tracking: falso.
-- Dominios de tracking: ninguno.
+- Dominios: ninguno.
 - Tipos de datos recopilados: ninguno.
-- Required Reason API: UserDefaults con motivo `CA92.1`, utilizado únicamente para ajustes locales de la app como idioma, guía y nivel del coach.
+- Required Reason API: UserDefaults / CA92.1.
 
-Si en el futuro se agregan red, analítica, SDK de crashes, IA en la nube, cuentas u otras Required Reason APIs, el manifiesto y este documento deberán actualizarse antes de publicar.
+Si en el futuro se agregan red, cuentas, analytics, SDK de crashes, IA cloud u otras Required Reason APIs, se debe revisar este documento y el manifest.
