@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.3.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.5.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -48,14 +48,19 @@ The service publishes capability flags for EV, custom exposure, locked focus, an
 
 ### Frame analysis
 
-The video-data output is shared by:
+The single `AVCaptureVideoDataOutput` stream is shared by:
 
 - `CoachEngine`;
-- `FocusPeakingEngine`.
+- `FocusPeakingEngine`;
+- `ProfessionalMonitoringEngine`.
 
-The coach combines Vision requests with lightweight local luminance/geometry analysis.
+`CoachEngine` throttles analysis to approximately one frame every 0.28 s and prevents overlapping analyses. It combines Vision requests with lightweight local luminance/geometry analysis.
 
-The geometric analyzer downsamples the luminance plane, estimates vertical symmetry, samples edge energy, and builds a compact Hough-style representation. Strong line candidates can produce leading-line strength and a vanishing-point estimate. Subject area and edge density contribute to negative-space/detail signals.
+Vision contributes face/person detection, horizon estimation, and attention-based saliency. The local analyzer samples preview luminance and downsamples geometry to a 64 × 48 grid, where it estimates vertical symmetry, edge/detail energy, strong Hough-style lines, leading-line strength, a possible vanishing point, and negative space.
+
+The Coach does not turn these values into one aesthetic score. A deterministic priority tree first handles horizon/exposure problems, then applies scene-specific composition rules. A new primary recommendation must survive two consecutive analyzed frames before publication.
+
+See [COACH.md](COACH.md) for current thresholds and decision branches.
 
 These values are heuristics intended for coaching.
 
@@ -102,13 +107,13 @@ The scene selector is a HUD item alongside Pro controls, language, lenses, coach
 
 ### Privacy
 
-No frame leaves the process in the current source. Camera analysis, Hough-style geometry, Vision, and Focus Peaking all run locally.
+No frame leaves the process in the current source. Coach analysis, Hough-style geometry, Vision, Focus Peaking, and professional monitoring all run locally.
 
 ---
 
 ## Español
 
-CapturePilot 0.3.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.5.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 
@@ -147,9 +152,19 @@ El servicio publica capacidades reales para EV, exposición custom, focus locked
 
 ### Análisis
 
-`CoachEngine` y `FocusPeakingEngine` comparten los frames del video-data output.
+Un único `AVCaptureVideoDataOutput` alimenta:
 
-El coach combina Vision con análisis local del plano de luminancia. El analizador geométrico reduce la imagen, estima simetría, energía de bordes y una representación compacta tipo Hough. De ahí obtiene líneas guía, fuerza de convergencia y estimación de punto de fuga. Área del sujeto y densidad de bordes alimentan espacio negativo y detalle.
+- `CoachEngine`;
+- `FocusPeakingEngine`;
+- `ProfessionalMonitoringEngine`.
+
+`CoachEngine` limita el análisis a aproximadamente un frame cada 0.28 s y evita análisis simultáneos. Combina Vision con análisis local de luminancia/geometría.
+
+Vision aporta rostro/persona, horizonte y saliencia. El análisis local muestrea luminancia y reduce la geometría a 64 × 48 para estimar simetría vertical, detalle/bordes, líneas tipo Hough, fuerza de líneas guía, posible punto de fuga y espacio negativo.
+
+El Coach no convierte todo en un score estético. Primero prioriza problemas de horizonte/exposición y después aplica reglas compositivas por escena. Un mensaje nuevo debe mantenerse durante dos análisis consecutivos antes de publicarse.
+
+Consulta [COACH.md](COACH.md) para los umbrales y ramas de decisión actuales.
 
 Son heurísticas fotográficas, no mediciones infalibles.
 
@@ -184,4 +199,4 @@ El selector de escena pasa a ser un elemento más del HUD.
 
 ### Privacidad
 
-Los frames no salen del proceso. Vision, coach, análisis geométrico y Focus Peaking funcionan localmente.
+Los frames no salen del proceso. Vision, Coach, análisis geométrico, Focus Peaking y monitoreo profesional funcionan localmente.
