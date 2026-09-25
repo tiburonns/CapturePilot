@@ -4,7 +4,7 @@
 
 ### Candidate
 
-CapturePilot 0.4.0 build 3 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.5.0 build 3 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, adaptive orientation, customizable HUD, and Focus Peaking.
 
@@ -38,7 +38,7 @@ Record actual dimensions for every resolution shown.
 
 ### TestFlight
 
-- Confirm **0.4.0 (3)**.
+- Confirm **0.5.0 (3)**.
 - Complete export compliance as requested.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
@@ -51,7 +51,7 @@ Record actual dimensions for every resolution shown.
 
 ### Candidato
 
-CapturePilot 0.4.0 build 3 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.5.0 build 3 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, orientación adaptativa, HUD y Focus Peaking.
 
@@ -82,7 +82,7 @@ Registra las dimensiones reales de cada resolución mostrada.
 
 ### TestFlight
 
-- Confirma **0.4.0 (3)**.
+- Confirma **0.5.0 (3)**.
 - Completa export compliance.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.

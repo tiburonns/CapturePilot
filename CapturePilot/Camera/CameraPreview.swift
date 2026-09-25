@@ -41,8 +41,8 @@ final class CameraPreviewView: UIView {
         }
     }
 
-    func showFocusReticle(at point: CGPoint) {
-        let size: CGFloat = 64
+    func showFocusReticle(at point: CGPoint, locked: Bool = false) {
+        let size: CGFloat = 68
         let reticle = UIView(
             frame: CGRect(
                 x: point.x - size / 2,
@@ -52,9 +52,22 @@ final class CameraPreviewView: UIView {
             )
         )
         reticle.layer.borderWidth = 1.5
-        reticle.layer.borderColor = UIColor.systemYellow.cgColor
+        reticle.layer.borderColor = (
+            locked ? UIColor.systemOrange : UIColor.systemYellow
+        ).cgColor
         reticle.layer.cornerRadius = 8
         reticle.alpha = 0
+
+        if locked {
+            let label = UILabel()
+            label.text = "AF/AE LOCK"
+            label.font = .monospacedSystemFont(ofSize: 9, weight: .semibold)
+            label.textColor = .systemOrange
+            label.sizeToFit()
+            label.center = CGPoint(x: size / 2, y: size + 12)
+            reticle.addSubview(label)
+        }
+
         addSubview(reticle)
 
         UIView.animate(withDuration: 0.12, animations: {
@@ -63,7 +76,7 @@ final class CameraPreviewView: UIView {
         }) { _ in
             UIView.animate(
                 withDuration: 0.55,
-                delay: 0.35,
+                delay: locked ? 0.7 : 0.35,
                 options: [.curveEaseOut],
                 animations: {
                     reticle.alpha = 0
@@ -88,9 +101,13 @@ final class CameraPreviewView: UIView {
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let onTapToFocus: (CGPoint) -> Void
+    let onLongPressAFAE: (CGPoint) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onTapToFocus: onTapToFocus)
+        Coordinator(
+            onTapToFocus: onTapToFocus,
+            onLongPressAFAE: onLongPressAFAE
+        )
     }
 
     func makeUIView(context: Context) -> CameraPreviewView {
@@ -102,7 +119,18 @@ struct CameraPreview: UIViewRepresentable {
             target: context.coordinator,
             action: #selector(Coordinator.handleTap(_:))
         )
+
+        let longPress = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleLongPress(_:))
+        )
+        longPress.minimumPressDuration = 0.45
+        longPress.allowableMovement = 18
+
+        tap.require(toFail: longPress)
+
         view.addGestureRecognizer(tap)
+        view.addGestureRecognizer(longPress)
         return view
     }
 
@@ -113,21 +141,41 @@ struct CameraPreview: UIViewRepresentable {
 
         uiView.configureRotationIfNeeded()
         context.coordinator.onTapToFocus = onTapToFocus
+        context.coordinator.onLongPressAFAE = onLongPressAFAE
     }
 
     final class Coordinator: NSObject {
         var onTapToFocus: (CGPoint) -> Void
+        var onLongPressAFAE: (CGPoint) -> Void
 
-        init(onTapToFocus: @escaping (CGPoint) -> Void) {
+        init(
+            onTapToFocus: @escaping (CGPoint) -> Void,
+            onLongPressAFAE: @escaping (CGPoint) -> Void
+        ) {
             self.onTapToFocus = onTapToFocus
+            self.onLongPressAFAE = onLongPressAFAE
         }
 
         @objc func handleTap(_ recognizer: UITapGestureRecognizer) {
             guard let view = recognizer.view as? CameraPreviewView else { return }
             let layerPoint = recognizer.location(in: view)
-            let devicePoint = view.previewLayer.captureDevicePointConverted(fromLayerPoint: layerPoint)
+            let devicePoint = view.previewLayer.captureDevicePointConverted(
+                fromLayerPoint: layerPoint
+            )
             view.showFocusReticle(at: layerPoint)
             onTapToFocus(devicePoint)
+        }
+
+        @objc func handleLongPress(_ recognizer: UILongPressGestureRecognizer) {
+            guard recognizer.state == .began,
+                  let view = recognizer.view as? CameraPreviewView else { return }
+
+            let layerPoint = recognizer.location(in: view)
+            let devicePoint = view.previewLayer.captureDevicePointConverted(
+                fromLayerPoint: layerPoint
+            )
+            view.showFocusReticle(at: layerPoint, locked: true)
+            onLongPressAFAE(devicePoint)
         }
     }
 }

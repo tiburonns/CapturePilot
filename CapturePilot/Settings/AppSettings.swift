@@ -23,12 +23,38 @@ final class AppSettings: ObservableObject {
         var id: String { rawValue }
     }
 
+    enum PeakingColor: String, CaseIterable, Identifiable {
+        case red, green, blue, yellow, cyan, white
+        var id: String { rawValue }
+    }
+
+    enum FrameGuide: String, CaseIterable, Identifiable {
+        case none, square, fourThree, threeTwo, sixteenNine, cinema239
+        var id: String { rawValue }
+
+        var aspectRatio: Double? {
+            switch self {
+            case .none: nil
+            case .square: 1.0
+            case .fourThree: 4.0 / 3.0
+            case .threeTwo: 3.0 / 2.0
+            case .sixteenNine: 16.0 / 9.0
+            case .cinema239: 2.39
+            }
+        }
+    }
+
     private enum Key {
         static let language = "settings.language"
         static let grid = "settings.grid"
         static let coachIntensity = "settings.coachIntensity"
         static let sceneCoach = "settings.sceneCoach"
         static let zebraLevel = "settings.monitoring.zebraLevel"
+        static let zebraLowLevel = "settings.monitoring.zebraLowLevel"
+        static let dualZebra = "settings.monitoring.dualZebra"
+        static let peakingThreshold = "settings.monitoring.peakingThreshold"
+        static let peakingColor = "settings.monitoring.peakingColor"
+        static let frameGuide = "settings.frameGuide"
     }
 
     @Published var language: Language {
@@ -49,6 +75,26 @@ final class AppSettings: ObservableObject {
 
     @Published var zebraLevel: Double {
         didSet { UserDefaults.standard.set(zebraLevel, forKey: Key.zebraLevel) }
+    }
+
+    @Published var zebraLowLevel: Double {
+        didSet { UserDefaults.standard.set(zebraLowLevel, forKey: Key.zebraLowLevel) }
+    }
+
+    @Published var dualZebra: Bool {
+        didSet { UserDefaults.standard.set(dualZebra, forKey: Key.dualZebra) }
+    }
+
+    @Published var peakingThreshold: Double {
+        didSet { UserDefaults.standard.set(peakingThreshold, forKey: Key.peakingThreshold) }
+    }
+
+    @Published var peakingColor: PeakingColor {
+        didSet { UserDefaults.standard.set(peakingColor.rawValue, forKey: Key.peakingColor) }
+    }
+
+    @Published var frameGuide: FrameGuide {
+        didSet { UserDefaults.standard.set(frameGuide.rawValue, forKey: Key.frameGuide) }
     }
 
     @Published var allowLandscape: Bool {
@@ -75,6 +121,25 @@ final class AppSettings: ObservableObject {
             ? defaults.double(forKey: Key.zebraLevel)
             : 95
         zebraLevel = min(max(savedZebra, 75), 100)
+
+        let savedLowZebra = defaults.object(forKey: Key.zebraLowLevel) != nil
+            ? defaults.double(forKey: Key.zebraLowLevel)
+            : 70
+        zebraLowLevel = min(max(savedLowZebra, 50), 95)
+        dualZebra = Self.boolValue(defaults, key: Key.dualZebra, defaultValue: true)
+
+        let savedPeakingThreshold = defaults.object(forKey: Key.peakingThreshold) != nil
+            ? defaults.double(forKey: Key.peakingThreshold)
+            : 54
+        peakingThreshold = min(max(savedPeakingThreshold, 20), 140)
+        peakingColor = PeakingColor(
+            rawValue: defaults.string(forKey: Key.peakingColor) ?? ""
+        ) ?? .red
+
+        frameGuide = FrameGuide(
+            rawValue: defaults.string(forKey: Key.frameGuide) ?? ""
+        ) ?? .none
+
         allowLandscape = Self.boolValue(
             defaults,
             key: OrientationPolicy.landscapeKey,
@@ -109,6 +174,28 @@ final class AppSettings: ObservableObject {
         case .street: text(.sceneStreet)
         case .landscape: text(.sceneLandscape)
         case .night: text(.sceneNight)
+        }
+    }
+
+    func peakingColorName(_ color: PeakingColor) -> String {
+        switch color {
+        case .red: text(.colorRed)
+        case .green: text(.colorGreen)
+        case .blue: text(.colorBlue)
+        case .yellow: text(.colorYellow)
+        case .cyan: text(.colorCyan)
+        case .white: text(.colorWhite)
+        }
+    }
+
+    func frameGuideName(_ guide: FrameGuide) -> String {
+        switch guide {
+        case .none: text(.off)
+        case .square: text(.frameSquare)
+        case .fourThree: text(.frameFourThree)
+        case .threeTwo: text(.frameThreeTwo)
+        case .sixteenNine: text(.frameSixteenNine)
+        case .cinema239: text(.frameCinema239)
         }
     }
 
@@ -156,7 +243,15 @@ enum LocalizedKey: Hashable {
     case hud, customizeHUD, hudDetail, hudElements, resetHUD, required
     case focusPeaking, focusPeakingQuick, lenses, metrics, photoFormat
     case shutterButton, gridButton, proControls
-    case monitoring, zebra, zebraLevel, zebraDetail, histogram, histogramRGB, histogramDetail
+    case monitoring, zebra, zebraLevel, zebraLowLevel, zebraHighLevel, dualZebra, zebraDetail
+    case histogram, histogramRGB, histogramDetail
+    case falseColor, falseColorDetail, waveform, rgbParade, vectorscope, scopesDetail
+    case peakingThreshold, peakingColor, peakingDetail
+    case afaeLock, afaeLocked, afaeUnlocked
+    case clippingWarnings, shadowsClipped, highlightsClipped
+    case frameGuide, frameGuideDetail, frameSquare, frameFourThree, frameThreeTwo
+    case frameSixteenNine, frameCinema239
+    case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -215,7 +310,27 @@ enum LocalizedKey: Hashable {
             .zebraLevel: "Nivel de cebra",
             .zebraDetail: "Marca con líneas diagonales las zonas que alcanzan o superan el nivel seleccionado.",
             .histogram: "Histograma", .histogramRGB: "Histograma RGB",
-            .histogramDetail: "Histograma RGB del preview YCbCr. Sirve para exposición y clipping; no representa el histograma del archivo RAW final."
+            .histogramDetail: "Histograma RGB del preview YCbCr. Sirve para exposición y clipping; no representa el histograma del archivo RAW final.",
+            .zebraLowLevel: "Cebra baja", .zebraHighLevel: "Cebra alta",
+            .dualZebra: "Cebra dual",
+            .falseColor: "False Color",
+            .falseColorDetail: "Mapa de exposición por color derivado de la luminancia del preview; no es una medición IRE calibrada del sensor.",
+            .waveform: "Waveform Luma", .rgbParade: "RGB Parade",
+            .vectorscope: "Vectorscope",
+            .scopesDetail: "Scopes derivados del preview para evaluar exposición, distribución tonal y balance de color antes de capturar.",
+            .peakingThreshold: "Umbral de Peaking", .peakingColor: "Color de Peaking",
+            .peakingDetail: "Un umbral menor resalta más bordes; uno mayor exige más microcontraste.",
+            .afaeLock: "Bloqueo AF/AE", .afaeLocked: "AF/AE bloqueado",
+            .afaeUnlocked: "AF/AE automático",
+            .clippingWarnings: "Avisos de clipping",
+            .shadowsClipped: "Sombras recortadas", .highlightsClipped: "Luces recortadas",
+            .frameGuide: "Guía de formato",
+            .frameGuideDetail: "Previsualiza proporciones de recorte para fotografía sin cambiar la resolución del archivo capturado.",
+            .frameSquare: "1:1 Cuadrado", .frameFourThree: "4:3",
+            .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
+            .frameCinema239: "2.39:1",
+            .colorRed: "Rojo", .colorGreen: "Verde", .colorBlue: "Azul",
+            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -274,7 +389,27 @@ enum LocalizedKey: Hashable {
             .zebraLevel: "Zebra level",
             .zebraDetail: "Draws diagonal lines over areas that reach or exceed the selected level.",
             .histogram: "Histogram", .histogramRGB: "RGB histogram",
-            .histogramDetail: "RGB histogram derived from the YCbCr preview stream. It is useful for exposure and clipping, but is not the final RAW-file histogram."
+            .histogramDetail: "RGB histogram derived from the YCbCr preview stream. It is useful for exposure and clipping, but is not the final RAW-file histogram.",
+            .zebraLowLevel: "Low zebra", .zebraHighLevel: "High zebra",
+            .dualZebra: "Dual zebra",
+            .falseColor: "False Color",
+            .falseColorDetail: "Color exposure map derived from preview luminance; it is not a sensor-calibrated IRE measurement.",
+            .waveform: "Luma Waveform", .rgbParade: "RGB Parade",
+            .vectorscope: "Vectorscope",
+            .scopesDetail: "Preview-derived scopes for evaluating exposure, tonal distribution, and color balance before capture.",
+            .peakingThreshold: "Peaking threshold", .peakingColor: "Peaking color",
+            .peakingDetail: "A lower threshold highlights more edges; a higher threshold requires stronger micro-contrast.",
+            .afaeLock: "AF/AE Lock", .afaeLocked: "AF/AE locked",
+            .afaeUnlocked: "AF/AE automatic",
+            .clippingWarnings: "Clipping warnings",
+            .shadowsClipped: "Shadows clipped", .highlightsClipped: "Highlights clipped",
+            .frameGuide: "Frame guide",
+            .frameGuideDetail: "Preview photographic crop ratios without changing the captured file resolution.",
+            .frameSquare: "1:1 Square", .frameFourThree: "4:3",
+            .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
+            .frameCinema239: "2.39:1",
+            .colorRed: "Red", .colorGreen: "Green", .colorBlue: "Blue",
+            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)

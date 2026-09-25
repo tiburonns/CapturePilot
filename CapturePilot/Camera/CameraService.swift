@@ -26,6 +26,7 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var supportsManualExposure = false
     @Published private(set) var supportsManualFocus = false
     @Published private(set) var supportsManualWhiteBalance = false
+    @Published private(set) var supportsAFAELock = false
     @Published private(set) var supportsHEVC = false
     @Published private(set) var supportsProRAW = false
 
@@ -53,6 +54,12 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var isZebraEnabled = false
     @Published private(set) var zebraImage: CGImage? = nil
     @Published private(set) var histogramSnapshot: HistogramSnapshot = .empty
+    @Published private(set) var isFalseColorEnabled = false
+    @Published private(set) var falseColorImage: CGImage? = nil
+    @Published private(set) var waveformImage: CGImage? = nil
+    @Published private(set) var rgbParadeImage: CGImage? = nil
+    @Published private(set) var vectorscopeImage: CGImage? = nil
+    @Published private(set) var isAFAELocked = false
 
     private let sessionQueue = DispatchQueue(label: "CapturePilot.CameraSession", qos: .userInitiated)
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
@@ -66,7 +73,16 @@ final class CameraService: NSObject, ObservableObject {
     private var focusPeakingRequested = false
     private var zebraRequested = false
     private var histogramRequested = false
+    private var falseColorRequested = false
+    private var waveformRequested = false
+    private var rgbParadeRequested = false
+    private var vectorscopeRequested = false
     private var zebraLevel: Double = 95
+    private var zebraLowLevel: Double = 70
+    private var dualZebra = true
+    private var peakingThreshold = 54
+    private var peakingColor: (UInt8, UInt8, UInt8) = (255, 80, 30)
+    private var afaeLockGeneration = 0
     private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
@@ -91,6 +107,23 @@ final class CameraService: NSObject, ObservableObject {
 
         monitoring.onHistogramUpdate = { [weak self] snapshot in
             self?.histogramSnapshot = snapshot
+        }
+
+        monitoring.onFalseColorUpdate = { [weak self] image in
+            guard let self, self.isFalseColorEnabled else { return }
+            self.falseColorImage = image
+        }
+
+        monitoring.onWaveformUpdate = { [weak self] image in
+            self?.waveformImage = image
+        }
+
+        monitoring.onRGBParadeUpdate = { [weak self] image in
+            self?.rgbParadeImage = image
+        }
+
+        monitoring.onVectorscopeUpdate = { [weak self] image in
+            self?.vectorscopeImage = image
         }
 
         registerSessionObservers()
@@ -147,6 +180,10 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func setZebraEnabled(_ enabled: Bool) {
+        if enabled, isFalseColorEnabled {
+            setFalseColorEnabled(false)
+        }
+
         isZebraEnabled = enabled
         if !enabled {
             zebraImage = nil
@@ -157,16 +194,83 @@ final class CameraService: NSObject, ObservableObject {
         }
     }
 
-    func setZebraLevel(_ value: Double) {
-        let clamped = min(max(value, 75), 100)
+    func setZebraConfiguration(
+        lowLevel: Double,
+        highLevel: Double,
+        dualEnabled: Bool
+    ) {
+        let low = min(max(lowLevel, 50), 95)
+        let high = min(max(highLevel, 75), 100)
+
         videoQueue.async { [weak self] in
-            self?.zebraLevel = clamped
+            self?.zebraLowLevel = min(low, high)
+            self?.zebraLevel = max(low, high)
+            self?.dualZebra = dualEnabled
         }
     }
 
     func setHistogramEnabled(_ enabled: Bool) {
+        if !enabled {
+            histogramSnapshot = .empty
+        }
         videoQueue.async { [weak self] in
             self?.histogramRequested = enabled
+        }
+    }
+
+    func toggleFalseColor() {
+        setFalseColorEnabled(!isFalseColorEnabled)
+    }
+
+    func setFalseColorEnabled(_ enabled: Bool) {
+        if enabled, isZebraEnabled {
+            setZebraEnabled(false)
+        }
+
+        isFalseColorEnabled = enabled
+        if !enabled {
+            falseColorImage = nil
+        }
+
+        videoQueue.async { [weak self] in
+            self?.falseColorRequested = enabled
+        }
+    }
+
+    func setWaveformEnabled(_ enabled: Bool) {
+        if !enabled { waveformImage = nil }
+        videoQueue.async { [weak self] in self?.waveformRequested = enabled }
+    }
+
+    func setRGBParadeEnabled(_ enabled: Bool) {
+        if !enabled { rgbParadeImage = nil }
+        videoQueue.async { [weak self] in self?.rgbParadeRequested = enabled }
+    }
+
+    func setVectorscopeEnabled(_ enabled: Bool) {
+        if !enabled { vectorscopeImage = nil }
+        videoQueue.async { [weak self] in self?.vectorscopeRequested = enabled }
+    }
+
+    func setFocusPeakingConfiguration(
+        threshold: Double,
+        color: AppSettings.PeakingColor
+    ) {
+        let clamped = min(max(Int(threshold.rounded()), 20), 140)
+        let rgb: (UInt8, UInt8, UInt8)
+
+        switch color {
+        case .red: rgb = (255, 70, 55)
+        case .green: rgb = (70, 255, 95)
+        case .blue: rgb = (70, 135, 255)
+        case .yellow: rgb = (255, 225, 40)
+        case .cyan: rgb = (30, 235, 245)
+        case .white: rgb = (255, 255, 255)
+        }
+
+        videoQueue.async { [weak self] in
+            self?.peakingThreshold = clamped
+            self?.peakingColor = rgb
         }
     }
 
@@ -369,6 +473,7 @@ final class CameraService: NSObject, ObservableObject {
                 self.manualExposure = false
                 self.manualFocus = false
                 self.manualWhiteBalance = false
+                self.isAFAELocked = false
                 self.syncDeviceValues(device)
             }
         }
@@ -486,11 +591,15 @@ final class CameraService: NSObject, ObservableObject {
         supportsManualExposure = device.isExposureModeSupported(.custom)
         supportsManualFocus = device.isFocusModeSupported(.locked)
         supportsManualWhiteBalance = device.isWhiteBalanceModeSupported(.locked)
+        supportsAFAELock =
+            device.isFocusModeSupported(.locked)
+            && device.isExposureModeSupported(.locked)
     }
 
     func focus(at point: CGPoint) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+            self.afaeLockGeneration += 1
 
             do {
                 try device.lockForConfiguration()
@@ -514,6 +623,109 @@ final class CameraService: NSObject, ObservableObject {
                 device.unlockForConfiguration()
 
                 DispatchQueue.main.async {
+                    self.manualFocus = false
+                    self.manualExposure = false
+                    self.isAFAELocked = false
+                }
+            } catch { }
+        }
+    }
+
+    func toggleAFAELock(at point: CGPoint? = nil) {
+        if isAFAELocked {
+            unlockAFAE()
+        } else {
+            lockAFAE(at: point)
+        }
+    }
+
+    func lockAFAE(at point: CGPoint?) {
+        sessionQueue.async { [weak self] in
+            guard let self,
+                  let device = self.currentInput?.device,
+                  device.isFocusModeSupported(.locked),
+                  device.isExposureModeSupported(.locked) else { return }
+
+            self.afaeLockGeneration += 1
+            let generation = self.afaeLockGeneration
+
+            do {
+                try device.lockForConfiguration()
+
+                if let point, device.isFocusPointOfInterestSupported {
+                    device.focusPointOfInterest = point
+                }
+                if let point, device.isExposurePointOfInterestSupported {
+                    device.exposurePointOfInterest = point
+                }
+
+                if device.isFocusModeSupported(.autoFocus) {
+                    device.focusMode = .autoFocus
+                } else if device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                }
+
+                if device.isExposureModeSupported(.autoExpose) {
+                    device.exposureMode = .autoExpose
+                } else if device.isExposureModeSupported(.continuousAutoExposure) {
+                    device.exposureMode = .continuousAutoExposure
+                }
+
+                device.unlockForConfiguration()
+            } catch {
+                return
+            }
+
+            self.sessionQueue.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                guard let self,
+                      generation == self.afaeLockGeneration,
+                      let device = self.currentInput?.device else { return }
+
+                do {
+                    try device.lockForConfiguration()
+
+                    if device.isFocusModeSupported(.locked) {
+                        device.setFocusModeLocked(
+                            lensPosition: device.lensPosition,
+                            completionHandler: nil
+                        )
+                    }
+
+                    if device.isExposureModeSupported(.locked) {
+                        device.exposureMode = .locked
+                    }
+
+                    device.unlockForConfiguration()
+
+                    DispatchQueue.main.async {
+                        self.manualFocus = false
+                        self.manualExposure = false
+                        self.isAFAELocked = true
+                    }
+                } catch { }
+            }
+        }
+    }
+
+    func unlockAFAE() {
+        sessionQueue.async { [weak self] in
+            guard let self, let device = self.currentInput?.device else { return }
+            self.afaeLockGeneration += 1
+
+            do {
+                try device.lockForConfiguration()
+
+                if device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                }
+                if device.isExposureModeSupported(.continuousAutoExposure) {
+                    device.exposureMode = .continuousAutoExposure
+                }
+
+                device.unlockForConfiguration()
+
+                DispatchQueue.main.async {
+                    self.isAFAELocked = false
                     self.manualFocus = false
                     self.manualExposure = false
                 }
@@ -542,8 +754,13 @@ final class CameraService: NSObject, ObservableObject {
         iso requestedISO: Float? = nil,
         shutter requestedShutter: Double? = nil
     ) {
+        if isAFAELocked {
+            unlockAFAE()
+        }
+
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+            self.afaeLockGeneration += 1
 
             do {
                 try device.lockForConfiguration()
@@ -561,6 +778,7 @@ final class CameraService: NSObject, ObservableObject {
                         self.iso = newISO
                         self.shutterSeconds = newShutter
                         self.manualExposure = true
+                        self.isAFAELocked = false
                     }
                 } else if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
@@ -573,8 +791,13 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func setManualFocus(enabled: Bool, position: Float? = nil) {
+        if isAFAELocked {
+            unlockAFAE()
+        }
+
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+            self.afaeLockGeneration += 1
 
             do {
                 try device.lockForConfiguration()
@@ -586,6 +809,7 @@ final class CameraService: NSObject, ObservableObject {
                     DispatchQueue.main.async {
                         self.focusPosition = clamped
                         self.manualFocus = true
+                        self.isAFAELocked = false
                     }
                 } else if device.isFocusModeSupported(.continuousAutoFocus) {
                     device.focusMode = .continuousAutoFocus
@@ -774,15 +998,30 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
     ) {
         if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             if focusPeakingRequested {
-                focusPeaking.process(pixelBuffer: pixelBuffer)
+                focusPeaking.process(
+                    pixelBuffer: pixelBuffer,
+                    threshold: peakingThreshold,
+                    color: peakingColor
+                )
             }
 
-            if zebraRequested || histogramRequested {
+            if zebraRequested
+                || histogramRequested
+                || falseColorRequested
+                || waveformRequested
+                || rgbParadeRequested
+                || vectorscopeRequested {
                 monitoring.process(
                     pixelBuffer: pixelBuffer,
                     zebraEnabled: zebraRequested,
                     zebraLevel: zebraLevel,
-                    histogramEnabled: histogramRequested
+                    zebraLowLevel: zebraLowLevel,
+                    dualZebraEnabled: dualZebra,
+                    histogramEnabled: histogramRequested,
+                    falseColorEnabled: falseColorRequested,
+                    waveformEnabled: waveformRequested,
+                    rgbParadeEnabled: rgbParadeRequested,
+                    vectorscopeEnabled: vectorscopeRequested
                 )
             }
         }

@@ -10,6 +10,9 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingProControls = false
     @State private var histogramExpanded = false
+    @State private var waveformExpanded = false
+    @State private var rgbParadeExpanded = false
+    @State private var vectorscopeExpanded = false
 
     var body: some View {
         ZStack {
@@ -29,7 +32,7 @@ struct ContentView: View {
         .onAppear {
             camera.setCoachIntensity(settings.coachIntensity)
             camera.setCoachScene(settings.sceneCoach)
-            camera.setZebraLevel(settings.zebraLevel)
+            applyMonitoringSettings()
             syncMonitoringHUD()
             camera.resumeIfPossible()
             OrientationPolicy.applyCurrentPolicy()
@@ -38,6 +41,8 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
+                applyMonitoringSettings()
+                syncMonitoringHUD()
                 camera.resumeIfPossible()
             case .inactive, .background:
                 camera.stop()
@@ -52,7 +57,25 @@ struct ContentView: View {
             camera.setCoachScene(value)
         }
         .onChange(of: settings.zebraLevel) { _, value in
-            camera.setZebraLevel(value)
+            if settings.dualZebra, settings.zebraLowLevel > value {
+                settings.zebraLowLevel = value
+            }
+            applyMonitoringSettings()
+        }
+        .onChange(of: settings.zebraLowLevel) { _, value in
+            if settings.dualZebra, value > settings.zebraLevel {
+                settings.zebraLevel = value
+            }
+            applyMonitoringSettings()
+        }
+        .onChange(of: settings.dualZebra) { _, _ in
+            applyMonitoringSettings()
+        }
+        .onChange(of: settings.peakingThreshold) { _, _ in
+            applyMonitoringSettings()
+        }
+        .onChange(of: settings.peakingColor) { _, _ in
+            applyMonitoringSettings()
         }
         .onChange(of: hud.configurations) { _, _ in
             syncMonitoringHUD()
@@ -61,9 +84,16 @@ struct ContentView: View {
             if editing {
                 showingProControls = false
                 histogramExpanded = false
+                waveformExpanded = false
+                rgbParadeExpanded = false
+                vectorscopeExpanded = false
                 camera.setFocusPeakingEnabled(false)
                 camera.setZebraEnabled(false)
+                camera.setFalseColorEnabled(false)
                 camera.setHistogramEnabled(false)
+                camera.setWaveformEnabled(false)
+                camera.setRGBParadeEnabled(false)
+                camera.setVectorscopeEnabled(false)
             } else {
                 syncMonitoringHUD()
             }
@@ -87,10 +117,24 @@ struct ContentView: View {
             let safeRect = safeHUDRect(for: geometry)
 
             ZStack {
-                CameraPreview(session: camera.session) { point in
-                    guard !hud.isEditing else { return }
-                    camera.focus(at: point)
-                }
+                CameraPreview(
+                    session: camera.session,
+                    onTapToFocus: { point in
+                        guard !hud.isEditing else { return }
+                        camera.focus(at: point)
+                    },
+                    onLongPressAFAE: { point in
+                        guard !hud.isEditing else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        camera.toggleAFAELock(at: point)
+                    }
+                )
+                .ignoresSafeArea()
+
+                FalseColorOverlay(
+                    image: camera.falseColorImage,
+                    isEnabled: camera.isFalseColorEnabled
+                )
                 .ignoresSafeArea()
 
                 ZebraOverlay(
@@ -117,6 +161,9 @@ struct ContentView: View {
                     showAnalysisGeometry: settings.coachIntensity == .teaching
                 )
                 .ignoresSafeArea()
+
+                FrameGuideOverlay(guide: settings.frameGuide)
+                    .ignoresSafeArea()
 
                 ForEach(HUDItem.allCases) { item in
                     if shouldRender(item) {
@@ -214,7 +261,9 @@ struct ContentView: View {
                         : "viewfinder.circle"
                 )
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(camera.isFocusPeakingEnabled ? .orange : .white)
+                .foregroundStyle(
+                    camera.isFocusPeakingEnabled ? peakingSwiftUIColor : .white
+                )
                 .frame(width: 46, height: 46)
                 .background(.ultraThinMaterial, in: Circle())
             }
@@ -228,6 +277,61 @@ struct ContentView: View {
                 snapshot: camera.histogramSnapshot,
                 isExpanded: $histogramExpanded
             )
+
+        case .falseColor:
+            Button { camera.toggleFalseColor() } label: {
+                Image(systemName: "circle.lefthalf.filled")
+                    .foregroundStyle(camera.isFalseColorEnabled ? .yellow : .white)
+                    .frame(width: 46, height: 46)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel(settings.text(.falseColor))
+
+        case .waveform:
+            PhotoScopeView(
+                kind: .waveform,
+                image: camera.waveformImage,
+                isExpanded: $waveformExpanded
+            )
+
+        case .rgbParade:
+            PhotoScopeView(
+                kind: .rgbParade,
+                image: camera.rgbParadeImage,
+                isExpanded: $rgbParadeExpanded
+            )
+
+        case .vectorscope:
+            PhotoScopeView(
+                kind: .vectorscope,
+                image: camera.vectorscopeImage,
+                isExpanded: $vectorscopeExpanded
+            )
+
+        case .afaeLock:
+            Button {
+                camera.toggleAFAELock()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: camera.isAFAELocked ? "lock.fill" : "lock.open")
+                    Text("AF/AE")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                }
+                .foregroundStyle(camera.isAFAELocked ? .orange : .white)
+                .padding(.horizontal, 9)
+                .frame(height: 42)
+                .background(.ultraThinMaterial, in: Capsule())
+            }
+            .accessibilityLabel(settings.text(.afaeLock))
+            .accessibilityValue(
+                settings.text(camera.isAFAELocked ? .afaeLocked : .afaeUnlocked)
+            )
+
+        case .clippingWarnings:
+            ClippingWarningView(snapshot: camera.histogramSnapshot)
+
+        case .frameGuide:
+            frameGuideMenu
         }
     }
 
@@ -238,7 +342,7 @@ struct ContentView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "line.diagonal")
-                    Text("Z\(Int(settings.zebraLevel.rounded()))")
+                    Text(zebraHUDLabel)
                         .font(.caption2.weight(.bold))
                         .monospacedDigit()
                 }
@@ -249,15 +353,49 @@ struct ContentView: View {
             }
 
             Menu {
-                ForEach([75, 80, 85, 90, 95, 100], id: \.self) { level in
+                Button {
+                    settings.dualZebra.toggle()
+                } label: {
+                    Label(
+                        settings.text(.dualZebra),
+                        systemImage: settings.dualZebra ? "checkmark" : "circle"
+                    )
+                }
+
+                Divider()
+
+                Button {
+                    settings.dualZebra = true
+                    settings.zebraLowLevel = 70
+                    settings.zebraLevel = 95
+                } label: {
+                    Text("70 / 95")
+                }
+
+                Button {
+                    settings.dualZebra = true
+                    settings.zebraLowLevel = 75
+                    settings.zebraLevel = 100
+                } label: {
+                    Text("75 / 100")
+                }
+
+                Button {
+                    settings.dualZebra = true
+                    settings.zebraLowLevel = 80
+                    settings.zebraLevel = 95
+                } label: {
+                    Text("80 / 95")
+                }
+
+                Divider()
+
+                ForEach([85, 90, 95, 100], id: \.self) { level in
                     Button {
+                        settings.dualZebra = false
                         settings.zebraLevel = Double(level)
                     } label: {
-                        if Int(settings.zebraLevel.rounded()) == level {
-                            Label("\(level)%", systemImage: "checkmark")
-                        } else {
-                            Text("\(level)%")
-                        }
+                        Text("Z \(level)")
                     }
                 }
             } label: {
@@ -268,6 +406,61 @@ struct ContentView: View {
         }
         .background(.ultraThinMaterial, in: Capsule())
         .accessibilityLabel(settings.text(.zebra))
+    }
+
+    private var zebraHUDLabel: String {
+        if settings.dualZebra {
+            return "Z\(Int(settings.zebraLowLevel.rounded()))/\(Int(settings.zebraLevel.rounded()))"
+        }
+        return "Z\(Int(settings.zebraLevel.rounded()))"
+    }
+
+    private var frameGuideMenu: some View {
+        Menu {
+            ForEach(AppSettings.FrameGuide.allCases) { guide in
+                Button {
+                    settings.frameGuide = guide
+                } label: {
+                    if settings.frameGuide == guide {
+                        Label(settings.frameGuideName(guide), systemImage: "checkmark")
+                    } else {
+                        Text(settings.frameGuideName(guide))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "rectangle.dashed")
+                Text(frameGuideShortLabel)
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+            }
+            .padding(.horizontal, 9)
+            .frame(height: 42)
+            .background(.ultraThinMaterial, in: Capsule())
+        }
+        .accessibilityLabel(settings.text(.frameGuide))
+    }
+
+    private var frameGuideShortLabel: String {
+        switch settings.frameGuide {
+        case .none: "OFF"
+        case .square: "1:1"
+        case .fourThree: "4:3"
+        case .threeTwo: "3:2"
+        case .sixteenNine: "16:9"
+        case .cinema239: "2.39"
+        }
+    }
+
+    private var peakingSwiftUIColor: Color {
+        switch settings.peakingColor {
+        case .red: .red
+        case .green: .green
+        case .blue: .blue
+        case .yellow: .yellow
+        case .cyan: .cyan
+        case .white: .white
+        }
     }
 
     private var languageMenu: some View {
@@ -431,6 +624,8 @@ struct ContentView: View {
             return settings.coachIntensity != .subtle
         case .lenses:
             return !camera.availableLenses.isEmpty
+        case .afaeLock:
+            return camera.supportsAFAELock
         default:
             return true
         }
@@ -515,13 +710,35 @@ struct ContentView: View {
         .foregroundStyle(.white)
     }
 
+    private func applyMonitoringSettings() {
+        camera.setZebraConfiguration(
+            lowLevel: settings.zebraLowLevel,
+            highLevel: settings.zebraLevel,
+            dualEnabled: settings.dualZebra
+        )
+        camera.setFocusPeakingConfiguration(
+            threshold: settings.peakingThreshold,
+            color: settings.peakingColor
+        )
+    }
+
     private func syncMonitoringHUD() {
         guard !hud.isEditing else { return }
 
-        camera.setHistogramEnabled(hud.isVisible(.histogram))
+        let needsHistogram =
+            hud.isVisible(.histogram)
+            || hud.isVisible(.clippingWarnings)
+
+        camera.setHistogramEnabled(needsHistogram)
+        camera.setWaveformEnabled(hud.isVisible(.waveform))
+        camera.setRGBParadeEnabled(hud.isVisible(.rgbParade))
+        camera.setVectorscopeEnabled(hud.isVisible(.vectorscope))
 
         if !hud.isVisible(.zebra) {
             camera.setZebraEnabled(false)
+        }
+        if !hud.isVisible(.falseColor) {
+            camera.setFalseColorEnabled(false)
         }
     }
 
