@@ -38,6 +38,28 @@ CapturePilot es una cámara gratuita y sin anuncios para iOS que combina control
 - Unsupported manual controls are hidden instead of presenting controls that cannot work.
 - Resolution selector in the Pro controls.
 
+### Photography monitoring and capture aids
+
+CapturePilot 0.5 adds still-photography monitoring tools to help evaluate a frame before capture:
+
+- dual-level Zebra with configurable low/high thresholds;
+- preview-derived False Color;
+- RGB histogram with per-channel shadow/highlight clipping indicators;
+- Luma Waveform;
+- RGB Parade;
+- Vectorscope;
+- configurable Focus Peaking threshold and overlay color;
+- compact per-channel clipping warnings;
+- tap-to-focus/meter plus long-press AF/AE Lock when the active camera supports both locks;
+- optional AF/AE Lock HUD control;
+- photographic crop/frame guides: 1:1, 4:3, 3:2, 16:9, and 2.39:1.
+
+Histogram, False Color, Waveform, RGB Parade, Vectorscope, and Zebras are derived from the processed live YCbCr preview. They are practical monitoring aids; CapturePilot does **not** describe them as sensor-linear RAW measurements, calibrated IRE instruments, or a replacement for inspecting the captured RAW/ProRAW file.
+
+These are photography tools. CapturePilot does not add video codecs, bitrate, audio meters, or video-recording controls.
+
+See [Professional monitoring](docs/MONITORING.md) for the signal path and limitations.
+
 ### Composition coach
 
 All analysis is on-device.
@@ -94,11 +116,14 @@ Each mode changes the priority of real analysis signals. For example, Architectu
 - Customizable HUD with separate portrait and landscape positions.
 - HUD items stay clamped to the safe area.
 - Optional dedicated Focus Peaking button.
+- Optional Zebra, Histogram, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping-warning, and frame-guide controls.
 - Settings and shutter remain non-hideable recovery controls.
 
 ### Focus Peaking
 
 Focus Peaking uses the luminance plane already delivered by the camera pipeline and highlights strong local edges. It is a contrast-based focusing aid, not an absolute focus-confidence measurement.
+
+The photographer can change the Peaking threshold and overlay color. The optional quick-access button remains separate from viewfinder long-press, which is reserved for AF/AE Lock.
 
 ### Session recovery
 
@@ -126,7 +151,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - No third-party analytics SDK.
 - No CapturePilot cloud service.
 - No live-frame upload.
-- Coach, geometry analysis, and Focus Peaking run on-device.
+- Coach, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, and Vectorscope run on-device.
 - Privacy Manifest declares no tracking or collected-data types.
 - UserDefaults Required Reason API: CA92.1.
 
@@ -168,6 +193,28 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - Balance de blancos automático/manual y temperatura.
 - Los controles manuales no compatibles se ocultan en lugar de presentar funciones inactivas.
 - Selector de resolución dentro de los controles Pro.
+
+### Monitoreo y ayudas de captura fotográfica
+
+CapturePilot 0.5 agrega herramientas para evaluar la fotografía antes de capturar:
+
+- Zebra dual con umbrales bajo/alto configurables;
+- False Color derivado del preview;
+- histograma RGB con avisos de clipping por canal;
+- Waveform Luma;
+- RGB Parade;
+- Vectorscope;
+- umbral y color configurables de Focus Peaking;
+- avisos compactos de clipping por canal;
+- toque para enfoque/medición y pulsación larga para AF/AE Lock cuando la cámara activa soporta ambos bloqueos;
+- botón HUD opcional para AF/AE Lock;
+- guías de formato/recorte: 1:1, 4:3, 3:2, 16:9 y 2.39:1.
+
+Histograma, False Color, Waveform, RGB Parade, Vectorscope y Cebras se derivan del preview YCbCr procesado. Son ayudas prácticas de monitoreo; CapturePilot **no** las presenta como mediciones RAW lineales del sensor, instrumentos IRE calibrados ni sustitutos de revisar el RAW/ProRAW capturado.
+
+Son herramientas de fotografía. CapturePilot no agrega codecs, bitrate, medidores de audio ni controles de grabación de video.
+
+Consulta [Monitoreo profesional](docs/MONITORING.md) para conocer la ruta de señal y sus límites.
 
 ### Coach de composición
 
@@ -225,11 +272,14 @@ Cada modo cambia la prioridad de señales reales. Arquitectura enfatiza horizont
 - HUD personalizable con posiciones separadas vertical/horizontal.
 - Los elementos permanecen dentro del área segura.
 - Botón opcional dedicado a Focus Peaking.
+- Controles opcionales para Zebra, Histograma, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping y guía de formato.
 - Ajustes y disparador no pueden ocultarse.
 
 ### Focus Peaking
 
 Focus Peaking analiza contraste local en el plano de luminancia del mismo pipeline de cámara. Es una ayuda visual de enfoque, no una medición absoluta del plano focal.
+
+El fotógrafo puede cambiar el umbral y el color del overlay. El botón rápido opcional permanece separado de la pulsación larga del visor, reservada para AF/AE Lock.
 
 ### Recuperación de sesión
 
@@ -257,7 +307,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - Sin SDK de analítica de terceros.
 - Sin nube de CapturePilot.
 - Sin subida de frames.
-- Coach, geometría y Focus Peaking son locales.
+- Coach, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade y Vectorscope son locales.
 - Privacy Manifest sin tracking ni tipos de datos recopilados.
 - Required Reason API de UserDefaults: CA92.1.
 
