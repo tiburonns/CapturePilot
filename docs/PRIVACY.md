@@ -6,8 +6,9 @@ CapturePilot does not create an account, serve ads, include third-party analytic
 
 ### Protected resources
 
-- Camera: live viewfinder, local coach/geometric analysis, Focus Peaking, and photo capture.
+- Camera: live viewfinder, local coach/geometric analysis, Focus Peaking, professional monitoring, and photo capture.
 - Photo Library add-only: save photos explicitly captured by the user.
+- Files folder selected by the user: optional LUT-library access. CapturePilot cannot scan arbitrary Files locations; the photographer explicitly chooses a directory with the system picker.
 
 ### Local processing
 
@@ -16,13 +17,25 @@ The following run on-device:
 - Vision face/person/saliency/horizon requests;
 - luminance and clipping sampling;
 - leading-line / symmetry / vanishing-point / negative-space heuristics;
-- Focus Peaking edge analysis.
+- Focus Peaking edge analysis;
+- Zebra/Histogram/False Color/Waveform/RGB Parade/Vectorscope preview analysis;
+- .cube parsing and LUT transform profiling;
+- scene/exposure-aware LUT recommendation;
+- Core Image LUT application to the Share JPEG.
 
 No networking dependency is required for these features.
 
+### LUT folder access
+
+When the photographer chooses an external LUT directory, CapturePilot stores bookmark data in UserDefaults so the app can attempt to reopen that same authorized directory on later launches.
+
+When access is available, CapturePilot uses security-scoped file access and coordinates reads through Foundation file-coordination APIs. The external LUT itself is not uploaded. A LUT selected for capture is validated and copied into app-local storage before the shutter workflow uses it.
+
+Removing the external LUT folder from CapturePilot clears the stored directory bookmark. If an active LUT came from that external folder, its active selection/cache is also cleared.
+
 ### Local preferences
 
-UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, and HUD layout.
+UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, HUD layout, LUT recommendation preference, external-folder bookmark data, and active LUT identifiers/names.
 
 `PrivacyInfo.xcprivacy` declares:
 
@@ -41,8 +54,9 @@ CapturePilot no crea cuenta, no sirve publicidad, no incluye analítica de terce
 
 ### Recursos protegidos
 
-- Cámara: visor, coach/análisis geométrico local, Focus Peaking y captura.
+- Cámara: visor, Coach/análisis geométrico local, Focus Peaking, monitoreo profesional y captura.
 - Fototeca add-only: guardar fotos tomadas explícitamente por la persona.
+- Carpeta de Archivos seleccionada por el usuario: acceso opcional a biblioteca LUT. CapturePilot no escanea ubicaciones arbitrarias; la persona elige explícitamente una carpeta mediante el selector del sistema.
 
 ### Procesamiento local
 
@@ -51,13 +65,25 @@ Se ejecutan localmente:
 - Vision para rostro/persona/saliencia/horizonte;
 - luminancia y clipping;
 - líneas/simetría/punto de fuga/espacio negativo;
-- Focus Peaking.
+- Focus Peaking;
+- Zebra/Histograma/False Color/Waveform/RGB Parade/Vectorscope;
+- parseo .cube y perfilado del transform LUT;
+- recomendación LUT según escena/exposición;
+- aplicación Core Image del LUT al JPEG para compartir.
 
 No requieren una dependencia de red.
 
+### Acceso a carpeta LUT
+
+Cuando la persona selecciona una carpeta LUT externa, CapturePilot guarda bookmark data en UserDefaults para intentar reabrir esa misma carpeta autorizada en lanzamientos posteriores.
+
+Cuando hay acceso, CapturePilot usa security-scoped access y coordinación de archivos de Foundation. Los LUT externos no se suben. El LUT elegido para captura se valida y se copia al almacenamiento local de la app antes de usarlo en el disparo.
+
+Eliminar la carpeta externa desde CapturePilot borra el bookmark guardado. Si el LUT activo provenía de esa carpeta, también se limpia su selección/cache activo.
+
 ### Preferencias
 
-UserDefaults conserva idioma, guía, intensidad/escena del coach, orientación y HUD.
+UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, HUD, preferencia de recomendaciones LUT, bookmark de carpeta externa e identificadores/nombres del LUT activo.
 
 `PrivacyInfo.xcprivacy` declara:
 

@@ -82,6 +82,14 @@ Current scope intentionally rejects:
 - non-0–1 input domains;
 - malformed or incomplete cube tables.
 
+### Persistent LUT library
+
+CapturePilot 0.7 can source the active LUT from a persistent library built from a photographer-authorized Files folder. The selected external LUT is validated and copied into app-local cache before the RAW+Share capture path uses it.
+
+Coach LUT recommendations are optional, explainable, and require explicit user approval. They never modify the RAW resource.
+
+See [LUT_LIBRARY.md](LUT_LIBRARY.md).
+
 ### JPEG output
 
 The Share JPEG:
@@ -164,6 +172,14 @@ Soporte actual:
 El LUT se copia a Application Support y se procesa localmente mediante Core Image.
 
 No se aceptan todavía LUT 1D, dominios no estándar ni cubos incompletos.
+
+### Biblioteca LUT persistente
+
+CapturePilot 0.7 puede obtener el LUT activo de una biblioteca persistente basada en una carpeta de Archivos autorizada por el fotógrafo. El LUT externo elegido se valida y se copia al cache local antes de que el flujo RAW+Share lo utilice.
+
+Las recomendaciones LUT del Coach son opcionales, explicables y requieren aprobación explícita. Nunca modifican el RAW.
+
+Consulta [LUT_LIBRARY.md](LUT_LIBRARY.md).
 
 ### Guardado y compartir
 

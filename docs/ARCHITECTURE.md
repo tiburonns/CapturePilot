@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.6.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.7.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -49,6 +49,38 @@ The RAW data bypasses Core Image entirely.
 Photos import first attempts JPEG `.photo` + RAW `.alternatePhoto`. A separate-assets fallback protects the capture if Photos rejects the pair.
 
 See [RAW_SHARE_WORKFLOW.md](RAW_SHARE_WORKFLOW.md).
+
+### LUT library and recommendation pipeline
+
+CapturePilot 0.7 adds a persistent LUT-library layer without moving LUT analysis or image analysis off-device.
+
+The photographer selects an external directory through the system Files picker. CapturePilot stores bookmark data for that directory and, on later launches, resolves the bookmark and starts security-scoped access before scanning.
+
+`LUTLibraryStore` combines two sources:
+
+- CapturePilot's local Documents/LUTs directory;
+- the user-authorized external Files directory.
+
+The external directory is enumerated recursively. Hidden files are skipped, supported 3D `.cube` files are parsed and profiled, and invalid files are counted rather than exposed as usable looks.
+
+While the app is active, an `NSFilePresenter` observes the selected external folder. Changes schedule a debounced refresh. Returning to the foreground also reopens monitoring and refreshes the library.
+
+Each valid LUT receives a deterministic transform profile containing:
+
+- warmth;
+- contrast;
+- saturation;
+- shadow lift;
+- highlight compression;
+- overall transform strength.
+
+`LUTRecommendationEngine` ranks the available entries using that LUT profile together with the selected scene coach and current Coach exposure signals. It can return no recommendation when the scene has a more important capture problem or when candidates are weak/tied.
+
+Recommendations are stabilized in `ContentView` and are never applied automatically. The photographer must explicitly apply the suggestion. Before capture, an external LUT is validated again and copied into CapturePilot's app-local active-LUT cache so the shutter path does not depend on a remote File Provider responding at capture time.
+
+The RAW/ProRAW resource bypasses this LUT path. Only the Share JPEG can receive the active look.
+
+See [LUT_LIBRARY.md](LUT_LIBRARY.md).
 
 ### Lens model
 
@@ -128,13 +160,13 @@ The scene selector is a HUD item alongside Pro controls, language, lenses, coach
 
 ### Privacy
 
-No frame leaves the process in the current source. Coach analysis, Hough-style geometry, Vision, Focus Peaking, and professional monitoring all run locally.
+No frame leaves the process in the current source. Coach analysis, Hough-style geometry, Vision, Focus Peaking, professional monitoring, LUT parsing/profiling, and LUT recommendations all run locally.
 
 ---
 
 ## Español
 
-CapturePilot 0.6.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.7.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 
@@ -172,6 +204,38 @@ Sólo el JPEG pasa por `RawShareProcessor`: orientación, LUT opcional, intensid
 Fotos intenta JPEG `.photo` + RAW `.alternatePhoto`; existe fallback a assets separados.
 
 Consulta [RAW_SHARE_WORKFLOW.md](RAW_SHARE_WORKFLOW.md).
+
+### Biblioteca LUT y pipeline de recomendación
+
+CapturePilot 0.7 agrega una capa de biblioteca LUT persistente sin sacar del dispositivo el análisis del LUT ni de la escena.
+
+El fotógrafo selecciona una carpeta externa mediante el selector de Archivos. CapturePilot guarda bookmark data, resuelve ese bookmark en lanzamientos posteriores y abre acceso security-scoped antes de escanear.
+
+`LUTLibraryStore` combina:
+
+- Documents/LUTs local de CapturePilot;
+- carpeta externa autorizada por el usuario.
+
+La carpeta externa se recorre de forma recursiva. Se ignoran archivos ocultos, se validan LUT 3D `.cube` compatibles y los inválidos se cuentan sin presentarlos como looks utilizables.
+
+Mientras la app está activa, `NSFilePresenter` observa cambios y programa un refresh con debounce. Al volver al foreground se reactiva el monitoreo y se actualiza la biblioteca.
+
+Cada LUT válido recibe un perfil determinista de:
+
+- calidez;
+- contraste;
+- saturación;
+- levantamiento de sombras;
+- compresión de luces;
+- fuerza global de la transformación.
+
+`LUTRecommendationEngine` combina ese perfil con el Coach de escena y señales actuales de exposición. Puede decidir no recomendar nada cuando existe un problema de captura prioritario o los candidatos son demasiado débiles/similares.
+
+Las recomendaciones se estabilizan en `ContentView` y nunca se aplican automáticamente. El fotógrafo debe aceptar la sugerencia. Antes del disparo, un LUT externo se vuelve a validar y se copia al cache local activo para no depender de la respuesta de un File Provider en el momento de capturar.
+
+El RAW/ProRAW no pasa por este pipeline; sólo el JPEG para compartir puede recibir el look.
+
+Consulta [LUT_LIBRARY.md](LUT_LIBRARY.md).
 
 ### Lentes
 
@@ -232,4 +296,4 @@ El selector de escena pasa a ser un elemento más del HUD.
 
 ### Privacidad
 
-Los frames no salen del proceso. Vision, Coach, análisis geométrico, Focus Peaking y monitoreo profesional funcionan localmente.
+Los frames no salen del proceso. Vision, Coach, análisis geométrico, Focus Peaking, monitoreo profesional, parseo/perfilado de LUT y recomendaciones LUT funcionan localmente.

@@ -307,6 +307,34 @@ Before describing the Coach as physically validated, CapturePilot still needs:
 - thermal/performance testing with scopes + Coach active;
 - deterministic tests for the rule-selection logic.
 
+### 14. LUT recommendation layer
+
+CapturePilot 0.7 adds an optional **look recommendation layer** after the core photographic Coach decision.
+
+This layer does not change the primary hierarchy. Capture correction still comes first:
+
+```text
+capture fundamentals
+→ exposure / clipping
+→ composition guidance
+→ optional look recommendation
+```
+
+A LUT recommendation is considered only when:
+- RAW+JPG is enabled;
+- LUT recommendations are enabled;
+- Coach intensity is Balanced or Teaching;
+- at least one valid LUT exists in the library;
+- exposure conditions are not severe enough to make a look recommendation inappropriate.
+
+`LUTRecommendationEngine` does not use LUT filenames as semantic labels. It compares deterministic profiles of the actual transforms — warmth, contrast, saturation, shadow lift, highlight compression, and strength — against the current scene mode and preview exposure signals.
+
+The recommendation may deliberately return **none**.
+
+When a suggestion is shown, the photographer must explicitly apply it. CapturePilot never changes the look automatically.
+
+See [LUT_LIBRARY.md](LUT_LIBRARY.md).
+
 ---
 
 ## Español
@@ -546,3 +574,31 @@ Antes de considerarlo validado físicamente faltan:
 - falsos positivos de líneas/puntos de fuga;
 - carga térmica con scopes + Coach;
 - tests deterministas para la lógica de selección.
+
+### 14. Capa de recomendación LUT
+
+CapturePilot 0.7 agrega una capa opcional de **recomendación de look** después de la decisión principal del Coach fotográfico.
+
+No cambia la jerarquía base:
+
+```text
+fundamentos de captura
+→ exposición / clipping
+→ composición
+→ recomendación de look opcional
+```
+
+Sólo se considera una recomendación cuando:
+- RAW+JPG está activo;
+- recomendaciones LUT están activas;
+- el Coach está en Equilibrado o Didáctico;
+- existe al menos un LUT válido;
+- la exposición no tiene un problema suficientemente grave como para priorizar la corrección.
+
+`LUTRecommendationEngine` no interpreta nombres de archivo. Compara perfiles deterministas del transform real —calidez, contraste, saturación, sombras, luces y fuerza— contra la escena seleccionada y señales actuales del preview.
+
+El motor puede decidir devolver **ninguna recomendación**.
+
+Cuando existe una sugerencia, el fotógrafo debe aplicarla explícitamente. CapturePilot nunca cambia el look automáticamente.
+
+Consulta [LUT_LIBRARY.md](LUT_LIBRARY.md).
