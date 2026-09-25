@@ -10,11 +10,40 @@ struct RankingView: View {
 
     @State private var topCount = 10
     @State private var category: PhotoCategory?
+    @State private var searchText = ""
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showingSocial = false
 
     private var ranked: [PhotoRankingEntry] {
-        rankingStore.top(limit: topCount, category: category)
+        let query = searchText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        let filtered = rankingStore.entries.filter { entry in
+            let categoryMatches = category == nil || entry.category == category
+            guard categoryMatches else { return false }
+
+            guard !query.isEmpty else { return true }
+
+            let searchable = (
+                [entry.category.rawValue] + entry.tags
+            )
+            .joined(separator: " ")
+            .lowercased()
+
+            return searchable.contains(query)
+        }
+
+        return Array(
+            filtered
+                .sorted { lhs, rhs in
+                    if lhs.coachScore == rhs.coachScore {
+                        return lhs.createdAt > rhs.createdAt
+                    }
+                    return lhs.coachScore > rhs.coachScore
+                }
+                .prefix(topCount)
+        )
     }
 
     var body: some View {
@@ -61,6 +90,10 @@ struct RankingView: View {
             }
             .background(Color.black.ignoresSafeArea())
             .navigationTitle(localized("Rankings", "Ranking"))
+            .searchable(
+                text: $searchText,
+                prompt: localized("Search category or tags", "Buscar categoría o etiquetas")
+            )
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(localized("Done", "Listo")) { dismiss() }
@@ -354,6 +387,8 @@ private struct RankingDetailView: View {
             return es ? "Prueba mover el encuadre hacia un punto compositivo fuerte." : "Try moving the framing toward a stronger compositional point."
         case .reduceHeadroom:
             return es ? "Reduce aire sobre el sujeto o ajusta ligeramente el punto de vista." : "Reduce headroom or adjust the viewpoint slightly."
+        case .improvePortraitQuality:
+            return es ? "Busca luz más limpia, confirma foco en los ojos y prueba una pose más estable." : "Look for cleaner light, confirm focus on the eyes, and try a steadier pose."
         case .strengthenSymmetry:
             return es ? "Refuerza el eje de simetría o rompe la simetría de forma intencional." : "Strengthen the symmetry axis or break symmetry deliberately."
         case .useLeadingLines:
