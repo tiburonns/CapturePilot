@@ -1,4 +1,3 @@
-import AuthenticationServices
 import CloudKit
 import CryptoKit
 import Foundation
@@ -46,7 +45,7 @@ final class SocialCompetitionService: ObservableObject {
     private let container = CKContainer(identifier: "iCloud.com.tiburonns.CapturePilot")
     private var database: CKDatabase { container.publicCloudDatabase }
 
-    private static let userIDKey = "social.appleUserID"
+    private static let socialEnabledKey = "social.enabled"
     private static let shareScoresKey = "social.shareScores"
 
     init() {
@@ -54,36 +53,63 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func restoreIfPossible() async {
-        guard let userID = UserDefaults.standard.string(forKey: Self.userIDKey) else {
+        guard UserDefaults.standard.bool(forKey: Self.socialEnabledKey) else {
+            return
+        }
+        await connect(createProfile: true)
+    }
+
+    func enableSocial() async {
+        UserDefaults.standard.set(true, forKey: Self.socialEnabledKey)
+        await connect(createProfile: true)
+    }
+
+    func deleteSocialProfile() async {
+        guard let me = profile else {
+            clearLocalSocialState()
             return
         }
 
-        let state = await credentialState(for: userID)
-        guard state == .authorized else {
-            signOutLocal()
-            return
+        isBusy = true
+        defer { isBusy = false }
+
+        do {
+            await removeOwnScores()
+
+            let fromMe = try await connectionRecords(
+                field: "requesterHash",
+                value: me.id,
+                status: nil
+            )
+            let toMe = try await connectionRecords(
+                field: "addresseeHash",
+                value: me.id,
+                status: nil
+            )
+
+            var ids = Set(fromMe.map(\.recordID))
+            ids.formUnion(toMe.map(\.recordID))
+
+            for id in ids {
+                _ = try? await database.deleteRecord(withID: id)
+            }
+
+            let profileID = CKRecord.ID(recordName: "profile_\(me.id)")
+            _ = try? await database.deleteRecord(withID: profileID)
+
+            clearLocalSocialState()
+        } catch {
+            errorDescription = socialError(error)
         }
-
-        await establishProfile(userID: userID)
-    }
-
-    func handleAppleCredential(_ credential: ASAuthorizationAppleIDCredential) async {
-        UserDefaults.standard.set(credential.user, forKey: Self.userIDKey)
-        await establishProfile(userID: credential.user)
-    }
-
-    func signOutLocal() {
-        UserDefaults.standard.removeObject(forKey: Self.userIDKey)
-        profile = nil
-        friends = []
-        incomingRequests = []
-        leaderboard = []
-        errorDescription = nil
     }
 
     func sendFriendRequest(username rawUsername: String) async {
         guard let me = profile else { return }
-        let username = rawUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let username = rawUsername
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+
         guard !username.isEmpty,
               username.caseInsensitiveCompare(me.username) != .orderedSame else {
             return
@@ -113,10 +139,14 @@ final class SocialCompetitionService: ObservableObject {
                 let addressee = existing["addresseeHash"] as? String ?? ""
                 if addressee == me.id {
                     existing["status"] = "accepted" as CKRecordValue
+                    existing["acceptedAt"] = Date() as CKRecordValue
                     _ = try await database.save(existing)
                     await refresh()
                     return
                 }
+
+                errorDescription = nil
+                return
             }
 
             let record = CKRecord(recordType: "FriendConnection", recordID: recordID)
@@ -141,6 +171,7 @@ final class SocialCompetitionService: ObservableObject {
         do {
             let record = try await database.record(for: request.id)
             record["status"] = "accepted" as CKRecordValue
+            record["acceptedAt"] = Date() as CKRecordValue
             _ = try await database.save(record)
             await refresh()
         } catch {
@@ -166,6 +197,7 @@ final class SocialCompetitionService: ObservableObject {
         entries: [PhotoRankingEntry]
     ) async {
         shareScores = enabled
+
         if enabled {
             await syncBestScores(entries: entries)
         } else {
@@ -176,37 +208,30 @@ final class SocialCompetitionService: ObservableObject {
     func syncBestScores(entries: [PhotoRankingEntry]) async {
         guard shareScores, let me = profile else { return }
 
-        let bestOverall = entries.max(by: { $0.coachScore < $1.coachScore })
-        var bestByCategory: [PhotoCategory: PhotoRankingEntry] = [:]
-        for category in PhotoCategory.allCases {
-            bestByCategory[category] = entries
-                .filter { $0.category == category }
-                .max(by: { $0.coachScore < $1.coachScore })
-        }
-
         var submissions: [(String, PhotoRankingEntry)] = []
-        if let bestOverall {
+
+        if let bestOverall = entries.max(by: { $0.coachScore < $1.coachScore }) {
             submissions.append(("overall", bestOverall))
         }
-        submissions.append(
-            contentsOf: bestByCategory.map { category, entry in
-                (category.rawValue, entry)
+
+        for category in PhotoCategory.allCases {
+            if let best = entries
+                .filter({ $0.category == category })
+                .max(by: { $0.coachScore < $1.coachScore }) {
+                submissions.append((category.rawValue, best))
             }
-        )
+        }
 
         do {
             for (category, entry) in submissions {
-                let id = CKRecord.ID(
-                    recordName: "score_\(me.id)_\(category)"
-                )
-
+                let id = CKRecord.ID(recordName: "score_\(me.id)_\(category)")
                 let record = (try? await database.record(for: id))
                     ?? CKRecord(recordType: "RankingScore", recordID: id)
 
                 record["ownerHash"] = me.id as CKRecordValue
                 record["username"] = me.username as CKRecordValue
                 record["category"] = category as CKRecordValue
-                record["score"] = entry.coachScore as CKRecordValue
+                record["score"] = NSNumber(value: entry.coachScore)
                 record["capturedAt"] = entry.createdAt as CKRecordValue
                 _ = try await database.save(record)
             }
@@ -224,20 +249,26 @@ final class SocialCompetitionService: ObservableObject {
         await loadLeaderboard()
     }
 
-    private func establishProfile(userID: String) async {
+    private func connect(createProfile: Bool) async {
         isBusy = true
         defer { isBusy = false }
 
-        let hash = stableHash(userID)
-        let username = "Pilot-\(String(hash.prefix(10)).uppercased())"
-        let recordID = CKRecord.ID(recordName: "profile_\(hash)")
-
         do {
+            let userRecordID = try await container.userRecordID()
+            let hash = stableHash(userRecordID.recordName)
+            let username = "PILOT-\(String(hash.prefix(10)).uppercased())"
+            let profileID = CKRecord.ID(recordName: "profile_\(hash)")
+
             let record: CKRecord
-            if let existing = try? await database.record(for: recordID) {
+
+            if let existing = try? await database.record(for: profileID) {
                 record = existing
             } else {
-                record = CKRecord(recordType: "CapturePilotProfile", recordID: recordID)
+                guard createProfile else { return }
+                record = CKRecord(
+                    recordType: "CapturePilotProfile",
+                    recordID: profileID
+                )
                 record["userHash"] = hash as CKRecordValue
                 record["username"] = username as CKRecordValue
                 record["createdAt"] = Date() as CKRecordValue
@@ -249,7 +280,6 @@ final class SocialCompetitionService: ObservableObject {
             errorDescription = nil
             await refresh()
         } catch {
-            profile = SocialProfile(id: hash, username: username)
             errorDescription = socialError(error)
         }
     }
@@ -278,50 +308,45 @@ final class SocialCompetitionService: ObservableObject {
         guard let me = profile else { return }
 
         do {
-            let incomingQuery = CKQuery(
-                recordType: "FriendConnection",
-                predicate: NSPredicate(
-                    format: "addresseeHash == %@ AND status == %@",
-                    me.id,
-                    "pending"
-                )
+            let incoming = try await connectionRecords(
+                field: "addresseeHash",
+                value: me.id,
+                status: "pending"
             )
 
-            let incomingResult = try await database.records(
-                matching: incomingQuery,
-                resultsLimit: 100
-            )
-
-            incomingRequests = incomingResult.matchResults.compactMap { id, result in
-                guard let record = try? result.get(),
-                      let hash = record["requesterHash"] as? String,
+            incomingRequests = incoming.compactMap { record in
+                guard let hash = record["requesterHash"] as? String,
                       let name = record["requesterUsername"] as? String else {
                     return nil
                 }
                 return SocialFriendRequest(
-                    id: id,
+                    id: record.recordID,
                     requesterHash: hash,
                     requesterUsername: name
                 )
             }
             .sorted { $0.requesterUsername < $1.requesterUsername }
 
-            let fromMe = try await acceptedConnections(
+            let fromMe = try await connectionRecords(
                 field: "requesterHash",
-                value: me.id
+                value: me.id,
+                status: "accepted"
             )
-            let toMe = try await acceptedConnections(
+            let toMe = try await connectionRecords(
                 field: "addresseeHash",
-                value: me.id
+                value: me.id,
+                status: "accepted"
             )
 
             var merged: [String: SocialFriend] = [:]
+
             for record in fromMe {
                 if let hash = record["addresseeHash"] as? String,
                    let name = record["addresseeUsername"] as? String {
                     merged[hash] = SocialFriend(id: hash, username: name)
                 }
             }
+
             for record in toMe {
                 if let hash = record["requesterHash"] as? String,
                    let name = record["requesterUsername"] as? String {
@@ -335,18 +360,27 @@ final class SocialCompetitionService: ObservableObject {
         }
     }
 
-    private func acceptedConnections(
+    private func connectionRecords(
         field: String,
-        value: String
+        value: String,
+        status: String?
     ) async throws -> [CKRecord] {
-        let query = CKQuery(
-            recordType: "FriendConnection",
-            predicate: NSPredicate(
+        let predicate: NSPredicate
+
+        if let status {
+            predicate = NSPredicate(
                 format: "%K == %@ AND status == %@",
                 field,
                 value,
-                "accepted"
+                status
             )
+        } else {
+            predicate = NSPredicate(format: "%K == %@", field, value)
+        }
+
+        let query = CKQuery(
+            recordType: "FriendConnection",
+            predicate: predicate
         )
 
         let result = try await database.records(
@@ -363,10 +397,6 @@ final class SocialCompetitionService: ObservableObject {
         guard let me = profile else { return }
 
         let hashes = [me.id] + friends.map(\.id)
-        guard !hashes.isEmpty else {
-            leaderboard = []
-            return
-        }
 
         do {
             let query = CKQuery(
@@ -409,26 +439,25 @@ final class SocialCompetitionService: ObservableObject {
 
     private func removeOwnScores() async {
         guard let me = profile else { return }
-        let categories = ["overall"] + PhotoCategory.allCases.map(\.rawValue)
 
+        let categories = ["overall"] + PhotoCategory.allCases.map(\.rawValue)
         for category in categories {
             let id = CKRecord.ID(recordName: "score_\(me.id)_\(category)")
             _ = try? await database.deleteRecord(withID: id)
         }
 
-        await loadLeaderboard()
+        leaderboard.removeAll { $0.ownerHash == me.id }
     }
 
-    private func credentialState(
-        for userID: String
-    ) async -> ASAuthorizationAppleIDProvider.CredentialState {
-        await withCheckedContinuation { continuation in
-            ASAuthorizationAppleIDProvider().getCredentialState(
-                forUserID: userID
-            ) { state, _ in
-                continuation.resume(returning: state)
-            }
-        }
+    private func clearLocalSocialState() {
+        UserDefaults.standard.set(false, forKey: Self.socialEnabledKey)
+        UserDefaults.standard.set(false, forKey: Self.shareScoresKey)
+        shareScores = false
+        profile = nil
+        friends = []
+        incomingRequests = []
+        leaderboard = []
+        errorDescription = nil
     }
 
     private func stableHash(_ value: String) -> String {
@@ -441,9 +470,9 @@ final class SocialCompetitionService: ObservableObject {
         if let cloudError = error as? CKError {
             switch cloudError.code {
             case .notAuthenticated:
-                return "iCloud is not available for social rankings."
+                return "Sign in to iCloud on this device to use friends rankings."
             case .permissionFailure:
-                return "CloudKit permissions are not configured for this build."
+                return "CloudKit permissions/schema are not configured for this build."
             default:
                 return cloudError.localizedDescription
             }
