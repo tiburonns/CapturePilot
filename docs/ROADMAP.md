@@ -1,62 +1,61 @@
 # Roadmap / Hoja de ruta
 
-The roadmap distinguishes implemented source, device validation, and future ideas. A checked source item is not equivalent to a successfully processed TestFlight build.
+The roadmap distinguishes source implementation, physical validation and future work.
 
 ## 0.1 — Camera + coach baseline
-
-- [x] AVFoundation preview and capture
+- [x] AVFoundation preview/capture
 - [x] HEIF/JPEG
-- [x] RAW only when the active device/configuration reports support
-- [x] Lens discovery and switching
+- [x] Capability-gated RAW
+- [x] Lens discovery/switching
 - [x] EV / ISO / shutter / focus / white balance
-- [x] Tap-to-focus and tap-to-meter
-- [x] Horizon / person / saliency / sampled-luminance coach
-- [x] Thirds / golden-ratio / crosshair guides
-- [x] English / Spanish / System language setting
+- [x] Tap-to-focus / meter
+- [x] Basic on-device coach
+- [x] Composition guides
+- [x] English / Spanish / System
 - [x] Privacy Manifest
 
-## 0.2 — TestFlight candidate hardening
+## 0.2 — TestFlight hardening
+- [x] Edge-to-edge camera
+- [x] Safe-area-aware controls
+- [x] AppIcon / launch assets
+- [x] CA92.1 UserDefaults declaration
+- [x] Bilingual release documentation
+- [x] Xcode 26 Release CI for Simulator and iPhoneOS
 
-- [x] Edge-to-edge camera preview
-- [x] Safe-area-aware camera controls
-- [x] Hidden shooting status bar / launch status bar
-- [x] Compact top chrome for smaller iPhones
-- [x] Direct language button in the camera UI
-- [x] AppIcon asset catalog
-- [x] Launch-screen background asset
-- [x] UserDefaults Required Reason API declaration (CA92.1)
-- [x] Export-compliance Info.plist declaration for current no-custom-encryption source
-- [x] Version/build set to 0.2.0 (2)
-- [x] Bilingual TestFlight, privacy, UI and testing documentation
-- [x] CI build workflow added
-- [ ] Physical-device checklist passed
-- [ ] Xcode 26 Release archive validated
-- [ ] Build uploaded and processed successfully by App Store Connect
+## 0.3 — Adaptive orientation + HUD
+- [x] Landscape-left/right source support
+- [x] Upside-down portrait source support
+- [x] Independent Landscape / Upside-down enable switches
+- [x] AVFoundation RotationCoordinator for preview/capture rotation
+- [x] Persistent portrait/landscape HUD layouts
+- [x] Safe-area-bounded drag editing
+- [x] Optional show/hide HUD elements
+- [x] Recovery-safe required Settings/Shutter
+- [x] Reset HUD
+- [x] Edge-contrast Focus Peaking implementation
+- [x] Optional quick Focus Peaking HUD toggle
+- [ ] Physical rotation matrix passed
+- [ ] HUD dragging validated on Dynamic Island + small/notched iPhone
+- [ ] Focus Peaking alignment/performance validated on physical camera
 
-## 0.3 — Exposure and focus tools
-
-Planned, not currently advertised as implemented:
-
-- [ ] Real-time histogram
+## 0.4 — Exposure tools
+Planned:
 - [ ] Zebra overlay
-- [ ] Focus peaking
+- [ ] Luminance/RGB histogram
+- [ ] Peaking threshold/color customization
 - [ ] Expanded device capability report
 
-## 0.4 — Composition intelligence
-
+## 0.5 — Composition intelligence
 Planned:
-
 - [ ] Leading-line detection
 - [ ] Symmetry analysis
 - [ ] Vanishing-point estimation
 - [ ] Negative-space analysis
-- [ ] Golden triangle and spiral overlays
+- [ ] Golden triangle / spiral
 - [ ] Better multi-subject grouping
 
-## 0.5 — Scene coaches
-
+## 0.6 — Scene coaches
 Planned:
-
 - [ ] Portrait
 - [ ] Architecture
 - [ ] Automotive
@@ -65,20 +64,17 @@ Planned:
 - [ ] Landscape
 - [ ] Night
 
-A scene mode will not be exposed until it changes real analysis rules.
-
-## Later professional capture work
-
+## Later professional capture
 Planned:
-
-- [ ] Apple ProRAW workflow where supported
-- [ ] Bracketing workflows
-- [ ] Capture stabilization/readiness assistance
+- [ ] ProRAW-specific workflow
+- [ ] Bracketing
+- [ ] Dedicated AF/AE long-press lock
+- [ ] Capture stability/readiness
 - [ ] Metadata review
 - [ ] Optional post-capture teaching review
 
 ## Principle / Principio
 
-A feature is documented as implemented only when code exists. A feature is documented as device-validated only after a physical test. A release is documented as TestFlight-processed only after App Store Connect accepts the uploaded binary.
+Implemented means source exists and compiles. Device-validated means the physical-device checklist passed. TestFlight-processed means App Store Connect accepted the uploaded build.
 
-Una función se documenta como implementada solo cuando existe código. Se documenta como validada en dispositivo solo después de una prueba física. Una versión se documenta como procesada por TestFlight solo después de que App Store Connect acepte el binario.
+Implementado significa que existe código y compila. Validado significa que pasó la prueba física. Procesado por TestFlight significa que App Store Connect aceptó el build.

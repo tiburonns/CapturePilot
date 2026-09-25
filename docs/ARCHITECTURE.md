@@ -2,115 +2,101 @@
 
 ## English
 
-CapturePilot 0.2.0 is organized so camera capture, scene analysis, presentation, settings, and distribution metadata can evolve independently.
+CapturePilot 0.3.0 separates camera capture, analysis, HUD state, app settings and presentation.
 
 ```text
 CapturePilot
 ├── Camera
 │   ├── CameraModels.swift
 │   ├── CameraPreview.swift
-│   └── CameraService.swift
+│   ├── CameraService.swift
+│   └── FocusPeakingEngine.swift
 ├── Coach
 │   ├── CoachModels.swift
 │   └── CoachEngine.swift
+├── HUD
+│   ├── HUDLayout.swift
+│   └── HUDMovableItem.swift
 ├── Settings
 │   ├── AppSettings.swift
+│   ├── OrientationPolicy.swift
 │   └── SettingsView.swift
 ├── UI
 │   ├── CoachBubble.swift
 │   ├── CompositionOverlay.swift
+│   ├── FocusPeakingOverlay.swift
 │   └── ManualControlsView.swift
-├── Assets.xcassets
-├── en.lproj / es.lproj
-├── PrivacyInfo.xcprivacy
-├── Info.plist
 ├── ContentView.swift
 └── CapturePilotApp.swift
 ```
 
-### Camera layer
+### Orientation
 
-`CameraService` owns the AVFoundation session, camera inputs, photo output, video-frame output, device capability discovery, manual camera controls, capture formats, and add-only Photos save flow. Session mutations run on a dedicated serial queue.
+The Info.plist advertises portrait, portrait upside-down and both landscape orientations. `OrientationPolicy` then restricts the runtime mask using the user's Landscape and Upside-down settings while always retaining standard portrait.
 
-`CameraPreview` wraps `AVCaptureVideoPreviewLayer` with `.resizeAspectFill`, converts view taps to capture-device coordinates, displays the focus reticle, and uses the iOS 17+ video-rotation-angle API for portrait capture.
+When the preference changes, the app asks connected window scenes to refresh their supported orientations and requests compatible scene geometry.
 
-### Full-screen boundary
+AVFoundation rotation is separate from interface rotation. `AVCaptureDevice.RotationCoordinator` supplies the angle for both preview and capture/video-data connections so the camera stream can remain level across orientation changes.
 
-The preview and composition overlay extend under display cutouts and the Home Indicator. Interactive controls do not intentionally use those unsafe regions: the camera chrome uses SwiftUI safe-area padding, the top controls are split from the lens selector, and the lens selector can scroll horizontally on narrow displays.
+### HUD
 
-The shooting view hides the status bar and requests persistent system overlays to remain hidden. Portrait is the only supported orientation for this candidate.
+`HUDLayoutStore` persists a normalized position for every HUD item. Each item has:
+- visibility;
+- portrait coordinates;
+- landscape coordinates.
 
-This is a source-level layout guarantee. Dynamic Island/notch/Home Indicator behavior still requires the physical-device matrix in `docs/UI_LAYOUT.md`.
+Coordinates are relative to the current safe rectangle rather than raw pixels. This allows a saved layout to adapt to different screen sizes and cutouts.
 
-### Coach layer
+`HUDMovableItem` measures its own view size and clamps its center so the item remains inside the safe area. While editing, functional controls stop receiving their normal tap behavior and the wrapper owns the drag gesture.
 
-`CameraService` delivers frames on a serial video-output queue. `CoachEngine` throttles analysis and runs Vision/luminance work on that queue, then publishes UI state on the main queue. This avoids manually retaining Core Video buffers and is compatible with current Swift/CoreVideo memory management.
+Settings and the shutter are intentionally non-hideable. This is a recovery constraint: the user can freely customize the rest of the HUD without creating a camera UI that cannot reach Settings or capture a photo.
 
-Current signals:
-- horizon;
-- face/person rectangles;
-- attention-based saliency;
-- sampled luminance;
-- approximate highlight/shadow clipping;
-- rule-of-thirds proximity;
-- basic person headroom.
+### Focus Peaking
 
-The coach returns one prioritized recommendation rather than a numerical aesthetic score.
+`FocusPeakingEngine` only runs when requested. It reads the Y/luminance plane of the existing video-data output, calculates local horizontal/vertical gradients on a downsampled grid, and emits a transparent red/orange CGImage for pixels above the edge threshold.
 
-### UI and language
+This is an edge-contrast focus aid. It is not documented as an absolute physical focus-confidence measurement.
 
-SwiftUI owns presentation. `ContentView` contains the direct language menu (System / English / Spanish), full-screen camera chrome, lens selector, coach output, format selector, and shutter controls.
+The overlay is rendered independently from the camera preview. The optional HUD button toggles it with a tap, leaving the viewfinder free of a long-press peaking gesture.
 
-`SettingsView` provides the same language choice plus composition-guide and coach-intensity preferences. `AppSettings` persists these private app settings with `UserDefaults`.
+### Camera and coach
 
-### Privacy boundary
+`CameraService` owns AVFoundation, photo capture, manual controls, rotation coordination, coach delivery and optional peaking delivery. Frames remain on the existing serial video-output queue.
 
-No live frame is uploaded by the current source. Frames are processed in memory with Apple frameworks. Captured photo bytes are written to Photos only after user authorization.
+`CoachEngine` continues to use Vision and sampled luminance for composition/technical guidance.
 
-`PrivacyInfo.xcprivacy` declares no tracking or collected-data types and declares the UserDefaults Required Reason API with CA92.1 for app-local settings.
+### Persistence/privacy
 
-### Build validation
+Language, grid, coach mode, orientation switches and HUD layout are all app-local preferences stored with UserDefaults. They remain covered by the existing Privacy Manifest CA92.1 declaration.
 
-GitHub Actions uses Xcode 26.x to compile the Release configuration without signing. CI validates both simulator and iPhoneOS SDK compilation. Signing, physical camera behavior, Archive validation, and App Store Connect processing remain separate release gates.
+No new network service, account, tracking, analytics or cloud upload was added in 0.3.0.
 
 ---
 
 ## Español
 
-CapturePilot 0.2.0 separa cámara, análisis, interfaz, ajustes y distribución para que cada parte pueda evolucionar sin acoplar el resto.
+CapturePilot 0.3.0 separa captura, análisis, estado del HUD, ajustes y presentación.
 
-### Capa de cámara
+### Orientación
 
-`CameraService` controla la sesión AVFoundation, entradas de cámara, salida fotográfica, frames para análisis, detección de capacidades, controles manuales, formatos y guardado en Fotos. Los cambios de sesión se realizan en una cola serial.
+Info.plist permite vertical normal, vertical invertido y ambas orientaciones horizontales. `OrientationPolicy` restringe en ejecución las orientaciones según los interruptores del usuario, manteniendo siempre vertical normal.
 
-`CameraPreview` utiliza `AVCaptureVideoPreviewLayer` con `.resizeAspectFill`, convierte toques del visor a coordenadas de cámara, muestra la retícula de enfoque y usa la API moderna de ángulo de rotación de iOS 17+.
+AVFoundation utiliza `AVCaptureDevice.RotationCoordinator` para ajustar preview y conexiones de captura independientemente de la rotación de la interfaz.
 
-### Pantalla completa
+### HUD
 
-El preview y las guías visuales llegan hasta los bordes físicos de la pantalla, incluso detrás de Dynamic Island/notch y Home Indicator. Los controles interactivos permanecen dentro de zonas seguras mediante safe-area padding.
+`HUDLayoutStore` guarda visibilidad y coordenadas normalizadas para cada elemento, con posiciones independientes para vertical y horizontal.
 
-La fila superior está separada del selector de lentes y éste puede desplazarse horizontalmente para evitar desbordamiento en pantallas pequeñas. La barra de estado se oculta durante la captura. Esta versión está diseñada deliberadamente para orientación vertical.
+`HUDMovableItem` mide el tamaño de cada control y limita el arrastre para que permanezca dentro del área segura. Durante edición, los controles no ejecutan su acción normal.
 
-Esto se verificó en código y compilación; la geometría real de Dynamic Island/notch/Home Indicator todavía debe pasar la matriz física de `docs/UI_LAYOUT.md`.
+Ajustes y disparador no se pueden ocultar para garantizar que siempre exista una ruta de recuperación.
 
-### Coach
+### Focus Peaking
 
-Los frames llegan por una cola serial de AVFoundation. `CoachEngine` limita la frecuencia de análisis, combina Vision con muestreo de luminancia y publica el resultado final en el hilo principal.
+`FocusPeakingEngine` procesa únicamente cuando está activado. Usa el plano de luminancia, calcula gradientes locales y genera un overlay transparente rojo/naranja para bordes de alto contraste.
 
-Actualmente analiza horizonte, rostro/persona, saliencia visual, luminancia, recorte aproximado de luces/sombras, proximidad a puntos de tercios y headroom básico.
+Es una ayuda de enfoque basada en contraste de bordes, no una medición absoluta del plano focal.
 
-El coach devuelve una recomendación prioritaria, no una puntuación estética.
+### Persistencia/privacidad
 
-### Interfaz e idioma
-
-`ContentView` incluye un botón directo de idioma con **Sistema / English / Español**, además del selector equivalente en Ajustes. `AppSettings` persiste idioma, guía y nivel del coach mediante `UserDefaults`.
-
-### Privacidad
-
-El código actual no sube frames. El análisis ocurre localmente y una fotografía solo se agrega a Fotos después del permiso del usuario.
-
-`PrivacyInfo.xcprivacy` declara que no hay tracking ni tipos de datos recopilados y declara UserDefaults con motivo CA92.1 para preferencias privadas de la propia app.
-
-### Validación de build
-
-GitHub Actions usa Xcode 26.x para compilar Release sin firma contra Simulator y SDK iPhoneOS. Firma, cámara física, Archive y procesamiento en App Store Connect siguen siendo puertas distintas antes de distribución.
+Idioma, guía, coach, orientación y layout HUD se almacenan localmente con UserDefaults. No se agregó red, cuenta, tracking, analítica ni subida a la nube.

@@ -1,36 +1,39 @@
-# Full-screen UI Validation / Validación de pantalla completa
+# Full-screen, Orientation & HUD Validation / Validación de pantalla, orientación y HUD
 
-## What the source now guarantees / Qué garantiza el código
+## Source behavior / Comportamiento implementado
 
-- The camera preview explicitly ignores safe areas and fills the display behind the Dynamic Island/notch and Home Indicator.
-- Camera controls remain inside safe-area-aware layout.
-- The status bar is hidden in SwiftUI and during launch.
-- System overlays are requested hidden while shooting.
-- The top control row is separated from the lens selector to avoid horizontal compression on smaller iPhones.
-- The lens selector scrolls horizontally instead of forcing buttons outside the screen.
-- Bottom capture controls keep safe-area padding and do not intentionally overlap the Home Indicator.
-- Orientation is intentionally portrait-only for this TestFlight candidate.
+- Camera preview and composition/peaking overlays fill the display.
+- Interactive HUD items are positioned relative to a safe-area rectangle.
+- Each item's measured size is included when clamping drag positions.
+- Portrait and landscape store different normalized coordinates.
+- Upside-down portrait uses the portrait layout with the new safe-area geometry.
+- Landscape supports both physical directions when enabled.
+- Settings and Shutter remain recoverable and cannot be hidden.
+- Focus Peaking quick access is optional and defaults to hidden.
 
-## Physical-device matrix / Matriz de prueba física
+## Dynamic Island
+- [ ] No draggable element can be left beneath the island.
+- [ ] Rotating from portrait to landscape keeps every visible element reachable.
+- [ ] Returning to portrait restores the portrait layout rather than the landscape layout.
+- [ ] Upside-down portrait respects the opposite safe-area geometry.
 
-### Dynamic Island
-- [ ] Viewfinder reaches all four display edges.
-- [ ] No black rectangle/pillarbox appears around the camera preview.
-- [ ] Pro, language and settings buttons do not touch/overlap Dynamic Island.
-- [ ] Lens selector remains fully reachable.
-- [ ] Coach bubble never becomes clipped by the island.
+## Small/notched iPhone
+- [ ] Lens selector remains movable/reachable.
+- [ ] Coach bubble can be placed without clipping.
+- [ ] Editor toolbar remains on-screen in portrait and landscape.
+- [ ] Manual Pro controls do not make the HUD unrecoverable.
 
-### Smaller/notched iPhone
-- [ ] Top buttons remain on-screen at default text size.
-- [ ] Lens selector scrolls rather than overflowing.
-- [ ] Shutter and format/grid buttons remain above the Home Indicator.
-- [ ] Opening Pro controls does not push the shutter off-screen.
+## HUD editing
+- [ ] Drag starts without triggering the element's normal action.
+- [ ] Drag ends inside the safe area even after a fast throw.
+- [ ] Hidden elements can be restored from Elements menu.
+- [ ] Reset produces usable portrait and landscape defaults.
 
-### Accessibility layout
-- [ ] Test standard and at least one larger Dynamic Type size.
-- [ ] Settings screen remains navigable in English and Spanish.
-- [ ] Language button remains reachable after switching languages.
+## Focus Peaking
+- [ ] Overlay uses exactly the camera preview area.
+- [ ] Overlay rotation follows the camera in all enabled orientations.
+- [ ] Quick button never relies on viewfinder long-press.
 
 ## Important
 
-These checks cannot be certified from source inspection alone. They must be completed on hardware before external TestFlight distribution.
+CI verifies compilation, not physical geometry. These checks remain open until tested on hardware.

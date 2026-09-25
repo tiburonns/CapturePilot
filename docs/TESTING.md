@@ -1,100 +1,94 @@
 # Device Test Checklist / Lista de prueba en dispositivo
 
-Use a physical iPhone. Record model, iOS version, Xcode version, app version/build, and console errors before changing code.
+Record iPhone model, iOS version, Xcode version and CapturePilot version/build.
 
-## 1. Build and launch / Compilación e inicio
-
-- [ ] Release configuration builds with Xcode 26 or later.
+## 1. Build / Inicio
+- [ ] Release builds with Xcode 26 or later.
 - [ ] App installs and launches.
-- [ ] App icon is present in the Home Screen/TestFlight build.
-- [ ] Launch transition uses the dark CapturePilot background without a white flash.
-- [ ] Camera permission appears in the device language.
-- [ ] Denying permission shows the recovery screen and Settings button.
-- [ ] Granting permission produces a live rear-camera preview.
+- [ ] Camera/Photos permission flows work.
 
-## 2. Full screen / Pantalla completa
+## 2. Orientation / Orientación
 
-- [ ] Viewfinder fills the display edge-to-edge.
-- [ ] No unintended black frame/pillarbox appears.
-- [ ] Status bar is hidden while shooting.
-- [ ] Dynamic Island/notch does not cover camera controls.
-- [ ] Home Indicator area does not cover shutter/format/grid controls.
-- [ ] Lens selector remains usable on a smaller iPhone.
-- [ ] Pro controls do not push primary capture controls off-screen.
+With Landscape ON and Upside-down ON:
+- [ ] Portrait works.
+- [ ] Portrait upside-down rotates and remains usable.
+- [ ] Landscape left works.
+- [ ] Landscape right works.
+- [ ] Preview remains correctly oriented after each rotation.
+- [ ] Captured JPEG/HEIF is stored with correct orientation.
+- [ ] RAW capture, when exposed, has correct orientation metadata/content.
 
-See `docs/UI_LAYOUT.md`.
+Disable Landscape:
+- [ ] Device no longer settles into landscape UI.
+- [ ] If currently landscape, returning to an allowed orientation is handled cleanly.
 
-## 3. Lenses / Lentes
+Disable Upside-down:
+- [ ] Device no longer settles into upside-down portrait.
+- [ ] Standard portrait remains available in every setting combination.
 
-- [ ] 0.5× appears only when Ultra Wide exists.
-- [ ] 1× appears and works.
-- [ ] Tele appears only when a telephoto camera exists.
-- [ ] Switching lenses does not freeze the preview.
-- [ ] Manual state resets cleanly after lens change.
+## 3. HUD editor / Editor HUD
+- [ ] Settings > Customize HUD returns to camera in edit mode.
+- [ ] Every HUD item can be dragged.
+- [ ] Elements cannot be dragged under Dynamic Island/notch.
+- [ ] Elements cannot be dragged under Home Indicator unsafe area.
+- [ ] Portrait positions persist after relaunch.
+- [ ] Landscape positions persist independently.
+- [ ] Rotating does not overwrite the other layout.
+- [ ] Optional elements can be hidden.
+- [ ] Hidden elements appear as editable ghosts while editing.
+- [ ] Settings cannot be hidden.
+- [ ] Shutter cannot be hidden.
+- [ ] Reset HUD restores defaults.
+- [ ] Normal control actions do not fire while dragging/editing.
 
-## 4. Focus and exposure / Enfoque y exposición
+## 4. Focus Peaking
+- [ ] Enable Focus Peaking quick access from HUD editor.
+- [ ] Quick button appears near its saved edge position.
+- [ ] One tap enables peaking; second tap disables it.
+- [ ] No long press is required.
+- [ ] Tap-to-focus continues to work independently when not editing.
+- [ ] Peaking overlay aligns with the preview in portrait.
+- [ ] Peaking overlay aligns in both landscape directions.
+- [ ] Peaking overlay aligns upside-down.
+- [ ] High-detail/in-focus edges receive substantially more highlighting than smooth/out-of-focus regions.
+- [ ] Enabling peaking does not cause unacceptable camera stutter or thermal load during a short smoke test.
 
-- [ ] Tapping preview shows focus reticle.
-- [ ] Tap-to-focus visibly refocuses between near/far subjects.
-- [ ] EV adjustment changes preview exposure.
-- [ ] Manual exposure toggle works.
-- [ ] ISO changes in manual mode.
-- [ ] Shutter duration changes in manual mode.
-- [ ] Manual focus changes lens position.
-- [ ] Returning to AF works.
-- [ ] Manual white balance changes color temperature.
-- [ ] Returning to AWB works.
+## 5. Existing camera regression
+- [ ] 0.5× only when available.
+- [ ] 1× works.
+- [ ] Tele only when available.
+- [ ] HEIF saves.
+- [ ] JPEG saves.
+- [ ] RAW appears/saves only when supported.
+- [ ] EV/ISO/shutter work.
+- [ ] AF/manual focus work.
+- [ ] AWB/manual white balance work.
+- [ ] Coach remains stable.
 
-## 5. Capture / Captura
+## 6. Language / Idioma
+- [ ] AUTO/System.
+- [ ] English.
+- [ ] Español.
+- [ ] New Orientation and HUD labels change language immediately.
+- [ ] Language persists.
 
-- [ ] HEIF captures and saves.
-- [ ] JPEG captures and saves.
-- [ ] RAW is shown only when supported.
-- [ ] RAW capture saves a valid asset when shown.
-- [ ] Photo Library permission is localized.
-- [ ] Save success/failure banner matches result.
+## 7. TestFlight gate
+- [ ] Simulator Release CI passes.
+- [ ] iPhoneOS Release CI passes.
+- [ ] Product > Archive succeeds signed.
+- [ ] Validate App succeeds.
+- [ ] Internal TestFlight build processes and installs.
+- [ ] Physical smoke test passes before external beta.
 
-## 6. Coach
-
-- [ ] Tilting several degrees triggers level guidance.
-- [ ] Strong overexposure triggers highlight guidance.
-- [ ] Very dark scenes trigger low-light guidance.
-- [ ] A person/face is detected reliably in ordinary light.
-- [ ] Balanced mode provides compositional guidance.
-- [ ] Subtle mode avoids noncritical prompts.
-- [ ] Teaching mode displays secondary explanation/subject marker.
-- [ ] Messages remain stable instead of changing every frame.
-
-## 7. Language / Idioma
-
-- [ ] Globe button is visible from the camera.
-- [ ] Globe menu offers System, English and Spanish.
-- [ ] System follows Spanish device language.
-- [ ] System follows English device language.
-- [ ] Forced English updates camera/settings UI immediately.
-- [ ] Forced Spanish updates camera/settings UI immediately.
-- [ ] Settings language selector matches the globe selection.
-- [ ] Language selection persists after relaunch.
-- [ ] Grid and coach preferences persist after relaunch.
-- [ ] Camera/Photo permission strings are localized by iOS.
-
-## 8. Distribution / Distribución
-
-- [ ] Product > Archive succeeds using Release.
-- [ ] Organizer > Validate App succeeds.
-- [ ] Version/build is 0.2.0 (2).
-- [ ] App Store Connect processes the upload without binary/privacy/icon errors.
-- [ ] Internal TestFlight install launches and captures a photo.
-- [ ] Crash-free smoke test completed before external beta.
-
-## Report format / Formato de reporte
+## Report format
 
 Device:
 iOS:
 Xcode:
 CapturePilot version/build:
+Orientation settings:
 Build result:
-Failed checklist item:
+Failed item:
 Expected:
 Observed:
 Console error:
