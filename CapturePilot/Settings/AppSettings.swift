@@ -28,6 +28,15 @@ final class AppSettings: ObservableObject {
         var id: String { rawValue }
     }
 
+    enum ShareJPEGResolution: Int, CaseIterable, Identifiable {
+        case mp12 = 12
+        case mp24 = 24
+        case mp48 = 48
+
+        var id: Int { rawValue }
+        var label: String { "\(rawValue) MP" }
+    }
+
     enum FrameGuide: String, CaseIterable, Identifiable {
         case none, square, fourThree, threeTwo, sixteenNine, cinema239
         var id: String { rawValue }
@@ -55,6 +64,11 @@ final class AppSettings: ObservableObject {
         static let peakingThreshold = "settings.monitoring.peakingThreshold"
         static let peakingColor = "settings.monitoring.peakingColor"
         static let frameGuide = "settings.frameGuide"
+        static let rawShareEnabled = "settings.rawShare.enabled"
+        static let shareJPEGResolution = "settings.rawShare.jpegResolution"
+        static let lutEnabled = "settings.rawShare.lutEnabled"
+        static let lutIntensity = "settings.rawShare.lutIntensity"
+        static let lutDisplayName = "settings.rawShare.lutDisplayName"
     }
 
     @Published var language: Language {
@@ -95,6 +109,31 @@ final class AppSettings: ObservableObject {
 
     @Published var frameGuide: FrameGuide {
         didSet { UserDefaults.standard.set(frameGuide.rawValue, forKey: Key.frameGuide) }
+    }
+
+    @Published var rawShareEnabled: Bool {
+        didSet { UserDefaults.standard.set(rawShareEnabled, forKey: Key.rawShareEnabled) }
+    }
+
+    @Published var shareJPEGResolution: ShareJPEGResolution {
+        didSet {
+            UserDefaults.standard.set(
+                shareJPEGResolution.rawValue,
+                forKey: Key.shareJPEGResolution
+            )
+        }
+    }
+
+    @Published var lutEnabled: Bool {
+        didSet { UserDefaults.standard.set(lutEnabled, forKey: Key.lutEnabled) }
+    }
+
+    @Published var lutIntensity: Double {
+        didSet { UserDefaults.standard.set(lutIntensity, forKey: Key.lutIntensity) }
+    }
+
+    @Published private(set) var lutDisplayName: String? {
+        didSet { UserDefaults.standard.set(lutDisplayName, forKey: Key.lutDisplayName) }
     }
 
     @Published var allowLandscape: Bool {
@@ -139,6 +178,27 @@ final class AppSettings: ObservableObject {
         frameGuide = FrameGuide(
             rawValue: defaults.string(forKey: Key.frameGuide) ?? ""
         ) ?? .none
+
+        rawShareEnabled = Self.boolValue(
+            defaults,
+            key: Key.rawShareEnabled,
+            defaultValue: false
+        )
+
+        let savedShareMP = defaults.integer(forKey: Key.shareJPEGResolution)
+        shareJPEGResolution = ShareJPEGResolution(rawValue: savedShareMP) ?? .mp12
+
+        lutEnabled = Self.boolValue(
+            defaults,
+            key: Key.lutEnabled,
+            defaultValue: false
+        )
+
+        let savedLUTIntensity = defaults.object(forKey: Key.lutIntensity) != nil
+            ? defaults.double(forKey: Key.lutIntensity)
+            : 1
+        lutIntensity = min(max(savedLUTIntensity, 0), 1)
+        lutDisplayName = defaults.string(forKey: Key.lutDisplayName)
 
         allowLandscape = Self.boolValue(
             defaults,
@@ -188,6 +248,54 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    var rawShareConfiguration: RawShareCaptureConfiguration? {
+        guard rawShareEnabled else { return nil }
+
+        return RawShareCaptureConfiguration(
+            targetMegapixels: shareJPEGResolution.rawValue,
+            lutURL: lutEnabled ? selectedLUTURL : nil,
+            lutIntensity: lutEnabled ? lutIntensity : 0
+        )
+    }
+
+    var selectedLUTURL: URL? {
+        let url = Self.lutStorageURL
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    func importLUT(from sourceURL: URL) throws {
+        guard sourceURL.pathExtension.lowercased() == "cube" else {
+            throw RawShareProcessingError.invalidLUT
+        }
+
+        let scoped = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if scoped { sourceURL.stopAccessingSecurityScopedResource() }
+        }
+
+        let data = try Data(contentsOf: sourceURL)
+        let directory = Self.lutStorageURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+
+        let temporaryURL = directory.appendingPathComponent("validation.cube")
+        try data.write(to: temporaryURL, options: .atomic)
+        _ = try CubeLUT(url: temporaryURL)
+        try? FileManager.default.removeItem(at: temporaryURL)
+
+        try data.write(to: Self.lutStorageURL, options: .atomic)
+        lutDisplayName = sourceURL.deletingPathExtension().lastPathComponent
+        lutEnabled = true
+    }
+
+    func removeLUT() {
+        try? FileManager.default.removeItem(at: Self.lutStorageURL)
+        lutDisplayName = nil
+        lutEnabled = false
+    }
+
     func frameGuideName(_ guide: FrameGuide) -> String {
         switch guide {
         case .none: text(.off)
@@ -212,6 +320,18 @@ final class AppSettings: ObservableObject {
         return Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
             ? .spanish
             : .english
+    }
+
+    private static var lutStorageURL: URL {
+        let base = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+
+        return base
+            .appendingPathComponent("CapturePilot", isDirectory: true)
+            .appendingPathComponent("LUTs", isDirectory: true)
+            .appendingPathComponent("Selected.cube")
     }
 
     private static func boolValue(
@@ -252,6 +372,8 @@ enum LocalizedKey: Hashable {
     case frameGuide, frameGuideDetail, frameSquare, frameFourThree, frameThreeTwo
     case frameSixteenNine, frameCinema239
     case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
+    case rawShare, rawShareDetail, rawShareUnavailable, shareJPEGResolution
+    case lut, importLUT, removeLUT, lutIntensity, noLUT, shareJPEG, shareReady
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -330,7 +452,15 @@ enum LocalizedKey: Hashable {
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
             .colorRed: "Rojo", .colorGreen: "Verde", .colorBlue: "Azul",
-            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco"
+            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco",
+            .rawShare: "RAW + JPEG para compartir",
+            .rawShareDetail: "Captura RAW/ProRAW a máxima resolución y crea un JPEG del mismo disparo con LUT opcional. El JPEG puede salir a 12, 24 o 48 MP sin hacer upscale.",
+            .rawShareUnavailable: "RAW + JPEG requiere una lente/configuración con RAW y resolución máxima suficiente.",
+            .shareJPEGResolution: "Resolución del JPEG",
+            .lut: "LUT", .importLUT: "Importar LUT .cube",
+            .removeLUT: "Eliminar LUT", .lutIntensity: "Intensidad del LUT",
+            .noLUT: "Sin LUT", .shareJPEG: "JPEG para compartir",
+            .shareReady: "JPEG listo para compartir"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -409,7 +539,15 @@ enum LocalizedKey: Hashable {
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
             .colorRed: "Red", .colorGreen: "Green", .colorBlue: "Blue",
-            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White"
+            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White",
+            .rawShare: "RAW + Share JPEG",
+            .rawShareDetail: "Captures RAW/ProRAW at maximum resolution and creates a JPEG from the same shot with an optional LUT. The JPEG can target 12, 24, or 48 MP without upscaling.",
+            .rawShareUnavailable: "RAW + Share JPEG requires a lens/configuration with RAW support and sufficient maximum resolution.",
+            .shareJPEGResolution: "Share JPEG resolution",
+            .lut: "LUT", .importLUT: "Import .cube LUT",
+            .removeLUT: "Remove LUT", .lutIntensity: "LUT intensity",
+            .noLUT: "No LUT", .shareJPEG: "Share JPEG",
+            .shareReady: "JPEG ready to share"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
