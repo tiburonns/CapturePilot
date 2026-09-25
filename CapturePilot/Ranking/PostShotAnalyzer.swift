@@ -19,14 +19,16 @@ final class PostShotAnalyzer {
         }
 
         let classifications = classify(image)
-        let faceQuality = detectFaceQuality(image)
+        let faceAnalysis = detectFaceAnalysis(image)
+        let faceQuality = faceAnalysis?.quality
         let saliencyCenter = detectSaliencyCenter(image)
+        let horizonAngle = detectHorizon(image)
         let pixelMetrics = samplePixels(image)
 
         let category = resolveCategory(
             sceneHint: sceneHint,
             classifications: classifications,
-            hasFace: faceQuality != nil,
+            hasFace: faceAnalysis != nil,
             metrics: pixelMetrics
         )
 
@@ -42,7 +44,11 @@ final class PostShotAnalyzer {
         }
 
         let exposure = exposureScore(metrics: pixelMetrics)
-        let composition = compositionScore(center: saliencyCenter)
+        let composition = compositionScore(
+            center: saliencyCenter,
+            category: category,
+            horizonAngle: horizonAngle
+        )
         let detail = min(100, max(0, pixelMetrics.edgeEnergy * 260))
 
         var weighted: [(Double, Double)] = [
@@ -74,6 +80,8 @@ final class PostShotAnalyzer {
             metrics: pixelMetrics,
             saliencyCenter: saliencyCenter,
             faceQuality: faceQuality,
+            faceRect: faceAnalysis?.rect,
+            horizonAngle: horizonAngle,
             score: score
         )
 
@@ -114,16 +122,49 @@ final class PostShotAnalyzer {
         }
     }
 
-    private func detectFaceQuality(_ image: CGImage) -> Double? {
+    private struct FaceAnalysis {
+        let quality: Double
+        let rect: CGRect
+    }
+
+    private func detectFaceAnalysis(_ image: CGImage) -> FaceAnalysis? {
         let request = VNDetectFaceCaptureQualityRequest()
         let handler = VNImageRequestHandler(cgImage: image, options: [:])
+
         do {
             try handler.perform([request])
-            let values = (request.results ?? []).compactMap {
-                $0.faceCaptureQuality.map(Double.init)
+
+            guard let best = (request.results ?? [])
+                .compactMap({ observation -> FaceAnalysis? in
+                    guard let quality = observation.faceCaptureQuality else {
+                        return nil
+                    }
+
+                    return FaceAnalysis(
+                        quality: min(100, max(0, Double(quality) * 100)),
+                        rect: observation.boundingBox
+                    )
+                })
+                .max(by: { $0.quality < $1.quality }) else {
+                return nil
             }
-            guard let best = values.max() else { return nil }
-            return min(100, max(0, best * 100))
+
+            return best
+        } catch {
+            return nil
+        }
+    }
+
+    private func detectHorizon(_ image: CGImage) -> Double? {
+        let request = VNDetectHorizonRequest()
+        let handler = VNImageRequestHandler(cgImage: image, options: [:])
+
+        do {
+            try handler.perform([request])
+            guard let horizon = request.results?.first as? VNHorizonObservation else {
+                return nil
+            }
+            return Double(horizon.angle) * 180 / .pi
         } catch {
             return nil
         }
@@ -226,25 +267,47 @@ final class PostShotAnalyzer {
         return min(100, max(0, 100 - midPenalty - highlightPenalty - shadowPenalty))
     }
 
-    private func compositionScore(center: CGPoint?) -> Double {
-        guard let center else { return 58 }
+    private func compositionScore(
+        center: CGPoint?,
+        category: PhotoCategory,
+        horizonAngle: Double?
+    ) -> Double {
+        let placement: Double
 
-        let points = [
-            CGPoint(x: 1.0 / 3.0, y: 1.0 / 3.0),
-            CGPoint(x: 2.0 / 3.0, y: 1.0 / 3.0),
-            CGPoint(x: 1.0 / 3.0, y: 2.0 / 3.0),
-            CGPoint(x: 2.0 / 3.0, y: 2.0 / 3.0)
-        ]
+        if let center {
+            let points = [
+                CGPoint(x: 1.0 / 3.0, y: 1.0 / 3.0),
+                CGPoint(x: 2.0 / 3.0, y: 1.0 / 3.0),
+                CGPoint(x: 1.0 / 3.0, y: 2.0 / 3.0),
+                CGPoint(x: 2.0 / 3.0, y: 2.0 / 3.0)
+            ]
 
-        let nearest = points.map {
-            hypot(center.x - $0.x, center.y - $0.y)
-        }.min() ?? 0.5
+            let nearest = points.map {
+                hypot(center.x - $0.x, center.y - $0.y)
+            }.min() ?? 0.5
 
-        let thirds = max(0, 100 - nearest * 220)
-        let centerDistance = hypot(center.x - 0.5, center.y - 0.5)
-        let centered = max(0, 84 - centerDistance * 150)
+            let thirds = max(0, 100 - nearest * 220)
+            let centerDistance = hypot(center.x - 0.5, center.y - 0.5)
+            let centered = max(0, 84 - centerDistance * 150)
+            placement = min(100, max(thirds, centered))
+        } else {
+            placement = 58
+        }
 
-        return min(100, max(thirds, centered))
+        guard let horizonAngle else { return placement }
+
+        let degrees = abs(horizonAngle)
+        let strict = category == .architecture || category == .landscape
+        let penaltyPerDegree = strict ? 10.0 : 5.0
+        let horizonComponent = max(0, 100 - degrees * penaltyPerDegree)
+
+        return min(
+            100,
+            max(
+                0,
+                placement * 0.80 + horizonComponent * 0.20
+            )
+        )
     }
 
     private func resolveCategory(
@@ -292,9 +355,20 @@ final class PostShotAnalyzer {
         metrics: PixelMetrics,
         saliencyCenter: CGPoint?,
         faceQuality: Double?,
+        faceRect: CGRect?,
+        horizonAngle: Double?,
         score: CoachScoreBreakdown
     ) -> [RankingRecommendation] {
         var result: [RankingRecommendation] = []
+
+        let horizonLimit =
+            category == .architecture || category == .landscape
+            ? 1.5
+            : 2.5
+
+        if let horizonAngle, abs(horizonAngle) > horizonLimit {
+            result.append(.levelHorizon)
+        }
 
         if metrics.highlightRatio > 0.035 || metrics.averageLuma > 0.78 {
             result.append(.lowerHighlights)
@@ -323,8 +397,13 @@ final class PostShotAnalyzer {
             }
         }
 
-        if category == .portrait, let faceQuality, faceQuality < 55 {
-            result.append(.improvePortraitQuality)
+        if category == .portrait {
+            if let faceRect, faceRect.maxY < 0.76 {
+                result.append(.reduceHeadroom)
+            }
+            if let faceQuality, faceQuality < 55 {
+                result.append(.improvePortraitQuality)
+            }
         }
 
         switch category {
