@@ -56,10 +56,16 @@ struct ContentView: View {
         .onChange(of: settings.sceneCoach) { _, value in
             camera.setCoachScene(value)
         }
-        .onChange(of: settings.zebraLevel) { _, _ in
+        .onChange(of: settings.zebraLevel) { _, value in
+            if settings.dualZebra, settings.zebraLowLevel > value {
+                settings.zebraLowLevel = value
+            }
             applyMonitoringSettings()
         }
-        .onChange(of: settings.zebraLowLevel) { _, _ in
+        .onChange(of: settings.zebraLowLevel) { _, value in
+            if settings.dualZebra, value > settings.zebraLevel {
+                settings.zebraLevel = value
+            }
             applyMonitoringSettings()
         }
         .onChange(of: settings.dualZebra) { _, _ in
