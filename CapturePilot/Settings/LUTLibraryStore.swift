@@ -81,6 +81,7 @@ final class LUTLibraryStore: ObservableObject {
 
     init() {
         Self.ensureLocalFolder()
+        folderDisplayName = nil
         activeEntryID = defaults.string(forKey: activeIDKey)
         activeDisplayName = defaults.string(forKey: activeNameKey)
         activeSource = LUTLibrarySource(
