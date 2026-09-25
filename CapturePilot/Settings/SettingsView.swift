@@ -52,6 +52,16 @@ struct SettingsView: View {
                         Text(settings.text(.goldenTriangle)).tag(AppSettings.Grid.goldenTriangle)
                         Text("+").tag(AppSettings.Grid.crosshair)
                     }
+
+                    Picker(settings.text(.frameGuide), selection: $settings.frameGuide) {
+                        ForEach(AppSettings.FrameGuide.allCases) { guide in
+                            Text(settings.frameGuideName(guide)).tag(guide)
+                        }
+                    }
+
+                    Text(settings.text(.frameGuideDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section(settings.text(.coach)) {
@@ -69,8 +79,25 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle(settings.text(.dualZebra), isOn: $settings.dualZebra)
+
                     HStack {
-                        Text(settings.text(.zebraLevel))
+                        Text(settings.text(.zebraLowLevel))
+                        Spacer()
+                        Text("\(Int(settings.zebraLowLevel.rounded()))%")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Slider(
+                        value: $settings.zebraLowLevel,
+                        in: 50...95,
+                        step: 1
+                    )
+                    .disabled(!settings.dualZebra)
+
+                    HStack {
+                        Text(settings.text(.zebraHighLevel))
                         Spacer()
                         Text("\(Int(settings.zebraLevel.rounded()))%")
                             .monospacedDigit()
@@ -87,7 +114,43 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
+                    Divider()
+
+                    HStack {
+                        Text(settings.text(.peakingThreshold))
+                        Spacer()
+                        Text("\(Int(settings.peakingThreshold.rounded()))")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Slider(
+                        value: $settings.peakingThreshold,
+                        in: 20...140,
+                        step: 1
+                    )
+
+                    Picker(settings.text(.peakingColor), selection: $settings.peakingColor) {
+                        ForEach(AppSettings.PeakingColor.allCases) { color in
+                            Text(settings.peakingColorName(color)).tag(color)
+                        }
+                    }
+
+                    Text(settings.text(.peakingDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    Text(settings.text(.falseColorDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
                     Text(settings.text(.histogramDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Text(settings.text(.scopesDetail))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } header: {
@@ -117,8 +180,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.4.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "4"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.5.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "5"
         return "\(version) (\(build))"
     }
 }
