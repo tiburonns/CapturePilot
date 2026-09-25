@@ -63,6 +63,8 @@ final class ProfessionalMonitoringEngine {
         pixelBuffer: CVPixelBuffer,
         zebraEnabled: Bool,
         zebraLevel: Double,
+        zebraLowLevel: Double,
+        dualZebraEnabled: Bool,
         histogramEnabled: Bool,
         falseColorEnabled: Bool,
         waveformEnabled: Bool,
@@ -101,7 +103,12 @@ final class ProfessionalMonitoringEngine {
         var vectorscopeImage: CGImage?
 
         if needsZebra {
-            zebraImage = makeZebraImage(pixelBuffer: pixelBuffer, level: zebraLevel)
+            zebraImage = makeZebraImage(
+                pixelBuffer: pixelBuffer,
+                highLevel: zebraLevel,
+                lowLevel: zebraLowLevel,
+                dualEnabled: dualZebraEnabled
+            )
             lastZebraTime = now
         }
 
@@ -169,7 +176,12 @@ final class ProfessionalMonitoringEngine {
         }
     }
 
-    private func makeZebraImage(pixelBuffer: CVPixelBuffer, level: Double) -> CGImage? {
+    private func makeZebraImage(
+        pixelBuffer: CVPixelBuffer,
+        highLevel: Double,
+        lowLevel: Double,
+        dualEnabled: Bool
+    ) -> CGImage? {
         guard let lumaBase = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0) else {
             return nil
         }
@@ -182,8 +194,14 @@ final class ProfessionalMonitoringEngine {
         let sampleStep = max(1, sourceWidth / 480)
         let outputWidth = max(2, sourceWidth / sampleStep)
         let outputHeight = max(2, sourceHeight / sampleStep)
-        let threshold = UInt8(
-            min(255, max(0, Int((min(max(level, 0), 100) / 100 * 255).rounded())))
+        let highThreshold = UInt8(
+            min(255, max(0, Int((min(max(highLevel, 0), 100) / 100 * 255).rounded())))
+        )
+        let lowThreshold = UInt8(
+            min(
+                Int(highThreshold),
+                max(0, Int((min(max(lowLevel, 0), 100) / 100 * 255).rounded()))
+            )
         )
 
         var rgba = [UInt8](repeating: 0, count: outputWidth * outputHeight * 4)
@@ -194,16 +212,24 @@ final class ProfessionalMonitoringEngine {
 
             for outputX in 0..<outputWidth {
                 let sourceX = min(sourceWidth - 1, outputX * sampleStep)
-                guard luma[sourceRow + sourceX] >= threshold else { continue }
-
-                let stripePhase = (outputX + outputY) % 16
-                guard stripePhase < 7 else { continue }
-
+                let value = luma[sourceRow + sourceX]
                 let index = (outputY * outputWidth + outputX) * 4
-                rgba[index] = 255
-                rgba[index + 1] = 255
-                rgba[index + 2] = 255
-                rgba[index + 3] = 210
+
+                if value >= highThreshold {
+                    let stripePhase = (outputX + outputY) % 14
+                    guard stripePhase < 7 else { continue }
+                    rgba[index] = 255
+                    rgba[index + 1] = 70
+                    rgba[index + 2] = 55
+                    rgba[index + 3] = 220
+                } else if dualEnabled, value >= lowThreshold {
+                    let stripePhase = (outputX - outputY + 1024) % 16
+                    guard stripePhase < 7 else { continue }
+                    rgba[index] = 255
+                    rgba[index + 1] = 230
+                    rgba[index + 2] = 70
+                    rgba[index + 3] = 205
+                }
             }
         }
 
@@ -360,7 +386,7 @@ final class ProfessionalMonitoringEngine {
                     )
                 )
                 let index = scopeY * outputWidth + scopeX
-                density[index] = min(UInt16.max, density[index] &+ 1)
+                if density[index] < UInt16.max { density[index] += 1 }
                 x += sampleStep
             }
             y += sampleStep
@@ -475,7 +501,7 @@ final class ProfessionalMonitoringEngine {
                     max(0, size - 1 - Int(Double(cr) / 255.0 * Double(size - 1)))
                 )
                 let index = scopeY * size + scopeX
-                density[index] = min(UInt16.max, density[index] &+ 1)
+                if density[index] < UInt16.max { density[index] += 1 }
                 x += sampleStep
             }
             y += sampleStep
@@ -538,7 +564,7 @@ final class ProfessionalMonitoringEngine {
             max(0, height - 1 - Int(Double(value) / 255.0 * Double(height - 1)))
         )
         let index = scopeY * width + x
-        density[index] = min(UInt16.max, density[index] &+ 1)
+        if density[index] < UInt16.max { density[index] += 1 }
     }
 
     private func writeDensityPixel(
