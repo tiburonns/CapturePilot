@@ -86,7 +86,8 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate every physical lens and rotation.
 - [ ] Validate session recovery after Settings/background/calls/camera interruption.
 - [ ] Validate Focus Peaking alignment in every orientation.
-- [ ] Validate geometric coach stability in varied real scenes.
+- [ ] Validate geometric Coach stability and false-positive rate in varied real scenes.
+- [ ] Validate current Coach thresholds against controlled horizon/exposure/composition scenes.
 - [ ] Validate Dynamic Island/notch/Home Indicator and large Dynamic Type.
 - [ ] Product > Archive with a paid Developer Team.
 - [ ] Organizer > Validate App.
