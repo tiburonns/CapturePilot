@@ -38,6 +38,8 @@
 		H10000000000000000000002 /* PostShotAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000002 /* PostShotAnalyzer.swift */; };
 		H10000000000000000000003 /* PhotoRankingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000003 /* PhotoRankingStore.swift */; };
 		H10000000000000000000004 /* RankingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000004 /* RankingView.swift */; };
+		I10000000000000000000001 /* SocialCompetitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = I20000000000000000000001 /* SocialCompetitionService.swift */; };
+		I10000000000000000000002 /* SocialCompetitionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = I20000000000000000000002 /* SocialCompetitionView.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
@@ -76,6 +78,9 @@
 		H20000000000000000000002 /* PostShotAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostShotAnalyzer.swift; sourceTree = "<group>"; };
 		H20000000000000000000003 /* PhotoRankingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankingStore.swift; sourceTree = "<group>"; };
 		H20000000000000000000004 /* RankingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingView.swift; sourceTree = "<group>"; };
+		I20000000000000000000001 /* SocialCompetitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialCompetitionService.swift; sourceTree = "<group>"; };
+		I20000000000000000000002 /* SocialCompetitionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialCompetitionView.swift; sourceTree = "<group>"; };
+		I20000000000000000000003 /* CapturePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CapturePilot.entitlements; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -108,6 +113,8 @@
 				96D5947C9C1BE3D117F9A0E7 /* Settings */,
 				B30000000000000000000001 /* HUD */,
 				H30000000000000000000001 /* Ranking */,
+				I30000000000000000000001 /* Social */,
+				I20000000000000000000003 /* CapturePilot.entitlements */,
 				442440819FFC8BBD4010CCFB /* Info.plist */,
 				A20000000000000000000001 /* PrivacyInfo.xcprivacy */,
 				A20000000000000000000004 /* Assets.xcassets */,
@@ -148,6 +155,10 @@
 				B20000000000000000000001 /* OrientationPolicy.swift */,
 				G20000000000000000000001 /* LUTLibraryStore.swift */,
 			); path = Settings; sourceTree = "<group>"; };
+		I30000000000000000000001 /* Social */ = { isa = PBXGroup; children = (
+				I20000000000000000000001 /* SocialCompetitionService.swift */,
+				I20000000000000000000002 /* SocialCompetitionView.swift */,
+			); path = Social; sourceTree = "<group>"; };
 		H30000000000000000000001 /* Ranking */ = { isa = PBXGroup; children = (
 				H20000000000000000000001 /* RankingModels.swift */,
 				H20000000000000000000002 /* PostShotAnalyzer.swift */,
@@ -254,6 +265,8 @@
 				H10000000000000000000002 /* PostShotAnalyzer.swift in Sources */,
 				H10000000000000000000003 /* PhotoRankingStore.swift in Sources */,
 				H10000000000000000000004 /* RankingView.swift in Sources */,
+				I10000000000000000000001 /* SocialCompetitionService.swift in Sources */,
+				I10000000000000000000002 /* SocialCompetitionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,6 +278,7 @@
 		53797DE442FCF2C62405D6BD /* Debug */ = { isa = XCBuildConfiguration; buildSettings = {
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 8;
 			GENERATE_INFOPLIST_FILE = NO;
@@ -280,6 +294,7 @@
 		C015BAAA3C846BD82DBAB3CE /* Release */ = { isa = XCBuildConfiguration; buildSettings = {
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;
 			CODE_SIGN_STYLE = Automatic;
 			CURRENT_PROJECT_VERSION = 8;
 			GENERATE_INFOPLIST_FILE = NO;
