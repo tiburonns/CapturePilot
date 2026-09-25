@@ -46,12 +46,36 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(sceneCoach.rawValue, forKey: Key.sceneCoach) }
     }
 
+    @Published var allowLandscape: Bool {
+        didSet {
+            UserDefaults.standard.set(allowLandscape, forKey: OrientationPolicy.landscapeKey)
+            OrientationPolicy.applyCurrentPolicy()
+        }
+    }
+
+    @Published var allowUpsideDown: Bool {
+        didSet {
+            UserDefaults.standard.set(allowUpsideDown, forKey: OrientationPolicy.upsideDownKey)
+            OrientationPolicy.applyCurrentPolicy()
+        }
+    }
+
     init() {
         let defaults = UserDefaults.standard
         language = Language(rawValue: defaults.string(forKey: Key.language) ?? "") ?? .system
         grid = Grid(rawValue: defaults.string(forKey: Key.grid) ?? "") ?? .thirds
         coachIntensity = CoachIntensity(rawValue: defaults.string(forKey: Key.coachIntensity) ?? "") ?? .balanced
         sceneCoach = SceneCoach(rawValue: defaults.string(forKey: Key.sceneCoach) ?? "") ?? .general
+        allowLandscape = Self.boolValue(
+            defaults,
+            key: OrientationPolicy.landscapeKey,
+            defaultValue: true
+        )
+        allowUpsideDown = Self.boolValue(
+            defaults,
+            key: OrientationPolicy.upsideDownKey,
+            defaultValue: true
+        )
     }
 
     func text(_ key: LocalizedKey) -> String {
@@ -93,6 +117,15 @@ final class AppSettings: ObservableObject {
             ? .spanish
             : .english
     }
+
+    private static func boolValue(
+        _ defaults: UserDefaults,
+        key: String,
+        defaultValue: Bool
+    ) -> Bool {
+        guard defaults.object(forKey: key) != nil else { return defaultValue }
+        return defaults.bool(forKey: key)
+    }
 }
 
 enum LocalizedKey: Hashable {
@@ -110,6 +143,10 @@ enum LocalizedKey: Hashable {
     case sceneGeneral, scenePortrait, sceneArchitecture, sceneAutomotive
     case sceneMacro, sceneStreet, sceneLandscape, sceneNight
     case goldenSpiral, goldenTriangle
+    case orientation, landscape, upsideDown, orientationDetail
+    case hud, customizeHUD, hudDetail, hudElements, resetHUD, required
+    case focusPeaking, focusPeakingQuick, lenses, metrics, photoFormat
+    case shutterButton, gridButton, proControls
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -152,7 +189,18 @@ enum LocalizedKey: Hashable {
             .sceneArchitecture: "Arquitectura", .sceneAutomotive: "Automotriz",
             .sceneMacro: "Macro", .sceneStreet: "Calle",
             .sceneLandscape: "Paisaje", .sceneNight: "Noche",
-            .goldenSpiral: "Espiral áurea", .goldenTriangle: "Triángulo áureo"
+            .goldenSpiral: "Espiral áurea", .goldenTriangle: "Triángulo áureo",
+            .orientation: "Orientación", .landscape: "Horizontal",
+            .upsideDown: "Vertical invertido",
+            .orientationDetail: "Vertical normal permanece siempre disponible. Puedes desactivar horizontal o vertical invertido de forma independiente.",
+            .hud: "HUD", .customizeHUD: "Personalizar HUD",
+            .hudDetail: "Mueve los elementos libremente dentro del área segura. Vertical y horizontal guardan posiciones independientes.",
+            .hudElements: "Elementos", .resetHUD: "Restablecer HUD", .required: "Obligatorio",
+            .focusPeaking: "Focus Peaking",
+            .focusPeakingQuick: "Acceso rápido Focus Peaking",
+            .lenses: "Lentes", .metrics: "Métricas", .photoFormat: "Formato",
+            .shutterButton: "Disparador", .gridButton: "Botón de guía",
+            .proControls: "Controles Pro"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -195,7 +243,18 @@ enum LocalizedKey: Hashable {
             .sceneArchitecture: "Architecture", .sceneAutomotive: "Automotive",
             .sceneMacro: "Macro", .sceneStreet: "Street",
             .sceneLandscape: "Landscape", .sceneNight: "Night",
-            .goldenSpiral: "Golden spiral", .goldenTriangle: "Golden triangle"
+            .goldenSpiral: "Golden spiral", .goldenTriangle: "Golden triangle",
+            .orientation: "Orientation", .landscape: "Landscape",
+            .upsideDown: "Upside-down portrait",
+            .orientationDetail: "Standard portrait always remains available. Landscape and upside-down portrait can be disabled independently.",
+            .hud: "HUD", .customizeHUD: "Customize HUD",
+            .hudDetail: "Move elements freely inside the safe area. Portrait and landscape keep independent positions.",
+            .hudElements: "Elements", .resetHUD: "Reset HUD", .required: "Required",
+            .focusPeaking: "Focus Peaking",
+            .focusPeakingQuick: "Focus Peaking quick access",
+            .lenses: "Lenses", .metrics: "Metrics", .photoFormat: "Format",
+            .shutterButton: "Shutter", .gridButton: "Guide button",
+            .proControls: "Pro controls"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)

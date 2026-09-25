@@ -5,6 +5,7 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
     case language
     case settings
     case lenses
+    case scene
     case coach
     case metrics
     case photoFormat
@@ -29,6 +30,7 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
         case .language: return .language
         case .settings: return .settings
         case .lenses: return .lenses
+        case .scene: return .scene
         case .coach: return .coach
         case .metrics: return .metrics
         case .photoFormat: return .photoFormat
@@ -121,7 +123,9 @@ final class HUDLayoutStore: ObservableObject {
     }
 
     private func save() {
-        let raw = Dictionary(uniqueKeysWithValues: configurations.map { ($0.key.rawValue, $0.value) })
+        let raw = Dictionary(
+            uniqueKeysWithValues: configurations.map { ($0.key.rawValue, $0.value) }
+        )
         let snapshot = HUDLayoutSnapshot(items: raw)
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: storageKey)
@@ -142,9 +146,10 @@ final class HUDLayoutStore: ObservableObject {
 
         return [
             .pro: config(portrait: (0.08, 0.07), landscape: (0.06, 0.10)),
-            .language: config(portrait: (0.76, 0.07), landscape: (0.82, 0.10)),
+            .language: config(portrait: (0.72, 0.07), landscape: (0.76, 0.10)),
             .settings: config(portrait: (0.93, 0.07), landscape: (0.95, 0.10)),
-            .lenses: config(portrait: (0.50, 0.15), landscape: (0.50, 0.11)),
+            .lenses: config(portrait: (0.50, 0.15), landscape: (0.48, 0.11)),
+            .scene: config(portrait: (0.86, 0.16), landscape: (0.90, 0.20)),
             .coach: config(portrait: (0.50, 0.68), landscape: (0.50, 0.55)),
             .metrics: config(portrait: (0.50, 0.75), landscape: (0.50, 0.67)),
             .photoFormat: config(portrait: (0.12, 0.92), landscape: (0.18, 0.87)),

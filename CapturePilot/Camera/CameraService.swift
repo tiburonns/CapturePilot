@@ -5,6 +5,7 @@ import SwiftUI
 final class CameraService: NSObject, ObservableObject {
     let session = AVCaptureSession()
     let coach = CoachEngine()
+    let focusPeaking = FocusPeakingEngine()
 
     @Published private(set) var isConfigured = false
     @Published private(set) var permissionDenied = false
@@ -46,6 +47,8 @@ final class CameraService: NSObject, ObservableObject {
 
     @Published var coachState = CoachState()
     @Published var lastSaveSucceeded: Bool? = nil
+    @Published private(set) var isFocusPeakingEnabled = false
+    @Published private(set) var focusPeakingImage: CGImage? = nil
 
     private let sessionQueue = DispatchQueue(label: "CapturePilot.CameraSession", qos: .userInitiated)
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
@@ -56,18 +59,29 @@ final class CameraService: NSObject, ObservableObject {
     private var observerTokens: [NSObjectProtocol] = []
     private var coachIntensity: AppSettings.CoachIntensity = .balanced
     private var coachScene: AppSettings.SceneCoach = .general
+    private var focusPeakingRequested = false
     private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
+
+    private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var captureRotationObservation: NSKeyValueObservation?
 
     override init() {
         super.init()
+
         coach.onUpdate = { [weak self] state in
             self?.coachState = state
         }
+
+        focusPeaking.onUpdate = { [weak self] image in
+            guard let self, self.isFocusPeakingEnabled else { return }
+            self.focusPeakingImage = image
+        }
+
         registerSessionObservers()
     }
 
     deinit {
-        observerTokens.forEach(NotificationCenter.default.removeObserver)
+        observerTokens.forEach { NotificationCenter.default.removeObserver($0) }
     }
 
     func start() {
@@ -96,6 +110,8 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func stop() {
+        setFocusPeakingEnabled(false)
+
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }
             self.session.stopRunning()
@@ -108,6 +124,21 @@ final class CameraService: NSObject, ObservableObject {
 
     func setCoachScene(_ scene: AppSettings.SceneCoach) {
         videoQueue.async { [weak self] in self?.coachScene = scene }
+    }
+
+    func toggleFocusPeaking() {
+        setFocusPeakingEnabled(!isFocusPeakingEnabled)
+    }
+
+    func setFocusPeakingEnabled(_ enabled: Bool) {
+        isFocusPeakingEnabled = enabled
+        if !enabled {
+            focusPeakingImage = nil
+        }
+
+        videoQueue.async { [weak self] in
+            self?.focusPeakingRequested = enabled
+        }
     }
 
     private func registerSessionObservers() {
@@ -163,9 +194,7 @@ final class CameraService: NSObject, ObservableObject {
 
         let devices = rearCameraDevices()
         let lenses = makeLensModels(from: devices)
-        DispatchQueue.main.async {
-            self.availableLenses = lenses
-        }
+        DispatchQueue.main.async { self.availableLenses = lenses }
 
         guard let wide = devices.first(where: { $0.deviceType == .builtInWideAngleCamera }),
               let input = try? AVCaptureDeviceInput(device: wide),
@@ -181,6 +210,7 @@ final class CameraService: NSObject, ObservableObject {
             DispatchQueue.main.async { self.cameraUnavailable = true }
             return
         }
+
         session.addOutput(photoOutput)
         photoOutput.maxPhotoQualityPrioritization = .quality
 
@@ -195,12 +225,8 @@ final class CameraService: NSObject, ObservableObject {
             session.addOutput(videoOutput)
         }
 
-        if let connection = videoOutput.connection(with: .video),
-           connection.isVideoRotationAngleSupported(90) {
-            connection.videoRotationAngle = 90
-        }
-
         configureCapturePipeline(for: wide)
+        configureCaptureRotation(for: wide)
 
         DispatchQueue.main.async {
             self.isConfigured = true
@@ -227,10 +253,12 @@ final class CameraService: NSObject, ObservableObject {
             return []
         }
 
-        let wideFOV = bestPhotoFormat(for: wide)?.videoFieldOfView ?? wide.activeFormat.videoFieldOfView
+        let wideFOV = bestPhotoFormat(for: wide)?.videoFieldOfView
+            ?? wide.activeFormat.videoFieldOfView
 
         return devices.map { device in
-            let fov = bestPhotoFormat(for: device)?.videoFieldOfView ?? device.activeFormat.videoFieldOfView
+            let fov = bestPhotoFormat(for: device)?.videoFieldOfView
+                ?? device.activeFormat.videoFieldOfView
             let scale = opticalScale(wideFOV: wideFOV, lensFOV: fov)
             return CameraLens(
                 id: device.uniqueID,
@@ -290,6 +318,8 @@ final class CameraService: NSObject, ObservableObject {
             if wasRunning { self.session.startRunning() }
 
             guard self.currentInput === newInput else { return }
+            self.configureCaptureRotation(for: device)
+
             DispatchQueue.main.async {
                 self.selectedLensID = lens.id
                 self.manualExposure = false
@@ -327,23 +357,22 @@ final class CameraService: NSObject, ObservableObject {
                 device.activeFormat = best
                 device.unlockForConfiguration()
             } catch {
-                // Continue with the active format if the device rejects a format switch.
+                // Continue with the active format if a format switch is rejected.
             }
         }
 
         let supportedDimensions = device.activeFormat.supportedMaxPhotoDimensions
             .filter { $0.width > 0 && $0.height > 0 }
-            .sorted { Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height) }
+            .sorted {
+                Int64($0.width) * Int64($0.height)
+                    < Int64($1.width) * Int64($1.height)
+            }
 
         if let maximum = supportedDimensions.last {
             photoOutput.maxPhotoDimensions = maximum
         }
 
-        if photoOutput.isAppleProRAWSupported {
-            photoOutput.isAppleProRAWEnabled = true
-        } else {
-            photoOutput.isAppleProRAWEnabled = false
-        }
+        photoOutput.isAppleProRAWEnabled = photoOutput.isAppleProRAWSupported
 
         let options = supportedDimensions.map {
             PhotoResolutionOption(width: $0.width, height: $0.height)
@@ -418,6 +447,7 @@ final class CameraService: NSObject, ObservableObject {
     func focus(at point: CGPoint) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+
             do {
                 try device.lockForConfiguration()
 
@@ -438,6 +468,7 @@ final class CameraService: NSObject, ObservableObject {
                 }
 
                 device.unlockForConfiguration()
+
                 DispatchQueue.main.async {
                     self.manualFocus = false
                     self.manualExposure = false
@@ -448,9 +479,11 @@ final class CameraService: NSObject, ObservableObject {
 
     func setExposureBias(_ value: Float) {
         guard supportsExposureBias else { return }
+
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
             let clamped = min(max(value, device.minExposureTargetBias), device.maxExposureTargetBias)
+
             do {
                 try device.lockForConfiguration()
                 device.setExposureTargetBias(clamped)
@@ -467,6 +500,7 @@ final class CameraService: NSObject, ObservableObject {
     ) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+
             do {
                 try device.lockForConfiguration()
 
@@ -497,12 +531,14 @@ final class CameraService: NSObject, ObservableObject {
     func setManualFocus(enabled: Bool, position: Float? = nil) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+
             do {
                 try device.lockForConfiguration()
 
                 if enabled, device.isFocusModeSupported(.locked) {
                     let clamped = min(max(position ?? self.focusPosition, 0), 1)
                     device.setFocusModeLocked(lensPosition: clamped, completionHandler: nil)
+
                     DispatchQueue.main.async {
                         self.focusPosition = clamped
                         self.manualFocus = true
@@ -520,6 +556,7 @@ final class CameraService: NSObject, ObservableObject {
     func setWhiteBalance(enabled: Bool, temperature: Float? = nil) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+
             do {
                 try device.lockForConfiguration()
 
@@ -639,9 +676,49 @@ final class CameraService: NSObject, ObservableObject {
             minShutterSeconds,
             CMTimeGetSeconds(device.activeFormat.maxExposureDuration)
         )
+
         let whiteBalance = device.temperatureAndTintValues(for: device.deviceWhiteBalanceGains)
         whiteBalanceTemperature = whiteBalance.temperature
         publishManualCapabilities(for: device)
+    }
+
+    private func configureCaptureRotation(for device: AVCaptureDevice) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            self.captureRotationObservation = nil
+
+            let coordinator = AVCaptureDevice.RotationCoordinator(
+                device: device,
+                previewLayer: nil
+            )
+            self.captureRotationCoordinator = coordinator
+
+            self.captureRotationObservation = coordinator.observe(
+                \.videoRotationAngleForHorizonLevelCapture,
+                options: [.initial, .new]
+            ) { [weak self] coordinator, _ in
+                self?.applyCaptureRotation(
+                    coordinator.videoRotationAngleForHorizonLevelCapture
+                )
+            }
+        }
+    }
+
+    private func applyCaptureRotation(_ angle: CGFloat) {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+
+            if let videoConnection = self.videoOutput.connection(with: .video),
+               videoConnection.isVideoRotationAngleSupported(angle) {
+                videoConnection.videoRotationAngle = angle
+            }
+
+            if let photoConnection = self.photoOutput.connection(with: .video),
+               photoConnection.isVideoRotationAngleSupported(angle) {
+                photoConnection.videoRotationAngle = angle
+            }
+        }
     }
 }
 
@@ -651,6 +728,11 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        if focusPeakingRequested,
+           let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            focusPeaking.process(pixelBuffer: pixelBuffer)
+        }
+
         coach.process(
             sampleBuffer: sampleBuffer,
             intensity: coachIntensity,
@@ -669,6 +751,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
             DispatchQueue.main.async { self.lastSaveSucceeded = false }
             return
         }
+
         savePhotoData(data)
     }
 }
