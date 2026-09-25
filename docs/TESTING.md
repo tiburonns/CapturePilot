@@ -94,11 +94,27 @@ Test all eight scene modes.
 - [ ] Peaking aligns with the preview in every orientation/lens.
 - [ ] Entering HUD edit disables active peaking.
 
+### Zebras / Histogram
+
+- [ ] Zebra button toggles the overlay without affecting AF/AE gestures.
+- [ ] Presets 75/80/85/90/95/100 update immediately.
+- [ ] Settings slider covers the full 75–100 range.
+- [ ] Zebra stripes appear only at/above the selected preview-luma threshold.
+- [ ] Zebra overlay aligns in portrait, both landscapes, and upside-down.
+- [ ] Zebra alignment remains correct after switching lenses.
+- [ ] Histogram appears when the HUD item is visible.
+- [ ] RGB channels react plausibly to strongly red/green/blue scenes.
+- [ ] Highlight clipping indicator reacts to clipped bright channels.
+- [ ] Shadow clipping indicator reacts to crushed dark channels.
+- [ ] Tap histogram expands and collapses without leaving the safe area.
+- [ ] Hiding Histogram stops its live processing.
+- [ ] Monitoring + Peaking + Coach together do not cause unacceptable preview stutter or thermal load in a short smoke test.
+
 ### Release
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.3.0 (3).
+- [ ] Version/build is 0.4.0 (4).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -198,11 +214,26 @@ Prueba los ocho modos.
 - [ ] Peaking se alinea en todas las orientaciones/lentes.
 - [ ] Editar HUD desactiva Peaking.
 
+### Cebras / Histograma
+
+- [ ] El botón Zebra activa/desactiva sin interferir con AF/AE.
+- [ ] Presets 75/80/85/90/95/100 se aplican al instante.
+- [ ] Slider de Ajustes cubre 75–100.
+- [ ] Las líneas aparecen sólo al alcanzar/superar el umbral del preview.
+- [ ] Alineación correcta en vertical, ambos horizontales e invertido.
+- [ ] Alineación correcta tras cambiar lente.
+- [ ] Histograma visible cuando su elemento HUD está activo.
+- [ ] Canales RGB reaccionan de forma razonable a escenas dominantes por color.
+- [ ] Indicadores de clipping reaccionan a luces/sombras recortadas.
+- [ ] Tocar el histograma expande/contrae sin salir del área segura.
+- [ ] Ocultar Histograma detiene su procesamiento.
+- [ ] Zebra + Histograma + Peaking + Coach no generan stutter/carga térmica inaceptable en una prueba corta.
+
 ### Publicación
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.3.0 (3).
+- [ ] 0.4.0 (4).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.
