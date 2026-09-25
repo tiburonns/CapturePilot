@@ -24,6 +24,8 @@
     <false/>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
     <key>NSCameraUsageDescription</key>
     <string>CapturePilot uses the camera for the live viewfinder, on-device composition analysis, and photo capture.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
@@ -38,6 +40,8 @@
         <key>UIColorName</key>
         <string>LaunchBackground</string>
     </dict>
+    <key>UIFileSharingEnabled</key>
+    <true/>
     <key>UIRequiresFullScreen</key>
     <true/>
     <key>UIStatusBarHidden</key>
