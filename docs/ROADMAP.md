@@ -62,6 +62,22 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate Zebra threshold accuracy on physical devices.
 - [ ] Validate histogram alignment/performance in all orientations and lenses.
 
+### 0.5 — Photography scopes + capture aids
+
+- [x] Preview-derived False Color.
+- [x] Luma Waveform.
+- [x] RGB Parade.
+- [x] Vectorscope.
+- [x] Configurable Focus Peaking threshold/color.
+- [x] Dual-level Zebra.
+- [x] Per-channel clipping-warning HUD.
+- [x] Long-press AF/AE Lock.
+- [x] Optional AF/AE Lock HUD control.
+- [x] Frame guides: 1:1, 4:3, 3:2, 16:9, 2.39:1.
+- [ ] Validate scope behavior against controlled test charts/scenes.
+- [ ] Validate AF/AE lock timing and recovery on physical hardware.
+- [ ] Validate combined scopes/coach thermal performance.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -80,7 +96,6 @@ A checked source item means implementation exists and the project compiles. It d
 ### Future
 
 - [ ] Bracketing.
-- [ ] AF/AE lock gesture/control.
 - [ ] Metadata inspection.
 - [ ] Optional post-capture teaching review.
 - [ ] Deterministic unit tests for coach decision logic.
@@ -150,6 +165,22 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar umbral real de Zebra en hardware.
 - [ ] Validar rendimiento/alineación del histograma en orientaciones/lentes.
 
+### 0.5 — Scopes fotográficos + ayudas de captura
+
+- [x] False Color derivado del preview.
+- [x] Waveform Luma.
+- [x] RGB Parade.
+- [x] Vectorscope.
+- [x] Umbral/color configurables de Focus Peaking.
+- [x] Zebra dual.
+- [x] Avisos de clipping por canal.
+- [x] AF/AE Lock por pulsación larga.
+- [x] Botón HUD opcional AF/AE.
+- [x] Guías 1:1, 4:3, 3:2, 16:9, 2.39:1.
+- [ ] Validar scopes con cartas/escenas controladas.
+- [ ] Validar timing/recuperación de AF/AE Lock en hardware.
+- [ ] Validar carga térmica usando scopes + coach.
+
 ### Gates pendientes
 
 - [ ] Validar 12/24/48 MP y dimensiones de archivos en hardware.
@@ -168,7 +199,6 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 ### Futuro
 
 - [ ] Bracketing.
-- [ ] AF/AE Lock.
 - [ ] Inspector de metadata.
 - [ ] Revisión didáctica post-captura.
 - [ ] Unit tests deterministas del coach.

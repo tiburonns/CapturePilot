@@ -1,5 +1,31 @@
 # Changelog / Registro de cambios
 
+## 0.5.0 — Photography scopes and capture aids / Scopes y ayudas fotográficas
+
+### English
+- Preview-derived False Color.
+- Luma Waveform, RGB Parade, and Vectorscope.
+- Long-press AF/AE Lock plus optional HUD lock control.
+- Configurable Focus Peaking threshold and color.
+- Dual-level Zebra with independent low/high thresholds.
+- Compact per-channel clipping warnings.
+- Frame guides for 1:1, 4:3, 3:2, 16:9, and 2.39:1.
+- All new tools integrate with the movable/hideable HUD.
+- No video recording parameters were added.
+- Version/build 0.5.0 (5).
+
+### Español
+- False Color derivado del preview.
+- Waveform Luma, RGB Parade y Vectorscope.
+- AF/AE Lock por pulsación larga y botón HUD opcional.
+- Umbral/color configurables de Focus Peaking.
+- Zebra dual con umbral bajo/alto.
+- Avisos compactos de clipping por canal.
+- Guías 1:1, 4:3, 3:2, 16:9 y 2.39:1.
+- Todas las herramientas se integran al HUD movible/ocultable.
+- No se agregaron parámetros de grabación de video.
+- Versión/build 0.5.0 (5).
+
 ## 0.4.0 — Professional monitoring / Monitoreo profesional
 
 ### English

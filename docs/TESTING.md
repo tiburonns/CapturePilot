@@ -110,11 +110,33 @@ Test all eight scene modes.
 - [ ] Hiding Histogram stops its live processing.
 - [ ] Monitoring + Peaking + Coach together do not cause unacceptable preview stutter or thermal load in a short smoke test.
 
+### Advanced photography monitoring
+
+- [ ] False Color aligns with the preview in every orientation/lens.
+- [ ] False Color and Zebra do not remain active simultaneously.
+- [ ] Luma Waveform reacts to left/right exposure differences.
+- [ ] Waveform vertical scale behaves consistently from dark to bright.
+- [ ] RGB Parade responds independently to dominant red/green/blue scenes.
+- [ ] Vectorscope returns near center on neutral gray/white scenes.
+- [ ] Vectorscope moves toward the expected hue direction on saturated targets.
+- [ ] Scope expansion remains inside the safe area.
+- [ ] Hiding each scope stops its requested processing.
+- [ ] Peaking threshold visibly changes edge density.
+- [ ] Every Peaking color renders correctly.
+- [ ] Dual Zebra clearly distinguishes low and high bands.
+- [ ] Clipping-warning HUD reports correct channel letters.
+- [ ] Long press resolves the selected AF/AE point then locks.
+- [ ] Tap after AF/AE Lock returns to automatic focus/meter behavior.
+- [ ] Optional AF/AE HUD button locks/unlocks without a viewfinder gesture.
+- [ ] Frame guides align correctly in portrait/landscape.
+- [ ] Frame guides do not change captured pixel dimensions.
+- [ ] Peaking + scopes + coach can run for 5 minutes without unacceptable stutter/thermal behavior.
+
 ### Release
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.4.0 (4).
+- [ ] Version/build is 0.5.0 (5).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -229,11 +251,33 @@ Prueba los ocho modos.
 - [ ] Ocultar Histograma detiene su procesamiento.
 - [ ] Zebra + Histograma + Peaking + Coach no generan stutter/carga térmica inaceptable en una prueba corta.
 
+### Monitoreo fotográfico avanzado
+
+- [ ] False Color coincide con el preview en orientaciones/lentes.
+- [ ] False Color y Zebra no permanecen activos simultáneamente.
+- [ ] Waveform reacciona a diferencias de exposición izquierda/derecha.
+- [ ] Escala vertical coherente de oscuro a claro.
+- [ ] RGB Parade responde por separado a escenas dominantes R/G/B.
+- [ ] Vectorscope vuelve cerca del centro con gris/blanco neutro.
+- [ ] Vectorscope se desplaza hacia el tono esperado con colores saturados.
+- [ ] Scopes ampliados permanecen dentro del área segura.
+- [ ] Ocultar cada scope detiene su procesamiento solicitado.
+- [ ] El umbral de Peaking cambia visiblemente la densidad de bordes.
+- [ ] Todos los colores de Peaking funcionan.
+- [ ] Zebra dual distingue claramente banda baja/alta.
+- [ ] Avisos de clipping muestran canales correctos.
+- [ ] Pulsación larga resuelve el punto y bloquea AF/AE.
+- [ ] Tocar después de AF/AE Lock devuelve el comportamiento automático.
+- [ ] Botón HUD AF/AE bloquea/desbloquea sin gesto.
+- [ ] Guías de formato correctas en vertical/horizontal.
+- [ ] Las guías no cambian las dimensiones capturadas.
+- [ ] Peaking + scopes + coach funcionan 5 minutos sin stutter/carga térmica inaceptable.
+
 ### Publicación
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.4.0 (4).
+- [ ] 0.5.0 (5).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.
