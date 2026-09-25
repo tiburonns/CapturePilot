@@ -896,9 +896,12 @@ final class CameraService: NSObject, ObservableObject {
             guard let self else { return }
 
             if let rawShareConfiguration {
-                guard self.supportsRawShareWorkflow,
-                      self.rawShareMaxDimensions.width > 0,
-                      self.rawShareMaxDimensions.height > 0,
+                let rawSharePixels =
+                    Int64(self.rawShareMaxDimensions.width)
+                    * Int64(self.rawShareMaxDimensions.height)
+
+                guard rawSharePixels >= 40_000_000,
+                      self.photoOutput.availablePhotoCodecTypes.contains(.jpeg),
                       let rawType = self.preferredRawSharePixelFormat() else {
                     DispatchQueue.main.async { self.lastSaveSucceeded = false }
                     return
