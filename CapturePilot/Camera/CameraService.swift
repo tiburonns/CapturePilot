@@ -472,6 +472,7 @@ final class CameraService: NSObject, ObservableObject {
                 self.manualExposure = false
                 self.manualFocus = false
                 self.manualWhiteBalance = false
+                self.isAFAELocked = false
                 self.syncDeviceValues(device)
             }
         }
@@ -746,6 +747,10 @@ final class CameraService: NSObject, ObservableObject {
         iso requestedISO: Float? = nil,
         shutter requestedShutter: Double? = nil
     ) {
+        if isAFAELocked {
+            unlockAFAE()
+        }
+
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
             self.afaeLockGeneration += 1
@@ -779,6 +784,10 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func setManualFocus(enabled: Bool, position: Float? = nil) {
+        if isAFAELocked {
+            unlockAFAE()
+        }
+
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
             self.afaeLockGeneration += 1
