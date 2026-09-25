@@ -13,6 +13,7 @@ struct SettingsView: View {
                         Text(settings.text(.english)).tag(AppSettings.Language.english)
                         Text(settings.text(.spanish)).tag(AppSettings.Language.spanish)
                     }
+                    .pickerStyle(.segmented)
                 }
 
                 Section(settings.text(.grid)) {
@@ -39,7 +40,10 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent(settings.text(.version), value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1")
+                    LabeledContent(
+                        settings.text(.version),
+                        value: versionAndBuild
+                    )
                 }
             }
             .navigationTitle(settings.text(.settings))
@@ -49,5 +53,11 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private var versionAndBuild: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2"
+        return "\(version) (\(build))"
     }
 }

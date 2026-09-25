@@ -47,6 +47,22 @@ final class AppSettings: ObservableObject {
         key.value(in: resolvedLanguage)
     }
 
+    func languageName(_ language: Language) -> String {
+        switch language {
+        case .system: return text(.system)
+        case .english: return text(.english)
+        case .spanish: return text(.spanish)
+        }
+    }
+
+    var languageBadge: String {
+        switch language {
+        case .system: return "AUTO"
+        case .english: return "EN"
+        case .spanish: return "ES"
+        }
+    }
+
     private var resolvedLanguage: Language {
         guard language == .system else { return language }
         return Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true ? .spanish : .english
@@ -67,7 +83,7 @@ enum LocalizedKey: Hashable {
             .grid: "Guía", .language: "Idioma", .system: "Sistema", .english: "Inglés", .spanish: "Español",
             .done: "Listo", .off: "Desactivada",
             .subtle: "Sutil", .balanced: "Equilibrado", .teaching: "Didáctico",
-            .privacy: "Privacidad", .privacyDetail: "El análisis del coach se realiza en el dispositivo. Sin cuenta, anuncios ni rastreadores.",
+            .privacy: "Privacidad", .privacyDetail: "El análisis del coach se realiza en el dispositivo. Sin cuenta, anuncios, analítica ni rastreadores.",
             .version: "Versión", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG", .raw: "RAW",
             .exposure: "Exposición", .iso: "ISO", .shutter: "Obturación", .whiteBalance: "Balance de blancos", .focus: "Enfoque",
             .cameraPermission: "CapturePilot necesita acceso a la cámara para mostrar el visor, analizar la escena y tomar fotografías.",
@@ -85,7 +101,7 @@ enum LocalizedKey: Hashable {
             .grid: "Guide", .language: "Language", .system: "System", .english: "English", .spanish: "Spanish",
             .done: "Done", .off: "Off",
             .subtle: "Subtle", .balanced: "Balanced", .teaching: "Teaching",
-            .privacy: "Privacy", .privacyDetail: "Coach analysis runs on-device. No account, ads, or trackers.",
+            .privacy: "Privacy", .privacyDetail: "Coach analysis runs on-device. No account, ads, analytics, or trackers.",
             .version: "Version", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG", .raw: "RAW",
             .exposure: "Exposure", .iso: "ISO", .shutter: "Shutter", .whiteBalance: "White balance", .focus: "Focus",
             .cameraPermission: "CapturePilot needs camera access to show the viewfinder, analyze the scene, and take photos.",

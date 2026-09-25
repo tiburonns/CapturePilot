@@ -1,0 +1,28 @@
+name: iOS Release Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build Release for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project CapturePilot.xcodeproj \
+            -target CapturePilot \
+            -configuration Release \
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO \
+            build

@@ -16,41 +16,12 @@ struct ContentView: View {
             } else if camera.cameraUnavailable {
                 unavailableView
             } else {
-                CameraPreview(session: camera.session) { point in
-                    camera.focus(at: point)
-                }
-                .ignoresSafeArea()
-
-                CompositionOverlay(
-                    grid: settings.grid,
-                    horizonAngle: camera.coachState.horizonAngleDegrees,
-                    saliencyCenter: camera.coachState.saliencyCenter,
-                    showSubjectMarker: settings.coachIntensity == .teaching && camera.coachState.hasSubject
-                )
-                .ignoresSafeArea()
-
-                VStack(spacing: 12) {
-                    topBar
-                    Spacer()
-
-                    CoachBubble(state: camera.coachState)
-
-                    if settings.coachIntensity != .subtle {
-                        technicalReadout
-                    }
-
-                    if showingProControls {
-                        ManualControlsView(camera: camera)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    bottomControls
-                }
-                .padding(.top, 8)
-                .padding(.bottom, 10)
+                cameraSurface
             }
         }
         .preferredColorScheme(.dark)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .onAppear {
             camera.setCoachIntensity(settings.coachIntensity)
             camera.start()
@@ -70,51 +41,124 @@ struct ContentView: View {
         }
     }
 
-    private var topBar: some View {
-        HStack {
-            Button {
-                withAnimation(.snappy) {
-                    showingProControls.toggle()
-                }
-            } label: {
-                Image(systemName: showingProControls ? "slider.horizontal.3" : "dial.medium")
-                    .frame(width: 40, height: 40)
-                    .background(.ultraThinMaterial, in: Circle())
+    private var cameraSurface: some View {
+        ZStack {
+            CameraPreview(session: camera.session) { point in
+                camera.focus(at: point)
             }
-            .accessibilityLabel(settings.text(.pro))
+            .ignoresSafeArea()
 
-            Spacer()
+            CompositionOverlay(
+                grid: settings.grid,
+                horizonAngle: camera.coachState.horizonAngleDegrees,
+                saliencyCenter: camera.coachState.saliencyCenter,
+                showSubjectMarker: settings.coachIntensity == .teaching && camera.coachState.hasSubject
+            )
+            .ignoresSafeArea()
 
-            HStack(spacing: 6) {
-                ForEach(camera.availableLenses) { lens in
-                    Button(lens.title) {
-                        camera.selectLens(lens)
+            VStack(spacing: 10) {
+                topChrome
+
+                Spacer(minLength: 12)
+
+                CoachBubble(state: camera.coachState)
+                    .padding(.horizontal, 12)
+
+                if settings.coachIntensity != .subtle {
+                    technicalReadout
+                }
+
+                if showingProControls {
+                    ManualControlsView(camera: camera)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                bottomControls
+            }
+            .safeAreaPadding(.top, 6)
+            .safeAreaPadding(.bottom, 6)
+        }
+    }
+
+    private var topChrome: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Button {
+                    withAnimation(.snappy) {
+                        showingProControls.toggle()
                     }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(camera.selectedLensID == lens.id ? .black : .white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(
-                        camera.selectedLensID == lens.id ? .white : .black.opacity(0.35),
-                        in: Capsule()
-                    )
+                } label: {
+                    Image(systemName: showingProControls ? "slider.horizontal.3" : "dial.medium")
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial, in: Circle())
                 }
-            }
-            .padding(4)
-            .background(.ultraThinMaterial, in: Capsule())
+                .accessibilityLabel(settings.text(.pro))
 
-            Spacer()
+                Spacer(minLength: 8)
 
-            Button {
-                showingSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .frame(width: 40, height: 40)
-                    .background(.ultraThinMaterial, in: Circle())
+                languageMenu
+
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                .accessibilityLabel(settings.text(.settings))
             }
-            .accessibilityLabel(settings.text(.settings))
+
+            if !camera.availableLenses.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(camera.availableLenses) { lens in
+                            Button(lens.title) {
+                                camera.selectLens(lens)
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(camera.selectedLensID == lens.id ? .black : .white)
+                            .padding(.horizontal, 12)
+                            .frame(height: 34)
+                            .background(
+                                camera.selectedLensID == lens.id ? .white : .black.opacity(0.38),
+                                in: Capsule()
+                            )
+                        }
+                    }
+                    .padding(4)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .background(.ultraThinMaterial, in: Capsule())
+            }
         }
         .padding(.horizontal, 14)
+    }
+
+    private var languageMenu: some View {
+        Menu {
+            ForEach(AppSettings.Language.allCases) { language in
+                Button {
+                    settings.language = language
+                } label: {
+                    if settings.language == language {
+                        Label(settings.languageName(language), systemImage: "checkmark")
+                    } else {
+                        Text(settings.languageName(language))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "globe")
+                Text(settings.languageBadge)
+                    .font(.caption2.weight(.bold))
+                    .monospaced()
+            }
+            .frame(minWidth: 54, minHeight: 42)
+            .padding(.horizontal, 3)
+            .background(.ultraThinMaterial, in: Capsule())
+        }
+        .accessibilityLabel(settings.text(.language))
     }
 
     private var technicalReadout: some View {
@@ -129,6 +173,7 @@ struct ContentView: View {
                 )
             }
         }
+        .padding(.horizontal, 10)
     }
 
     private func metric(icon: String, value: String) -> some View {
@@ -153,11 +198,11 @@ struct ContentView: View {
             } label: {
                 Text(camera.photoFormat.shortLabel)
                     .font(.caption.weight(.bold))
-                    .frame(width: 58, height: 40)
+                    .frame(width: 58, height: 42)
                     .background(.ultraThinMaterial, in: Capsule())
             }
 
-            Spacer()
+            Spacer(minLength: 12)
 
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -175,13 +220,13 @@ struct ContentView: View {
             .disabled(!camera.isConfigured)
             .accessibilityLabel(settings.text(.capture))
 
-            Spacer()
+            Spacer(minLength: 12)
 
             Button {
                 cycleGrid()
             } label: {
                 Image(systemName: "grid")
-                    .frame(width: 58, height: 40)
+                    .frame(width: 58, height: 42)
                     .background(.ultraThinMaterial, in: Capsule())
             }
             .accessibilityLabel(settings.text(.grid))
@@ -197,7 +242,7 @@ struct ContentView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(.ultraThinMaterial, in: Capsule())
-                .padding(.top, 54)
+                .safeAreaPadding(.top, 8)
                 .transition(.opacity)
                 .task(id: saved) {
                     try? await Task.sleep(for: .seconds(1.5))
