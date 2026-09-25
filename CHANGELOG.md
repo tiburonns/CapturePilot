@@ -1,5 +1,35 @@
 # Changelog / Registro de cambios
 
+## 0.6.0 — RAW + Share JPEG / RAW + JPEG para compartir
+
+### English
+- Single-request RAW/ProRAW + processed JPEG workflow.
+- Capability gate for approximately 48 MP-class RAW capture configurations.
+- Share JPEG targets: 12/24/48 MP, never upscaled.
+- 3D .cube LUT import from Files.
+- Adjustable LUT intensity.
+- Core Image CIColorCube processing.
+- High-quality Lanczos downsample.
+- sRGB JPEG at 0.94 quality.
+- Quick Share Sheet access after capture.
+- JPEG primary + RAW alternate Photos import attempt.
+- Separate-assets fallback.
+- Version/build 0.6.0 (6).
+
+### Español
+- Flujo RAW/ProRAW + JPEG procesado en un único request.
+- Capability gate para configuraciones RAW de clase aproximada 48 MP.
+- JPEG 12/24/48 MP sin upscale.
+- Importación LUT 3D .cube desde Files.
+- Intensidad ajustable.
+- Procesamiento CIColorCube.
+- Downsample Lanczos.
+- JPEG sRGB calidad 0.94.
+- Share Sheet rápido.
+- Intento JPEG principal + RAW alternativo.
+- Fallback a assets separados.
+- Versión/build 0.6.0 (6).
+
 ## 0.5.0 — Photography scopes and capture aids / Scopes y ayudas fotográficas
 
 ### English
