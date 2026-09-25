@@ -30,6 +30,22 @@ enum PhotoScopeKind: Equatable {
             CGSize(width: 248, height: 248)
         }
     }
+
+    private func scopeHueLabel(
+        _ text: String,
+        angle: Double,
+        center: CGPoint,
+        radius: CGFloat
+    ) -> some View {
+        let radians = angle * .pi / 180
+        return Text(text)
+            .font(.system(size: 7, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.58))
+            .position(
+                x: center.x + cos(radians) * radius,
+                y: center.y + sin(radians) * radius
+            )
+    }
 }
 
 struct PhotoScopeView: View {
@@ -156,32 +172,20 @@ struct PhotoScopeView: View {
                 }
 
             case .vectorscope:
-                VStack {
-                    HStack {
-                        Spacer()
-                        Text("R")
-                        Spacer()
-                        Text("M")
-                        Spacer()
-                        Text("B")
-                        Spacer()
-                    }
-                    Spacer()
-                    HStack {
-                        Text("Y")
-                        Spacer()
-                        Text("C")
-                    }
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Text("G")
-                        Spacer()
-                    }
+                GeometryReader { geometry in
+                    let center = CGPoint(
+                        x: geometry.size.width / 2,
+                        y: geometry.size.height / 2
+                    )
+                    let radius = min(geometry.size.width, geometry.size.height) * 0.39
+
+                    scopeHueLabel("R", angle: -135, center: center, radius: radius)
+                    scopeHueLabel("M", angle: -45, center: center, radius: radius)
+                    scopeHueLabel("B", angle: 15, center: center, radius: radius)
+                    scopeHueLabel("C", angle: 45, center: center, radius: radius)
+                    scopeHueLabel("G", angle: 135, center: center, radius: radius)
+                    scopeHueLabel("Y", angle: 195, center: center, radius: radius)
                 }
-                .font(.system(size: 7, weight: .bold, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.56))
-                .padding(8)
             }
         }
         .allowsHitTesting(false)
