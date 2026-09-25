@@ -28,6 +28,8 @@
 		C10000000000000000000003 /* HistogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* HistogramView.swift */; };
 		D10000000000000000000001 /* PhotoScopeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* PhotoScopeView.swift */; };
 		D10000000000000000000002 /* FalseColorOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000002 /* FalseColorOverlay.swift */; };
+		E10000000000000000000001 /* FrameGuideOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* FrameGuideOverlay.swift */; };
+		E10000000000000000000002 /* ClippingWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* ClippingWarningView.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
@@ -56,6 +58,8 @@
 		C20000000000000000000003 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
 		D20000000000000000000001 /* PhotoScopeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoScopeView.swift; sourceTree = "<group>"; };
 		D20000000000000000000002 /* FalseColorOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FalseColorOverlay.swift; sourceTree = "<group>"; };
+		E20000000000000000000001 /* FrameGuideOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameGuideOverlay.swift; sourceTree = "<group>"; };
+		E20000000000000000000002 /* ClippingWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClippingWarningView.swift; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -115,6 +119,8 @@
 				C20000000000000000000003 /* HistogramView.swift */,
 				D20000000000000000000001 /* PhotoScopeView.swift */,
 				D20000000000000000000002 /* FalseColorOverlay.swift */,
+				E20000000000000000000001 /* FrameGuideOverlay.swift */,
+				E20000000000000000000002 /* ClippingWarningView.swift */,
 			); path = UI; sourceTree = "<group>"; };
 		96D5947C9C1BE3D117F9A0E7 /* Settings */ = { isa = PBXGroup; children = (
 				EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */,
@@ -211,6 +217,8 @@
 				C10000000000000000000003 /* HistogramView.swift in Sources */,
 				D10000000000000000000001 /* PhotoScopeView.swift in Sources */,
 				D10000000000000000000002 /* FalseColorOverlay.swift in Sources */,
+				E10000000000000000000001 /* FrameGuideOverlay.swift in Sources */,
+				E10000000000000000000002 /* ClippingWarningView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
