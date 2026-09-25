@@ -375,6 +375,8 @@ private struct RankingDetailView: View {
     private func recommendationText(_ item: RankingRecommendation) -> String {
         let es = isSpanish
         switch item {
+        case .levelHorizon:
+            return es ? "Nivela el horizonte; en esta categoría la inclinación resta fuerza al encuadre." : "Level the horizon; in this category the tilt weakens the frame."
         case .lowerHighlights:
             return es ? "Reduce un poco las altas luces; deja más margen antes del clipping." : "Reduce the highlights slightly and leave more headroom before clipping."
         case .raiseExposure:
