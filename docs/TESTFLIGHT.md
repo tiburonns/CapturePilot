@@ -4,11 +4,13 @@
 
 ### Candidate
 
-CapturePilot 0.6.0 build 3 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.7.0 build 7 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, adaptive orientation, customizable HUD, and Focus Peaking.
 
-Compilation does not prove physical camera behavior or App Store acceptance.
+The candidate also includes a persistent LUT library from a user-selected Files folder and optional explainable LUT recommendations from the Coach.
+
+Compilation does not prove physical camera behavior, external File Provider persistence, LUT recommendation quality, or App Store acceptance.
 
 ### Before Archive
 
@@ -38,7 +40,7 @@ Record actual dimensions for every resolution shown.
 
 ### TestFlight
 
-- Confirm **0.6.0 (3)**.
+- Confirm **0.7.0 (7)**.
 - Complete export compliance as requested.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
@@ -51,11 +53,13 @@ Record actual dimensions for every resolution shown.
 
 ### Candidato
 
-CapturePilot 0.6.0 build 3 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.7.0 build 7 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, orientación adaptativa, HUD y Focus Peaking.
 
-Compilar no demuestra comportamiento físico ni aceptación de App Store.
+El candidato también incluye biblioteca LUT persistente desde una carpeta de Archivos y recomendaciones LUT explicables del Coach.
+
+Compilar no demuestra comportamiento físico, persistencia de File Providers externos, calidad de recomendaciones ni aceptación de App Store.
 
 ### Antes del Archive
 
@@ -82,7 +86,7 @@ Registra las dimensiones reales de cada resolución mostrada.
 
 ### TestFlight
 
-- Confirma **0.6.0 (3)**.
+- Confirma **0.7.0 (7)**.
 - Completa export compliance.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.
