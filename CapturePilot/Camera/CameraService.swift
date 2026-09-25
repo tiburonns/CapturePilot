@@ -925,7 +925,6 @@ final class CameraService: NSObject, ObservableObject {
                 settings.maxPhotoDimensions = self.rawShareMaxDimensions
                 settings.photoQualityPrioritization = .quality
                 settings.flashMode = .off
-                settings.isAutoStillImageStabilizationEnabled = false
 
                 self.photoProcessingQueue.sync {
                     self.pendingRawShareCaptures[settings.uniqueID] =
