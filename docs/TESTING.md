@@ -74,6 +74,34 @@ On every lens where RAW+JPG becomes available:
 - [ ] Repeated captures clean up/replace temporary share files correctly.
 - [ ] Maximum-resolution RAW+LUT JPEG processing does not cause an unacceptable memory spike/crash.
 
+### LUT library and Coach recommendations
+
+- [ ] Choose a LUT folder from On My iPhone.
+- [ ] Choose a LUT folder from iCloud Drive.
+- [ ] If available, test a third-party File Provider.
+- [ ] Selected folder remains accessible after app relaunch.
+- [ ] Selected folder remains accessible after device reboot.
+- [ ] Nested subfolders are scanned.
+- [ ] Add a valid .cube while CapturePilot is active; it appears after monitoring/rescan.
+- [ ] Remove an active external LUT; CapturePilot clears the unavailable active selection safely.
+- [ ] Rename a LUT; library refreshes without duplicate stale entries.
+- [ ] Add files while CapturePilot is backgrounded; foreground refresh sees them.
+- [ ] Invalid .cube files are counted but not offered.
+- [ ] 17³, 33³, and 65³ LUTs profile and activate.
+- [ ] Library remains responsive with a large collection.
+- [ ] Recommendation appears only when RAW+JPG + Balanced/Teaching + recommendation setting are enabled.
+- [ ] Subtle mode does not show LUT recommendations.
+- [ ] Severe clipping/darkness suppresses LUT recommendations.
+- [ ] Portrait tends toward moderate warm/restrained looks where suitable.
+- [ ] Architecture tends toward neutral/contrast looks where suitable.
+- [ ] Night favors shadow-lift/highlight-compression transforms where suitable.
+- [ ] Recommendations do not depend on LUT filenames.
+- [ ] Recommendation remains stable instead of changing on every Coach update.
+- [ ] Tapping Apply activates the suggested LUT.
+- [ ] Recommendation is never applied without explicit user action.
+- [ ] RAW output remains unaffected by the selected/recommended LUT.
+- [ ] Share JPEG uses the accepted library LUT.
+
 ### Manual controls
 
 - [ ] Unsupported controls are absent.
@@ -176,7 +204,7 @@ Test all eight scene modes and record false positives, false negatives, and time
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.6.0 (6).
+- [ ] Version/build is 0.7.0 (7).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -254,6 +282,34 @@ En cada lente donde RAW+JPG esté disponible:
 - [ ] Share Sheet comparte JPEG, no RAW.
 - [ ] Capturas repetidas gestionan temporales correctamente.
 - [ ] Procesamiento máximo no provoca pico de memoria/crash inaceptable.
+
+### Biblioteca LUT y recomendaciones del Coach
+
+- [ ] Seleccionar carpeta LUT en En mi iPhone.
+- [ ] Seleccionar carpeta LUT en iCloud Drive.
+- [ ] Probar File Provider de terceros si está disponible.
+- [ ] La carpeta sigue accesible tras relanzar.
+- [ ] La carpeta sigue accesible tras reiniciar el dispositivo.
+- [ ] Se escanean subcarpetas.
+- [ ] Agregar .cube válido con la app activa y comprobar actualización.
+- [ ] Eliminar un LUT externo activo limpia la selección de forma segura.
+- [ ] Renombrar LUT no deja duplicados obsoletos.
+- [ ] Cambios en background aparecen al volver.
+- [ ] LUT inválidos se cuentan pero no se ofrecen.
+- [ ] LUT 17³, 33³ y 65³ perfilan/activan.
+- [ ] Biblioteca grande mantiene respuesta aceptable.
+- [ ] Recomendación sólo aparece con RAW+JPG + Equilibrado/Didáctico + ajuste activo.
+- [ ] Sutil no muestra recomendaciones LUT.
+- [ ] Clipping/oscuridad grave suprime recomendaciones.
+- [ ] Retrato favorece looks moderadamente cálidos/controlados cuando procede.
+- [ ] Arquitectura favorece neutralidad/contraste cuando procede.
+- [ ] Noche favorece levantar sombras/comprimir luces cuando procede.
+- [ ] El nombre del archivo no determina la recomendación.
+- [ ] La recomendación se mantiene estable.
+- [ ] Aplicar activa el LUT sugerido.
+- [ ] Nunca se aplica sin acción explícita.
+- [ ] RAW no cambia por el LUT.
+- [ ] JPEG para compartir usa el LUT aceptado.
 
 ### Controles manuales
 
@@ -355,7 +411,7 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.6.0 (6).
+- [ ] 0.7.0 (7).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.
