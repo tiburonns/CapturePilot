@@ -401,7 +401,9 @@ enum LUTProfileAnalyzer {
         ]
 
         let outputSaturation = saturatedSamples.map { sample, _ in
-            Double(max(sample.x, sample.y, sample.z) - min(sample.x, sample.y, sample.z))
+            let maximum = max(sample.x, max(sample.y, sample.z))
+            let minimum = min(sample.x, min(sample.y, sample.z))
+            return Double(maximum - minimum)
         }.reduce(0, +) / Double(saturatedSamples.count)
 
         let saturation = clamp((outputSaturation - 0.64) / 0.32, -1, 1)
