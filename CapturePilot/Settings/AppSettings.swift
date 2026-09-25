@@ -399,6 +399,7 @@ enum LocalizedKey: Hashable {
     case lutReasonPortrait, lutReasonHighlights, lutReasonShadows, lutReasonNight
     case lutReasonLandscape, lutReasonArchitecture, lutReasonAutomotive
     case lutReasonStreet, lutReasonMacro, lutReasonGeneral
+    case rankings
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -507,7 +508,8 @@ enum LocalizedKey: Hashable {
             .lutReasonAutomotive: "Favorece contraste y separación de color.",
             .lutReasonStreet: "Favorece estructura y contraste para calle.",
             .lutReasonMacro: "Favorece separación de color y microcontraste.",
-            .lutReasonGeneral: "Look equilibrado para la escena actual."
+            .lutReasonGeneral: "Look equilibrado para la escena actual.",
+            .rankings: "Ranking"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -616,7 +618,8 @@ enum LocalizedKey: Hashable {
             .lutReasonAutomotive: "Favors contrast and color separation.",
             .lutReasonStreet: "Favors structure and contrast for street.",
             .lutReasonMacro: "Favors color separation and microcontrast.",
-            .lutReasonGeneral: "Balanced look for the current scene."
+            .lutReasonGeneral: "Balanced look for the current scene.",
+            .rankings: "Rankings"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
