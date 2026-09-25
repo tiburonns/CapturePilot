@@ -4,6 +4,7 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var hud: HUDLayoutStore
+    @EnvironmentObject private var lutLibrary: LUTLibraryStore
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var camera = CameraService()
 
@@ -34,18 +35,24 @@ struct ContentView: View {
             camera.setCoachScene(settings.sceneCoach)
             applyMonitoringSettings()
             syncMonitoringHUD()
+            lutLibrary.startMonitoring()
             camera.resumeIfPossible()
             OrientationPolicy.applyCurrentPolicy()
         }
-        .onDisappear { camera.stop() }
+        .onDisappear {
+            camera.stop()
+            lutLibrary.stopMonitoring()
+        }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
                 applyMonitoringSettings()
                 syncMonitoringHUD()
+                lutLibrary.startMonitoring()
                 camera.resumeIfPossible()
             case .inactive, .background:
                 camera.stop()
+                lutLibrary.stopMonitoring()
             @unknown default:
                 break
             }
@@ -102,6 +109,7 @@ struct ContentView: View {
             SettingsView()
                 .environmentObject(settings)
                 .environmentObject(hud)
+                .environmentObject(lutLibrary)
         }
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
@@ -232,9 +240,20 @@ struct ContentView: View {
             sceneMenu
 
         case .coach:
-            CoachBubble(state: camera.coachState)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: 320)
+            VStack(spacing: 6) {
+                CoachBubble(state: camera.coachState)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 320)
+
+                if let recommendation = currentLUTRecommendation {
+                    LUTRecommendationView(
+                        recommendation: recommendation,
+                        isActive: lutLibrary.activeEntryID == recommendation.entryID
+                    ) {
+                        applyLUTRecommendation(recommendation)
+                    }
+                }
+            }
 
         case .metrics:
             technicalReadout
@@ -630,7 +649,9 @@ struct ContentView: View {
         Button {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             camera.capturePhoto(
-                rawShareConfiguration: settings.rawShareConfiguration
+                rawShareConfiguration: settings.rawShareConfiguration(
+                    libraryLUTURL: lutLibrary.activeLUTURL
+                )
             )
         } label: {
             ZStack {
@@ -797,6 +818,35 @@ struct ContentView: View {
         }
         if !hud.isVisible(.falseColor) {
             camera.setFalseColorEnabled(false)
+        }
+    }
+
+    private var currentLUTRecommendation: LUTRecommendation? {
+        guard settings.rawShareEnabled,
+              settings.lutCoachRecommendations,
+              settings.coachIntensity != .subtle,
+              !lutLibrary.entries.isEmpty else {
+            return nil
+        }
+
+        return LUTRecommendationEngine.recommend(
+            entries: lutLibrary.entries,
+            scene: settings.sceneCoach,
+            state: camera.coachState
+        )
+    }
+
+    private func applyLUTRecommendation(_ recommendation: LUTRecommendation) {
+        guard let entry = lutLibrary.entry(withID: recommendation.entryID) else {
+            return
+        }
+
+        do {
+            try lutLibrary.activate(entry)
+            settings.lutEnabled = true
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } catch {
+            camera.runtimeErrorDescription = error.localizedDescription
         }
     }
 
