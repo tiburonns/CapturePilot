@@ -25,6 +25,7 @@ enum RankingRecommendation: String, Codable, CaseIterable {
     case simplifyBackground
     case moveTowardStrongPoint
     case reduceHeadroom
+    case improvePortraitQuality
     case strengthenSymmetry
     case useLeadingLines
     case lowerCameraAngle
