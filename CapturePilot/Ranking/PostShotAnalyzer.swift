@@ -46,20 +46,10 @@ final class PostShotAnalyzer {
         let detail = min(100, max(0, pixelMetrics.edgeEnergy * 260))
 
         var weighted: [(Double, Double)] = [
-            (exposure, 0.26),
-            (composition, 0.28),
-            (detail, 0.22)
+            (exposure, 0.34),
+            (composition, 0.38),
+            (detail, 0.28)
         ]
-
-        if let aesthetics {
-            weighted.append((aesthetics, 0.24))
-        } else {
-            weighted = [
-                (exposure, 0.32),
-                (composition, 0.38),
-                (detail, 0.30)
-            ]
-        }
 
         if let faceQuality, category == .portrait {
             weighted = weighted.map { ($0.0, $0.1 * 0.86) }
@@ -314,6 +304,10 @@ final class PostShotAnalyzer {
         }
         if score.detail < 48 {
             result.append(.stabilizeAndRefocus)
+        }
+
+        if let aesthetics = score.aesthetics, aesthetics < 45 {
+            result.append(.tryDifferentViewpoint)
         }
 
         if let center = saliencyCenter {
