@@ -19,6 +19,7 @@ enum RankingSource: String, Codable {
 }
 
 enum RankingRecommendation: String, Codable, CaseIterable {
+    case levelHorizon
     case lowerHighlights
     case raiseExposure
     case stabilizeAndRefocus
