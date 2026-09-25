@@ -36,7 +36,7 @@ struct ClippingWarningView: View {
             Text(channels.isEmpty ? "—" : channels)
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
         }
-        .foregroundStyle(active ? .white : .secondary)
+        .foregroundStyle(active ? Color.white : Color.secondary)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(active ? channels : settings.text(.off))
