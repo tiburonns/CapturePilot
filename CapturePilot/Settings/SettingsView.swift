@@ -1,9 +1,12 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var hud: HUDLayoutStore
+    @EnvironmentObject private var lutStore: LUTStore
     @Environment(\.dismiss) private var dismiss
+    @State private var showingLUTImporter = false
 
     var body: some View {
         NavigationStack {
@@ -157,6 +160,48 @@ struct SettingsView: View {
                     Text(settings.text(.monitoring))
                 }
 
+                Section {
+                    Picker(settings.text(.lut), selection: $lutStore.selectedID) {
+                        ForEach(lutStore.cubes) { cube in
+                            Text(cube.name).tag(cube.id)
+                        }
+                    }
+
+                    Button {
+                        showingLUTImporter = true
+                    } label: {
+                        Label(settings.text(.importLUT), systemImage: "square.and.arrow.down")
+                    }
+
+                    if !lutStore.importedCubes.isEmpty {
+                        ForEach(lutStore.importedCubes) { cube in
+                            HStack {
+                                Text(cube.name)
+                                    .lineLimit(1)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    lutStore.removeImportedCube(cube)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+
+                    if lutStore.lastImportError != nil {
+                        Text(settings.text(.lutImportError))
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
+                    }
+
+                    Text(settings.text(.quickShareDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.quickShare))
+                }
+
                 Section(settings.text(.privacy)) {
                     Text(settings.text(.privacyDetail))
                         .font(.footnote)
@@ -177,11 +222,20 @@ struct SettingsView: View {
                 }
             }
         }
+        .fileImporter(
+            isPresented: $showingLUTImporter,
+            allowedContentTypes: [UTType(filenameExtension: "cube") ?? .data],
+            allowsMultipleSelection: true
+        ) { result in
+            if case .success(let urls) = result {
+                lutStore.importCubeFiles(urls)
+            }
+        }
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.5.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "5"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.6.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "6"
         return "\(version) (\(build))"
     }
 }
