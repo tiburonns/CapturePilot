@@ -78,6 +78,24 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate AF/AE lock timing and recovery on physical hardware.
 - [ ] Validate combined scopes/coach thermal performance.
 
+### 0.6 — RAW + Share JPEG
+
+- [x] Single-request RAW/ProRAW + processed JPEG capture path.
+- [x] Maximum-dimension RAW-share request.
+- [x] 12/24/48 MP Share JPEG targets with no upscaling.
+- [x] 3D .cube LUT import.
+- [x] LUT intensity.
+- [x] Core Image LUT processing.
+- [x] Lanczos JPEG downsample.
+- [x] Quick iOS Share Sheet URL.
+- [x] JPEG-primary + RAW-alternate Photos import attempt.
+- [x] Separate-assets fallback.
+- [ ] Verify 48 MP RAW/ProRAW dimensions on physical hardware.
+- [ ] Verify processed-companion dimensions.
+- [ ] Validate LUT output against references.
+- [ ] Validate Photos RAW/JPEG pairing and metadata.
+- [ ] Validate memory/thermal performance at maximum resolution.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -181,6 +199,24 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar scopes con cartas/escenas controladas.
 - [ ] Validar timing/recuperación de AF/AE Lock en hardware.
 - [ ] Validar carga térmica usando scopes + coach.
+
+### 0.6 — RAW + JPEG para compartir
+
+- [x] RAW/ProRAW + JPEG processed en un único request.
+- [x] Request a máxima dimensión.
+- [x] JPEG objetivo 12/24/48 MP sin upscale.
+- [x] Importación LUT 3D .cube.
+- [x] Intensidad del LUT.
+- [x] Procesamiento Core Image.
+- [x] Downsample Lanczos.
+- [x] Share Sheet rápido.
+- [x] Intento JPEG principal + RAW alternativo en Fotos.
+- [x] Fallback a assets separados.
+- [ ] Verificar dimensiones RAW/ProRAW 48 MP en hardware.
+- [ ] Verificar dimensiones del companion procesado.
+- [ ] Validar LUT contra referencias.
+- [ ] Validar pairing/metadata en Fotos.
+- [ ] Validar memoria/temperatura a máxima resolución.
 
 ### Gates pendientes
 
