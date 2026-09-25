@@ -189,9 +189,8 @@ final class SocialCompetitionService: ObservableObject {
             submissions.append(("overall", bestOverall))
         }
         submissions.append(
-            contentsOf: bestByCategory.compactMap { category, entry in
-                guard let entry else { return nil }
-                return (category.rawValue, entry)
+            contentsOf: bestByCategory.map { category, entry in
+                (category.rawValue, entry)
             }
         )
 
