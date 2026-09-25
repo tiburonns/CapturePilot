@@ -190,4 +190,22 @@ struct PhotoScopeView: View {
         }
         .allowsHitTesting(false)
     }
+
+    private func scopeHueLabel(
+        _ text: String,
+        angle: Double,
+        center: CGPoint,
+        radius: CGFloat
+    ) -> some View {
+        let radians = angle * .pi / 180
+        return Text(text)
+            .font(.system(size: 7, weight: .bold, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.58))
+            .position(
+                x: center.x + cos(radians) * radius,
+                y: center.y + sin(radians) * radius
+            )
+    }
+
+
 }
