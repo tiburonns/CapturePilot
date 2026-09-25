@@ -25,6 +25,7 @@ struct SocialScore: Identifiable, Hashable {
     let category: String
     let score: Double
     let capturedAt: Date
+    let scoreVersion: Int
 }
 
 @MainActor
@@ -233,6 +234,7 @@ final class SocialCompetitionService: ObservableObject {
                 record["category"] = category as CKRecordValue
                 record["score"] = NSNumber(value: entry.coachScore)
                 record["capturedAt"] = entry.createdAt as CKRecordValue
+                record["scoreVersion"] = NSNumber(value: entry.scoreVersion)
                 _ = try await database.save(record)
             }
 
@@ -413,7 +415,9 @@ final class SocialCompetitionService: ObservableObject {
                       let ownerHash = record["ownerHash"] as? String,
                       let username = record["username"] as? String,
                       let category = record["category"] as? String,
-                      let number = record["score"] as? NSNumber else {
+                      let number = record["score"] as? NSNumber,
+                      let version = record["scoreVersion"] as? NSNumber,
+                      version.intValue == PhotoRankingEntry.currentScoreVersion else {
                     return nil
                 }
 
@@ -423,7 +427,8 @@ final class SocialCompetitionService: ObservableObject {
                     username: username,
                     category: category,
                     score: number.doubleValue,
-                    capturedAt: record["capturedAt"] as? Date ?? .distantPast
+                    capturedAt: record["capturedAt"] as? Date ?? .distantPast,
+                    scoreVersion: version.intValue
                 )
             }
             .sorted { lhs, rhs in
