@@ -9,6 +9,7 @@ struct ContentView: View {
 
     @State private var showingSettings = false
     @State private var showingProControls = false
+    @State private var histogramExpanded = false
 
     var body: some View {
         ZStack {
@@ -28,6 +29,8 @@ struct ContentView: View {
         .onAppear {
             camera.setCoachIntensity(settings.coachIntensity)
             camera.setCoachScene(settings.sceneCoach)
+            camera.setZebraLevel(settings.zebraLevel)
+            syncMonitoringHUD()
             camera.resumeIfPossible()
             OrientationPolicy.applyCurrentPolicy()
         }
@@ -48,10 +51,21 @@ struct ContentView: View {
         .onChange(of: settings.sceneCoach) { _, value in
             camera.setCoachScene(value)
         }
+        .onChange(of: settings.zebraLevel) { _, value in
+            camera.setZebraLevel(value)
+        }
+        .onChange(of: hud.configurations) { _, _ in
+            syncMonitoringHUD()
+        }
         .onChange(of: hud.isEditing) { _, editing in
             if editing {
                 showingProControls = false
+                histogramExpanded = false
                 camera.setFocusPeakingEnabled(false)
+                camera.setZebraEnabled(false)
+                camera.setHistogramEnabled(false)
+            } else {
+                syncMonitoringHUD()
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -77,6 +91,12 @@ struct ContentView: View {
                     guard !hud.isEditing else { return }
                     camera.focus(at: point)
                 }
+                .ignoresSafeArea()
+
+                ZebraOverlay(
+                    image: camera.zebraImage,
+                    isEnabled: camera.isZebraEnabled
+                )
                 .ignoresSafeArea()
 
                 FocusPeakingOverlay(
@@ -199,7 +219,55 @@ struct ContentView: View {
                 .background(.ultraThinMaterial, in: Circle())
             }
             .accessibilityLabel(settings.text(.focusPeaking))
+
+        case .zebra:
+            zebraControl
+
+        case .histogram:
+            HistogramView(
+                snapshot: camera.histogramSnapshot,
+                isExpanded: $histogramExpanded
+            )
         }
+    }
+
+    private var zebraControl: some View {
+        HStack(spacing: 0) {
+            Button {
+                camera.toggleZebra()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "line.diagonal")
+                    Text("Z\(Int(settings.zebraLevel.rounded()))")
+                        .font(.caption2.weight(.bold))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(camera.isZebraEnabled ? .yellow : .white)
+                .padding(.leading, 10)
+                .padding(.trailing, 6)
+                .frame(height: 44)
+            }
+
+            Menu {
+                ForEach([75, 80, 85, 90, 95, 100], id: \.self) { level in
+                    Button {
+                        settings.zebraLevel = Double(level)
+                    } label: {
+                        if Int(settings.zebraLevel.rounded()) == level {
+                            Label("\(level)%", systemImage: "checkmark")
+                        } else {
+                            Text("\(level)%")
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.bold))
+                    .frame(width: 28, height: 44)
+            }
+        }
+        .background(.ultraThinMaterial, in: Capsule())
+        .accessibilityLabel(settings.text(.zebra))
     }
 
     private var languageMenu: some View {
@@ -445,6 +513,16 @@ struct ContentView: View {
             systemImage: "camera.fill"
         )
         .foregroundStyle(.white)
+    }
+
+    private func syncMonitoringHUD() {
+        guard !hud.isEditing else { return }
+
+        camera.setHistogramEnabled(hud.isVisible(.histogram))
+
+        if !hud.isVisible(.zebra) {
+            camera.setZebraEnabled(false)
+        }
     }
 
     private func cycleGrid() {
