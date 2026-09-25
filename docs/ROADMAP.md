@@ -96,6 +96,26 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate Photos RAW/JPEG pairing and metadata.
 - [ ] Validate memory/thermal performance at maximum resolution.
 
+### 0.7 — LUT library + Coach recommendations
+
+- [x] User-selected Files LUT folder.
+- [x] Persistent folder bookmark.
+- [x] Recursive .cube discovery.
+- [x] Folder change monitoring while active.
+- [x] Refresh on foreground and manual rescan.
+- [x] Local + external LUT library.
+- [x] Invalid-LUT counting.
+- [x] LUT transform profiling: warmth/contrast/saturation/shadows/highlights/strength.
+- [x] Scene + exposure-aware LUT recommendation.
+- [x] Recommendation stabilization.
+- [x] Explicit user apply action; no automatic look changes.
+- [x] Active LUT copied into CapturePilot cache before capture.
+- [ ] Validate persistent folder access across relaunch/reboot.
+- [ ] Validate iCloud Drive and third-party File Provider behavior.
+- [ ] Validate live change detection for add/remove/rename.
+- [ ] Validate LUT profile/recommendation sanity against known references.
+- [ ] Validate large LUT libraries and 65³ cubes.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -217,6 +237,26 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar LUT contra referencias.
 - [ ] Validar pairing/metadata en Fotos.
 - [ ] Validar memoria/temperatura a máxima resolución.
+
+### 0.7 — Biblioteca LUT + recomendaciones del Coach
+
+- [x] Carpeta LUT seleccionada por el usuario en Archivos.
+- [x] Bookmark persistente.
+- [x] Descubrimiento recursivo .cube.
+- [x] Monitoreo de cambios mientras la app está activa.
+- [x] Refresh al volver al foreground y rescan manual.
+- [x] Biblioteca LUT local + externa.
+- [x] Conteo de LUT inválidos.
+- [x] Perfil de calidez/contraste/saturación/sombras/luces/fuerza.
+- [x] Recomendación según escena + exposición.
+- [x] Estabilización de recomendaciones.
+- [x] Aplicación explícita; nunca automática.
+- [x] LUT activo copiado al cache local antes de capturar.
+- [ ] Validar acceso persistente tras relanzar/reiniciar.
+- [ ] Validar iCloud Drive y File Providers de terceros.
+- [ ] Validar altas/bajas/renombres en vivo.
+- [ ] Validar perfiles/recomendaciones contra LUT conocidos.
+- [ ] Validar bibliotecas grandes y cubos 65³.
 
 ### Gates pendientes
 
