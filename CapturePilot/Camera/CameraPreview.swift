@@ -44,6 +44,7 @@ struct CameraPreview: UIViewRepresentable {
         let view = CameraPreviewView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
+        applyPortraitRotation(to: view.previewLayer)
 
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         view.addGestureRecognizer(tap)
@@ -54,7 +55,14 @@ struct CameraPreview: UIViewRepresentable {
         if uiView.previewLayer.session !== session {
             uiView.previewLayer.session = session
         }
+        applyPortraitRotation(to: uiView.previewLayer)
         context.coordinator.onTapToFocus = onTapToFocus
+    }
+
+    private func applyPortraitRotation(to previewLayer: AVCaptureVideoPreviewLayer) {
+        guard let connection = previewLayer.connection,
+              connection.isVideoRotationAngleSupported(90) else { return }
+        connection.videoRotationAngle = 90
     }
 
     final class Coordinator: NSObject {
