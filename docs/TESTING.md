@@ -47,6 +47,33 @@ For each lens:
 - [ ] ProRAW appears only on supported configurations.
 - [ ] ProRAW saves a readable Apple ProRAW asset.
 
+### RAW + Share JPEG workflow
+
+On every lens where RAW+JPG becomes available:
+
+- [ ] RAW+JPG HUD label appears only when the capability gate is satisfied.
+- [ ] One shutter press yields RAW and processed results from the same capture request.
+- [ ] Record actual RAW/ProRAW pixel dimensions.
+- [ ] Confirm the requested maximum is approximately 48 MP on the intended Wide-camera configuration.
+- [ ] Confirm CapturePilot never advertises a synthetic 48 MP workflow on unsupported lenses.
+- [ ] 12 MP target produces approximately 12 MP JPEG.
+- [ ] 24 MP target produces approximately 24 MP JPEG.
+- [ ] 48 MP target never upscales when the processed source is smaller.
+- [ ] RAW data remains visually/data-wise unaffected by LUT choice.
+- [ ] Import a known 17³ .cube LUT.
+- [ ] Import a known 33³ .cube LUT.
+- [ ] Import a known 65³ .cube LUT.
+- [ ] Invalid/1D/non-standard-domain LUT produces a controlled error.
+- [ ] LUT intensity 0% approximates the un-LUT processed JPEG.
+- [ ] LUT intensity 100% applies the full transform.
+- [ ] JPEG orientation is correct in every supported device orientation.
+- [ ] JPEG is sRGB and readable by Photos/Files/share targets.
+- [ ] Photos imports JPEG+RAW as one paired asset when supported.
+- [ ] Fallback saves both files when pairing is rejected.
+- [ ] Share Sheet sends the generated JPEG, not the RAW.
+- [ ] Repeated captures clean up/replace temporary share files correctly.
+- [ ] Maximum-resolution RAW+LUT JPEG processing does not cause an unacceptable memory spike/crash.
+
 ### Manual controls
 
 - [ ] Unsupported controls are absent.
@@ -149,7 +176,7 @@ Test all eight scene modes and record false positives, false negatives, and time
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.5.0 (5).
+- [ ] Version/build is 0.6.0 (6).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -202,6 +229,31 @@ Para cada lente:
 - [ ] RAW produce un archivo legible.
 - [ ] ProRAW sólo aparece en configuraciones compatibles.
 - [ ] ProRAW produce Apple ProRAW legible.
+
+### Flujo RAW + JPEG para compartir
+
+En cada lente donde RAW+JPG esté disponible:
+
+- [ ] RAW+JPG sólo aparece cuando pasa el capability gate.
+- [ ] Un disparo entrega RAW + processed del mismo request.
+- [ ] Registrar dimensiones RAW/ProRAW reales.
+- [ ] Confirmar ~48 MP en la configuración Wide prevista.
+- [ ] No se anuncian 48 MP sintéticos en lentes no compatibles.
+- [ ] JPEG 12 MP queda aproximadamente en 12 MP.
+- [ ] JPEG 24 MP queda aproximadamente en 24 MP.
+- [ ] Objetivo 48 MP nunca hace upscale.
+- [ ] RAW no cambia con el LUT.
+- [ ] Probar LUT conocido 17³, 33³ y 65³.
+- [ ] LUT inválido/1D/dominio no estándar falla de forma controlada.
+- [ ] Intensidad 0% se aproxima al processed sin LUT.
+- [ ] Intensidad 100% aplica la transformación completa.
+- [ ] Orientación JPEG correcta.
+- [ ] JPEG sRGB legible.
+- [ ] Fotos empareja JPEG+RAW cuando sea compatible.
+- [ ] Fallback conserva ambos archivos.
+- [ ] Share Sheet comparte JPEG, no RAW.
+- [ ] Capturas repetidas gestionan temporales correctamente.
+- [ ] Procesamiento máximo no provoca pico de memoria/crash inaceptable.
 
 ### Controles manuales
 
@@ -303,7 +355,7 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.5.0 (5).
+- [ ] 0.6.0 (6).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.
