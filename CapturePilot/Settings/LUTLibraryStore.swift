@@ -121,7 +121,7 @@ final class LUTLibraryStore: ObservableObject {
         }
 
         let data = try url.bookmarkData(
-            options: .withSecurityScope,
+            options: [],
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
@@ -368,7 +368,7 @@ final class LUTLibraryStore: ObservableObject {
         do {
             let url = try URL(
                 resolvingBookmarkData: data,
-                options: .withSecurityScope,
+                options: [],
                 relativeTo: nil,
                 bookmarkDataIsStale: &stale
             )
@@ -381,7 +381,7 @@ final class LUTLibraryStore: ObservableObject {
 
                 if accessed,
                    let fresh = try? url.bookmarkData(
-                    options: .withSecurityScope,
+                    options: [],
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                    ) {
