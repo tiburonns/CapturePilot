@@ -4,7 +4,7 @@
 
 ### Source status
 
-Version 0.2.0 build 2 is the first TestFlight candidate. The repository contains the app target, AppIcon asset, launch appearance, privacy manifest, localized permissions, English/Spanish/System language controls, and Release configuration.
+Version 0.2.0 build 2 is the first TestFlight candidate. The repository contains the app target, AppIcon asset, launch appearance, privacy manifest, localized permissions, English/Spanish/System language controls, and Release configuration. The unsigned Release target has been compiled successfully in GitHub Actions using Xcode 26.6.
 
 A repository can be prepared for TestFlight, but only an archive produced by Xcode on macOS can prove that the binary is accepted by App Store Connect. Do not mark a build as shipped until the archive and upload checks below pass.
 
@@ -44,7 +44,7 @@ All items in `docs/TESTING.md` and `docs/UI_LAYOUT.md` must pass on at least one
 
 ### Estado del código
 
-La versión 0.2.0 build 2 es el primer candidato para TestFlight. El repositorio incluye target de la app, AppIcon, apariencia de inicio, Privacy Manifest, permisos localizados, selector Inglés/Español/Sistema y configuración Release.
+La versión 0.2.0 build 2 es el primer candidato para TestFlight. El repositorio incluye target de la app, AppIcon, apariencia de inicio, Privacy Manifest, permisos localizados, selector Inglés/Español/Sistema y configuración Release. El target Release sin firma ya compiló correctamente en GitHub Actions con Xcode 26.6.
 
 Preparar el repositorio no demuestra por sí solo que Apple aceptará el binario. Solo un Archive creado con Xcode en macOS y procesado por App Store Connect permite validar esa parte. No marques una compilación como distribuida hasta completar las pruebas siguientes.
 

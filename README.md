@@ -4,7 +4,7 @@
 
 CapturePilot is a free, ad-free iOS camera that combines professional camera controls with an on-device photography coach. The coach offers one prioritized suggestion at a time; it does not assign an aesthetic score or make creative decisions for the photographer.
 
-> Status: **0.2.0 (2) — source-complete TestFlight candidate. Physical-device, Xcode Archive, and App Store Connect processing are still release gates.**
+> Status: **0.2.0 (2) — Release compilation verified on Xcode 26.6 CI. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.**
 
 ## English
 
@@ -72,7 +72,7 @@ See [ROADMAP](docs/ROADMAP.md).
 - Open `CapturePilot.xcodeproj`.
 - Select your Apple Developer Team and confirm the final Bundle Identifier.
 - Use Xcode 26 or later for 2026 App Store Connect uploads.
-- Complete the physical-device checklist before external testing.
+- Release compilation is continuously checked in GitHub Actions against Apple SDKs.\n- Complete the physical-device checklist and signed Archive validation before external testing.
 
 Documentation:
 - [Architecture](docs/ARCHITECTURE.md)
@@ -88,7 +88,7 @@ Documentation:
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles fotográficos profesionales con un coach que analiza la escena en el dispositivo. El coach presenta una recomendación prioritaria; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
 
-> Estado: **0.2.0 (2) — candidato de código para TestFlight. La prueba física, Archive en Xcode y procesamiento de App Store Connect siguen siendo puertas de publicación.**
+> Estado: **0.2.0 (2) — compilación Release verificada en CI con Xcode 26.6. La prueba física, validación de Archive firmado y procesamiento de App Store Connect siguen siendo puertas de publicación.**
 
 ### Implementado
 
@@ -154,7 +154,7 @@ Consulta [ROADMAP](docs/ROADMAP.md).
 - Abre `CapturePilot.xcodeproj`.
 - Selecciona tu Apple Developer Team y confirma el Bundle Identifier final.
 - Usa Xcode 26 o posterior para uploads de App Store Connect durante 2026.
-- Completa la lista de prueba física antes de testers externos.
+- La compilación Release se verifica continuamente en GitHub Actions contra los SDK de Apple.\n- Completa la prueba física y la validación de Archive firmado antes de testers externos.
 
 Documentación:
 - [Arquitectura](docs/ARCHITECTURE.md)

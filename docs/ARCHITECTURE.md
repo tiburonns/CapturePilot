@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.1 is intentionally small and modular.
+CapturePilot 0.2.0 is organized so camera capture, scene analysis, presentation, settings, and distribution metadata can evolve independently.
 
 ```text
 CapturePilot
@@ -20,34 +20,97 @@ CapturePilot
 │   ├── CoachBubble.swift
 │   ├── CompositionOverlay.swift
 │   └── ManualControlsView.swift
+├── Assets.xcassets
+├── en.lproj / es.lproj
+├── PrivacyInfo.xcprivacy
+├── Info.plist
 ├── ContentView.swift
 └── CapturePilotApp.swift
 ```
 
 ### Camera layer
 
-`CameraService` owns the AVFoundation capture session, device inputs, photo output, video-frame output, manual camera settings, capture formats, and Photos save flow. Camera configuration runs on a dedicated serial queue.
+`CameraService` owns the AVFoundation session, camera inputs, photo output, video-frame output, device capability discovery, manual camera controls, capture formats, and add-only Photos save flow. Session mutations run on a dedicated serial queue.
 
-`CameraPreview` is a thin `UIViewRepresentable` around `AVCaptureVideoPreviewLayer`. It also converts screen taps into capture-device coordinates for real tap-to-focus/metering.
+`CameraPreview` wraps `AVCaptureVideoPreviewLayer` with `.resizeAspectFill`, converts view taps to capture-device coordinates, displays the focus reticle, and uses the iOS 17+ video-rotation-angle API for portrait capture.
+
+### Full-screen boundary
+
+The preview and composition overlay extend under display cutouts and the Home Indicator. Interactive controls do not intentionally use those unsafe regions: the camera chrome uses SwiftUI safe-area padding, the top controls are split from the lens selector, and the lens selector can scroll horizontally on narrow displays.
+
+The shooting view hides the status bar and requests persistent system overlays to remain hidden. Portrait is the only supported orientation for this candidate.
+
+This is a source-level layout guarantee. Dynamic Island/notch/Home Indicator behavior still requires the physical-device matrix in `docs/UI_LAYOUT.md`.
 
 ### Coach layer
 
-`CoachEngine` receives throttled video frames and performs Vision requests off the main thread. It currently combines horizon, people/faces, saliency, and sampled luminance into a single prioritized recommendation.
+`CameraService` delivers frames on a serial video-output queue. `CoachEngine` throttles analysis and runs Vision/luminance work on that queue, then publishes UI state on the main queue. This avoids manually retaining Core Video buffers and is compatible with current Swift/CoreVideo memory management.
 
-The coach deliberately returns a recommendation rather than a numerical "photo score." Composition is contextual and creative; the system should explain opportunities without pretending there is one objectively perfect frame.
+Current signals:
+- horizon;
+- face/person rectangles;
+- attention-based saliency;
+- sampled luminance;
+- approximate highlight/shadow clipping;
+- rule-of-thirds proximity;
+- basic person headroom.
 
-### UI layer
+The coach returns one prioritized recommendation rather than a numerical aesthetic score.
 
-SwiftUI owns presentation. Pro controls call `CameraService`; composition overlays consume coach state; settings are persisted through `UserDefaults`.
+### UI and language
+
+SwiftUI owns presentation. `ContentView` contains the direct language menu (System / English / Spanish), full-screen camera chrome, lens selector, coach output, format selector, and shutter controls.
+
+`SettingsView` provides the same language choice plus composition-guide and coach-intensity preferences. `AppSettings` persists these private app settings with `UserDefaults`.
 
 ### Privacy boundary
 
-No frame is uploaded by this baseline. Camera frames are processed in memory by local Apple frameworks. Photo bytes are written to the user's Photo Library only after capture and authorization.
+No live frame is uploaded by the current source. Frames are processed in memory with Apple frameworks. Captured photo bytes are written to Photos only after user authorization.
+
+`PrivacyInfo.xcprivacy` declares no tracking or collected-data types and declares the UserDefaults Required Reason API with CA92.1 for app-local settings.
+
+### Build validation
+
+GitHub Actions uses Xcode 26.x to compile the Release configuration without signing. CI validates both simulator and iPhoneOS SDK compilation. Signing, physical camera behavior, Archive validation, and App Store Connect processing remain separate release gates.
+
+---
 
 ## Español
 
-CapturePilot 0.1 mantiene una arquitectura pequeña y modular. `CameraService` concentra AVFoundation y el guardado; `CoachEngine` analiza frames fuera del hilo principal; SwiftUI presenta el visor, controles y recomendaciones.
+CapturePilot 0.2.0 separa cámara, análisis, interfaz, ajustes y distribución para que cada parte pueda evolucionar sin acoplar el resto.
 
-El coach devuelve recomendaciones priorizadas, no una puntuación estética. La composición depende del contexto y de la intención del fotógrafo.
+### Capa de cámara
 
-En esta base ningún frame se sube a un servidor. El análisis ocurre en memoria y las fotografías se escriben en la fototeca únicamente después de la captura y autorización.
+`CameraService` controla la sesión AVFoundation, entradas de cámara, salida fotográfica, frames para análisis, detección de capacidades, controles manuales, formatos y guardado en Fotos. Los cambios de sesión se realizan en una cola serial.
+
+`CameraPreview` utiliza `AVCaptureVideoPreviewLayer` con `.resizeAspectFill`, convierte toques del visor a coordenadas de cámara, muestra la retícula de enfoque y usa la API moderna de ángulo de rotación de iOS 17+.
+
+### Pantalla completa
+
+El preview y las guías visuales llegan hasta los bordes físicos de la pantalla, incluso detrás de Dynamic Island/notch y Home Indicator. Los controles interactivos permanecen dentro de zonas seguras mediante safe-area padding.
+
+La fila superior está separada del selector de lentes y éste puede desplazarse horizontalmente para evitar desbordamiento en pantallas pequeñas. La barra de estado se oculta durante la captura. Esta versión está diseñada deliberadamente para orientación vertical.
+
+Esto se verificó en código y compilación; la geometría real de Dynamic Island/notch/Home Indicator todavía debe pasar la matriz física de `docs/UI_LAYOUT.md`.
+
+### Coach
+
+Los frames llegan por una cola serial de AVFoundation. `CoachEngine` limita la frecuencia de análisis, combina Vision con muestreo de luminancia y publica el resultado final en el hilo principal.
+
+Actualmente analiza horizonte, rostro/persona, saliencia visual, luminancia, recorte aproximado de luces/sombras, proximidad a puntos de tercios y headroom básico.
+
+El coach devuelve una recomendación prioritaria, no una puntuación estética.
+
+### Interfaz e idioma
+
+`ContentView` incluye un botón directo de idioma con **Sistema / English / Español**, además del selector equivalente en Ajustes. `AppSettings` persiste idioma, guía y nivel del coach mediante `UserDefaults`.
+
+### Privacidad
+
+El código actual no sube frames. El análisis ocurre localmente y una fotografía solo se agrega a Fotos después del permiso del usuario.
+
+`PrivacyInfo.xcprivacy` declara que no hay tracking ni tipos de datos recopilados y declara UserDefaults con motivo CA92.1 para preferencias privadas de la propia app.
+
+### Validación de build
+
+GitHub Actions usa Xcode 26.x para compilar Release sin firma contra Simulator y SDK iPhoneOS. Firma, cámara física, Archive y procesamiento en App Store Connect siguen siendo puertas distintas antes de distribución.

@@ -30,3 +30,14 @@ jobs:
             -sdk iphonesimulator \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Build Release for iPhoneOS
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project CapturePilot.xcodeproj \
+            -target CapturePilot \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            build
