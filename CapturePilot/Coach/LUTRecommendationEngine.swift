@@ -28,6 +28,16 @@ enum LUTRecommendationEngine {
     ) -> LUTRecommendation? {
         guard !entries.isEmpty else { return nil }
 
+        if state.highlightClipRatio > 0.07 || state.averageLuma > 0.82 {
+            return nil
+        }
+
+        if scene == .night {
+            if state.averageLuma < 0.07 { return nil }
+        } else if state.shadowClipRatio > 0.32 || state.averageLuma < 0.16 {
+            return nil
+        }
+
         let ranked = entries.map { entry -> (LUTLibraryEntry, Double, LUTRecommendationReason) in
             let exposure = exposureScore(profile: entry.profile, state: state)
             let sceneResult = sceneScore(profile: entry.profile, scene: scene)
@@ -41,8 +51,12 @@ enum LUTRecommendationEngine {
 
         let secondScore = ranked.dropFirst().first?.1 ?? best.1 - 0.25
         let separation = max(0, best.1 - secondScore)
+        if entries.count > 1, separation < 0.015, abs(best.1) < 0.08 {
+            return nil
+        }
+
         let confidence = min(
-            max(0.30 + separation * 0.55 + min(entries.count, 8).doubleValue * 0.025, 0),
+            max(0.35 + separation * 0.70 + min(abs(best.1), 0.50) * 0.15, 0),
             0.92
         )
 
@@ -145,6 +159,3 @@ enum LUTRecommendationEngine {
     }
 }
 
-private extension Int {
-    var doubleValue: Double { Double(self) }
-}
