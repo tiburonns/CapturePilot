@@ -316,12 +316,13 @@ final class PostShotAnalyzer {
         hasFace: Bool,
         metrics: PixelMetrics
     ) -> PhotoCategory {
-        if let sceneHint, sceneHint != .general {
-            return sceneHint
+        if hasFace {
+            return .portrait
         }
 
-        if hasFace { return .portrait }
-        if metrics.averageLuma < 0.18 { return .night }
+        if metrics.averageLuma < 0.18 {
+            return .night
+        }
 
         let identifiers = classifications.prefix(8)
             .map { $0.identifier.lowercased() }
@@ -334,17 +335,31 @@ final class PostShotAnalyzer {
         if contains(["car", "vehicle", "automobile", "truck", "motorcycle"]) {
             return .automotive
         }
-        if contains(["building", "architecture", "tower", "bridge", "church", "house"]) {
+
+        if contains([
+            "building", "architecture", "tower", "bridge", "church", "house"
+        ]) {
             return .architecture
         }
-        if contains(["mountain", "landscape", "seashore", "valley", "lake", "forest"]) {
+
+        if contains([
+            "mountain", "landscape", "seashore", "valley", "lake", "forest"
+        ]) {
             return .landscape
         }
-        if contains(["insect", "flower", "plant", "spider", "butterfly", "macro"]) {
+
+        if contains([
+            "insect", "flower", "plant", "spider", "butterfly", "macro"
+        ]) {
             return .macro
         }
+
         if contains(["street", "traffic", "sidewalk", "pedestrian"]) {
             return .street
+        }
+
+        if let sceneHint, sceneHint != .general {
+            return sceneHint
         }
 
         return .general
