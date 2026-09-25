@@ -5,15 +5,27 @@ import SwiftUI
 final class CameraService: NSObject, ObservableObject {
     let session = AVCaptureSession()
     let coach = CoachEngine()
-    let focusPeaking = FocusPeakingEngine()
 
     @Published private(set) var isConfigured = false
     @Published private(set) var permissionDenied = false
     @Published private(set) var cameraUnavailable = false
+    @Published private(set) var sessionInterrupted = false
+    @Published private(set) var runtimeErrorDescription: String?
+
     @Published private(set) var availableLenses: [CameraLens] = []
-    @Published private(set) var selectedLensID: String = "wide"
-    @Published private(set) var availablePhotoFormats: [PhotoFormat] = [.heif, .jpeg]
+    @Published private(set) var selectedLensID: String = ""
+    @Published private(set) var availablePhotoFormats: [PhotoFormat] = [.jpeg]
     @Published var photoFormat: PhotoFormat = .heif
+
+    @Published private(set) var availableResolutions: [PhotoResolutionOption] = []
+    @Published private(set) var selectedResolutionID: String = ""
+
+    @Published private(set) var supportsExposureBias = false
+    @Published private(set) var supportsManualExposure = false
+    @Published private(set) var supportsManualFocus = false
+    @Published private(set) var supportsManualWhiteBalance = false
+    @Published private(set) var supportsHEVC = false
+    @Published private(set) var supportsProRAW = false
 
     @Published var exposureBias: Float = 0
     @Published private(set) var minExposureBias: Float = -2
@@ -34,8 +46,6 @@ final class CameraService: NSObject, ObservableObject {
 
     @Published var coachState = CoachState()
     @Published var lastSaveSucceeded: Bool? = nil
-    @Published private(set) var isFocusPeakingEnabled = false
-    @Published private(set) var focusPeakingImage: CGImage? = nil
 
     private let sessionQueue = DispatchQueue(label: "CapturePilot.CameraSession", qos: .userInitiated)
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
@@ -43,28 +53,33 @@ final class CameraService: NSObject, ObservableObject {
     private let videoOutput = AVCaptureVideoDataOutput()
 
     private var currentInput: AVCaptureDeviceInput?
+    private var observerTokens: [NSObjectProtocol] = []
     private var coachIntensity: AppSettings.CoachIntensity = .balanced
-    private var focusPeakingRequested = false
-
-    private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
-    private var captureRotationObservation: NSKeyValueObservation?
+    private var coachScene: AppSettings.SceneCoach = .general
+    private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
 
     override init() {
         super.init()
-
         coach.onUpdate = { [weak self] state in
             self?.coachState = state
         }
+        registerSessionObservers()
+    }
 
-        focusPeaking.onUpdate = { [weak self] image in
-            guard let self, self.isFocusPeakingEnabled else { return }
-            self.focusPeakingImage = image
-        }
+    deinit {
+        observerTokens.forEach(NotificationCenter.default.removeObserver)
     }
 
     func start() {
+        resumeIfPossible()
+    }
+
+    func resumeIfPossible() {
+        runtimeErrorDescription = nil
+
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
+            permissionDenied = false
             configureAndStart()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
@@ -76,15 +91,11 @@ final class CameraService: NSObject, ObservableObject {
                 }
             }
         default:
-            DispatchQueue.main.async {
-                self.permissionDenied = true
-            }
+            permissionDenied = true
         }
     }
 
     func stop() {
-        setFocusPeakingEnabled(false)
-
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }
             self.session.stopRunning()
@@ -92,24 +103,46 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func setCoachIntensity(_ intensity: AppSettings.CoachIntensity) {
-        videoQueue.async { [weak self] in
-            self?.coachIntensity = intensity
-        }
+        videoQueue.async { [weak self] in self?.coachIntensity = intensity }
     }
 
-    func toggleFocusPeaking() {
-        setFocusPeakingEnabled(!isFocusPeakingEnabled)
+    func setCoachScene(_ scene: AppSettings.SceneCoach) {
+        videoQueue.async { [weak self] in self?.coachScene = scene }
     }
 
-    func setFocusPeakingEnabled(_ enabled: Bool) {
-        isFocusPeakingEnabled = enabled
-        if !enabled {
-            focusPeakingImage = nil
-        }
+    private func registerSessionObservers() {
+        let center = NotificationCenter.default
 
-        videoQueue.async { [weak self] in
-            self?.focusPeakingRequested = enabled
-        }
+        observerTokens.append(center.addObserver(
+            forName: AVCaptureSession.wasInterruptedNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] _ in
+            self?.sessionInterrupted = true
+        })
+
+        observerTokens.append(center.addObserver(
+            forName: AVCaptureSession.interruptionEndedNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] _ in
+            self?.sessionInterrupted = false
+            self?.resumeIfPossible()
+        })
+
+        observerTokens.append(center.addObserver(
+            forName: AVCaptureSession.runtimeErrorNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
+            self.runtimeErrorDescription = error?.localizedDescription ?? "Camera session error"
+
+            if error?.code == AVError.Code.mediaServicesWereReset.rawValue {
+                self.resumeIfPossible()
+            }
+        })
     }
 
     private func configureAndStart() {
@@ -128,17 +161,16 @@ final class CameraService: NSObject, ObservableObject {
         session.sessionPreset = .photo
         defer { session.commitConfiguration() }
 
-        let lenses = discoverLenses()
+        let devices = rearCameraDevices()
+        let lenses = makeLensModels(from: devices)
         DispatchQueue.main.async {
             self.availableLenses = lenses
         }
 
-        guard let wide = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        guard let wide = devices.first(where: { $0.deviceType == .builtInWideAngleCamera }),
               let input = try? AVCaptureDeviceInput(device: wide),
               session.canAddInput(input) else {
-            DispatchQueue.main.async {
-                self.cameraUnavailable = true
-            }
+            DispatchQueue.main.async { self.cameraUnavailable = true }
             return
         }
 
@@ -146,18 +178,16 @@ final class CameraService: NSObject, ObservableObject {
         currentInput = input
 
         guard session.canAddOutput(photoOutput) else {
-            DispatchQueue.main.async {
-                self.cameraUnavailable = true
-            }
+            DispatchQueue.main.async { self.cameraUnavailable = true }
             return
         }
-
         session.addOutput(photoOutput)
         photoOutput.maxPhotoQualityPrioritization = .quality
 
         videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+            kCVPixelBufferPixelFormatTypeKey as String:
+                kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
         ]
         videoOutput.setSampleBufferDelegate(self, queue: videoQueue)
 
@@ -165,74 +195,229 @@ final class CameraService: NSObject, ObservableObject {
             session.addOutput(videoOutput)
         }
 
-        configureCaptureRotation(for: wide)
+        if let connection = videoOutput.connection(with: .video),
+           connection.isVideoRotationAngleSupported(90) {
+            connection.videoRotationAngle = 90
+        }
+
+        configureCapturePipeline(for: wide)
 
         DispatchQueue.main.async {
             self.isConfigured = true
-            self.selectedLensID = "wide"
+            self.cameraUnavailable = false
+            self.selectedLensID = wide.uniqueID
             self.syncDeviceValues(wide)
-            self.refreshPhotoFormats()
         }
     }
 
-    private func discoverLenses() -> [CameraLens] {
-        var result: [CameraLens] = []
+    private func rearCameraDevices() -> [AVCaptureDevice] {
+        AVCaptureDevice.DiscoverySession(
+            deviceTypes: [
+                .builtInUltraWideCamera,
+                .builtInWideAngleCamera,
+                .builtInTelephotoCamera
+            ],
+            mediaType: .video,
+            position: .back
+        ).devices
+    }
 
-        if AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) != nil {
-            result.append(CameraLens(id: "ultra", title: "0.5×", deviceType: .builtInUltraWideCamera))
-        }
-        if AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil {
-            result.append(CameraLens(id: "wide", title: "1×", deviceType: .builtInWideAngleCamera))
-        }
-        if AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back) != nil {
-            result.append(CameraLens(id: "tele", title: "Tele", deviceType: .builtInTelephotoCamera))
+    private func makeLensModels(from devices: [AVCaptureDevice]) -> [CameraLens] {
+        guard let wide = devices.first(where: { $0.deviceType == .builtInWideAngleCamera }) else {
+            return []
         }
 
-        return result
+        let wideFOV = bestPhotoFormat(for: wide)?.videoFieldOfView ?? wide.activeFormat.videoFieldOfView
+
+        return devices.map { device in
+            let fov = bestPhotoFormat(for: device)?.videoFieldOfView ?? device.activeFormat.videoFieldOfView
+            let scale = opticalScale(wideFOV: wideFOV, lensFOV: fov)
+            return CameraLens(
+                id: device.uniqueID,
+                title: lensTitle(scale: scale),
+                deviceType: device.deviceType,
+                opticalScale: scale
+            )
+        }
+        .sorted { $0.opticalScale < $1.opticalScale }
+    }
+
+    private func opticalScale(wideFOV: Float, lensFOV: Float) -> Double {
+        let wideRadians = Double(wideFOV) * .pi / 180
+        let lensRadians = Double(lensFOV) * .pi / 180
+        guard wideRadians > 0, lensRadians > 0 else { return 1 }
+        return tan(wideRadians / 2) / tan(lensRadians / 2)
+    }
+
+    private func lensTitle(scale: Double) -> String {
+        let common = [0.5, 1.0, 2.0, 3.0, 5.0]
+        if let nearest = common.min(by: { abs($0 - scale) < abs($1 - scale) }),
+           abs(nearest - scale) < 0.38 {
+            return nearest == floor(nearest)
+                ? "\(Int(nearest))×"
+                : String(format: "%.1f×", nearest)
+        }
+        return String(format: "%.1f×", scale)
     }
 
     func selectLens(_ lens: CameraLens) {
         sessionQueue.async { [weak self] in
             guard let self,
-                  lens.id != self.selectedLensID,
-                  let device = AVCaptureDevice.default(lens.deviceType, for: .video, position: .back),
+                  lens.id != self.currentInput?.device.uniqueID,
+                  let device = self.rearCameraDevices().first(where: { $0.uniqueID == lens.id }),
                   let newInput = try? AVCaptureDeviceInput(device: device) else { return }
+
+            let wasRunning = self.session.isRunning
+            if wasRunning { self.session.stopRunning() }
 
             let oldInput = self.currentInput
             self.session.beginConfiguration()
 
-            if let oldInput {
-                self.session.removeInput(oldInput)
-            }
+            if let oldInput { self.session.removeInput(oldInput) }
 
             if self.session.canAddInput(newInput) {
                 self.session.addInput(newInput)
                 self.currentInput = newInput
+                self.configureCapturePipeline(for: device)
             } else if let oldInput, self.session.canAddInput(oldInput) {
                 self.session.addInput(oldInput)
                 self.currentInput = oldInput
+                self.configureCapturePipeline(for: oldInput.device)
             }
 
             self.session.commitConfiguration()
 
-            guard self.currentInput === newInput else { return }
-            self.configureCaptureRotation(for: device)
+            if wasRunning { self.session.startRunning() }
 
+            guard self.currentInput === newInput else { return }
             DispatchQueue.main.async {
                 self.selectedLensID = lens.id
                 self.manualExposure = false
                 self.manualFocus = false
                 self.manualWhiteBalance = false
                 self.syncDeviceValues(device)
-                self.refreshPhotoFormats()
             }
         }
+    }
+
+    private func bestPhotoFormat(for device: AVCaptureDevice) -> AVCaptureDevice.Format? {
+        device.formats.max { lhs, rhs in
+            let lhsPixels = maximumPixels(in: lhs)
+            let rhsPixels = maximumPixels(in: rhs)
+            if lhsPixels == rhsPixels {
+                if lhs.isHighestPhotoQualitySupported != rhs.isHighestPhotoQualitySupported {
+                    return !lhs.isHighestPhotoQualitySupported
+                }
+                return lhs.videoFieldOfView > rhs.videoFieldOfView
+            }
+            return lhsPixels < rhsPixels
+        }
+    }
+
+    private func maximumPixels(in format: AVCaptureDevice.Format) -> Int64 {
+        format.supportedMaxPhotoDimensions
+            .map { Int64($0.width) * Int64($0.height) }
+            .max() ?? 0
+    }
+
+    private func configureCapturePipeline(for device: AVCaptureDevice) {
+        if let best = bestPhotoFormat(for: device), best !== device.activeFormat {
+            do {
+                try device.lockForConfiguration()
+                device.activeFormat = best
+                device.unlockForConfiguration()
+            } catch {
+                // Continue with the active format if the device rejects a format switch.
+            }
+        }
+
+        let supportedDimensions = device.activeFormat.supportedMaxPhotoDimensions
+            .filter { $0.width > 0 && $0.height > 0 }
+            .sorted { Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height) }
+
+        if let maximum = supportedDimensions.last {
+            photoOutput.maxPhotoDimensions = maximum
+        }
+
+        if photoOutput.isAppleProRAWSupported {
+            photoOutput.isAppleProRAWEnabled = true
+        } else {
+            photoOutput.isAppleProRAWEnabled = false
+        }
+
+        let options = supportedDimensions.map {
+            PhotoResolutionOption(width: $0.width, height: $0.height)
+        }
+
+        let preferred =
+            options.first(where: { abs($0.megapixels - 24) < 3.5 })
+            ?? options.first(where: { abs($0.megapixels - 12) < 2.5 })
+            ?? options.last
+
+        if !supportedDimensions.contains(where: {
+            $0.width == captureDimensions.width && $0.height == captureDimensions.height
+        }), let preferred {
+            captureDimensions = preferred.dimensions
+        }
+
+        refreshPhotoCapabilities(for: device, resolutions: options)
+    }
+
+    private func refreshPhotoCapabilities(
+        for device: AVCaptureDevice,
+        resolutions: [PhotoResolutionOption]
+    ) {
+        let hevc = photoOutput.availablePhotoCodecTypes.contains(.hevc)
+        let rawTypes = photoOutput.availableRawPhotoPixelFormatTypes
+        let hasBayer = rawTypes.contains(where: AVCapturePhotoOutput.isBayerRAWPixelFormat)
+        let hasProRAW = photoOutput.isAppleProRAWEnabled
+            && rawTypes.contains(where: AVCapturePhotoOutput.isAppleProRAWPixelFormat)
+
+        var formats: [PhotoFormat] = [.jpeg]
+        if hevc { formats.insert(.heif, at: 0) }
+        if hasBayer { formats.append(.raw) }
+        if hasProRAW { formats.append(.proRAW) }
+
+        let selectedID = "\(captureDimensions.width)x\(captureDimensions.height)"
+
+        DispatchQueue.main.async {
+            self.availableResolutions = resolutions
+            self.selectedResolutionID = selectedID
+            self.availablePhotoFormats = formats
+            self.supportsHEVC = hevc
+            self.supportsProRAW = hasProRAW
+            if !formats.contains(self.photoFormat) {
+                self.photoFormat = hevc ? .heif : .jpeg
+            }
+            self.publishManualCapabilities(for: device)
+        }
+    }
+
+    func selectResolution(_ option: PhotoResolutionOption) {
+        sessionQueue.async { [weak self] in
+            guard let self, let device = self.currentInput?.device else { return }
+            let supported = device.activeFormat.supportedMaxPhotoDimensions
+            guard supported.contains(where: {
+                $0.width == option.width && $0.height == option.height
+            }) else { return }
+
+            self.captureDimensions = option.dimensions
+            DispatchQueue.main.async {
+                self.selectedResolutionID = option.id
+            }
+        }
+    }
+
+    private func publishManualCapabilities(for device: AVCaptureDevice) {
+        supportsExposureBias = device.minExposureTargetBias < device.maxExposureTargetBias
+        supportsManualExposure = device.isExposureModeSupported(.custom)
+        supportsManualFocus = device.isFocusModeSupported(.locked)
+        supportsManualWhiteBalance = device.isWhiteBalanceModeSupported(.locked)
     }
 
     func focus(at point: CGPoint) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
-
             do {
                 try device.lockForConfiguration()
 
@@ -253,38 +438,35 @@ final class CameraService: NSObject, ObservableObject {
                 }
 
                 device.unlockForConfiguration()
-
                 DispatchQueue.main.async {
                     self.manualFocus = false
                     self.manualExposure = false
-                }
-            } catch {
-                // Keep the current focus/exposure state if configuration locking fails.
-            }
-        }
-    }
-
-    func setExposureBias(_ value: Float) {
-        sessionQueue.async { [weak self] in
-            guard let self, let device = self.currentInput?.device else { return }
-            let clamped = min(max(value, device.minExposureTargetBias), device.maxExposureTargetBias)
-
-            do {
-                try device.lockForConfiguration()
-                device.setExposureTargetBias(clamped)
-                device.unlockForConfiguration()
-
-                DispatchQueue.main.async {
-                    self.exposureBias = clamped
                 }
             } catch { }
         }
     }
 
-    func setManualExposure(enabled: Bool, iso requestedISO: Float? = nil, shutter requestedShutter: Double? = nil) {
+    func setExposureBias(_ value: Float) {
+        guard supportsExposureBias else { return }
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
+            let clamped = min(max(value, device.minExposureTargetBias), device.maxExposureTargetBias)
+            do {
+                try device.lockForConfiguration()
+                device.setExposureTargetBias(clamped)
+                device.unlockForConfiguration()
+                DispatchQueue.main.async { self.exposureBias = clamped }
+            } catch { }
+        }
+    }
 
+    func setManualExposure(
+        enabled: Bool,
+        iso requestedISO: Float? = nil,
+        shutter requestedShutter: Double? = nil
+    ) {
+        sessionQueue.async { [weak self] in
+            guard let self, let device = self.currentInput?.device else { return }
             do {
                 try device.lockForConfiguration()
 
@@ -295,7 +477,6 @@ final class CameraService: NSObject, ObservableObject {
                     let maxSeconds = max(minSeconds, CMTimeGetSeconds(format.maxExposureDuration))
                     let newShutter = min(max(requestedShutter ?? self.shutterSeconds, minSeconds), maxSeconds)
                     let duration = CMTimeMakeWithSeconds(newShutter, preferredTimescale: 1_000_000_000)
-
                     device.setExposureModeCustom(duration: duration, iso: newISO, completionHandler: nil)
 
                     DispatchQueue.main.async {
@@ -305,9 +486,7 @@ final class CameraService: NSObject, ObservableObject {
                     }
                 } else if device.isExposureModeSupported(.continuousAutoExposure) {
                     device.exposureMode = .continuousAutoExposure
-                    DispatchQueue.main.async {
-                        self.manualExposure = false
-                    }
+                    DispatchQueue.main.async { self.manualExposure = false }
                 }
 
                 device.unlockForConfiguration()
@@ -318,24 +497,19 @@ final class CameraService: NSObject, ObservableObject {
     func setManualFocus(enabled: Bool, position: Float? = nil) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
-
             do {
                 try device.lockForConfiguration()
 
                 if enabled, device.isFocusModeSupported(.locked) {
-                    let requested = position ?? self.focusPosition
-                    let clamped = min(max(requested, 0), 1)
+                    let clamped = min(max(position ?? self.focusPosition, 0), 1)
                     device.setFocusModeLocked(lensPosition: clamped, completionHandler: nil)
-
                     DispatchQueue.main.async {
                         self.focusPosition = clamped
                         self.manualFocus = true
                     }
                 } else if device.isFocusModeSupported(.continuousAutoFocus) {
                     device.focusMode = .continuousAutoFocus
-                    DispatchQueue.main.async {
-                        self.manualFocus = false
-                    }
+                    DispatchQueue.main.async { self.manualFocus = false }
                 }
 
                 device.unlockForConfiguration()
@@ -346,7 +520,6 @@ final class CameraService: NSObject, ObservableObject {
     func setWhiteBalance(enabled: Bool, temperature: Float? = nil) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
-
             do {
                 try device.lockForConfiguration()
 
@@ -369,9 +542,7 @@ final class CameraService: NSObject, ObservableObject {
                     }
                 } else if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
                     device.whiteBalanceMode = .continuousAutoWhiteBalance
-                    DispatchQueue.main.async {
-                        self.manualWhiteBalance = false
-                    }
+                    DispatchQueue.main.async { self.manualWhiteBalance = false }
                 }
 
                 device.unlockForConfiguration()
@@ -380,27 +551,53 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     func capturePhoto() {
+        let requestedFormat = photoFormat
+
         sessionQueue.async { [weak self] in
             guard let self else { return }
 
             let settings: AVCapturePhotoSettings
-            switch self.photoFormat {
+
+            switch requestedFormat {
             case .raw:
-                guard let rawType = self.photoOutput.availableRawPhotoPixelFormatTypes.first else {
-                    DispatchQueue.main.async {
-                        self.photoFormat = .heif
-                        self.lastSaveSucceeded = false
-                    }
+                guard let rawType = self.photoOutput.availableRawPhotoPixelFormatTypes.first(
+                    where: AVCapturePhotoOutput.isBayerRAWPixelFormat
+                ) else {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                    return
+                }
+                settings = AVCapturePhotoSettings(rawPixelFormatType: rawType)
+
+            case .proRAW:
+                guard self.photoOutput.isAppleProRAWEnabled,
+                      let rawType = self.photoOutput.availableRawPhotoPixelFormatTypes.first(
+                        where: AVCapturePhotoOutput.isAppleProRAWPixelFormat
+                      ) else {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = false }
                     return
                 }
                 settings = AVCapturePhotoSettings(rawPixelFormatType: rawType)
 
             case .jpeg:
-                settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
+                settings = AVCapturePhotoSettings(
+                    format: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+                )
 
             case .heif:
-                let codec: AVVideoCodecType = self.photoOutput.availablePhotoCodecTypes.contains(.hevc) ? .hevc : .jpeg
-                settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: codec])
+                guard self.photoOutput.availablePhotoCodecTypes.contains(.hevc) else {
+                    DispatchQueue.main.async {
+                        self.photoFormat = .jpeg
+                        self.lastSaveSucceeded = false
+                    }
+                    return
+                }
+                settings = AVCapturePhotoSettings(
+                    format: [AVVideoCodecKey: AVVideoCodecType.hevc]
+                )
+            }
+
+            if self.captureDimensions.width > 0, self.captureDimensions.height > 0 {
+                settings.maxPhotoDimensions = self.captureDimensions
             }
 
             settings.photoQualityPrioritization = .quality
@@ -412,9 +609,7 @@ final class CameraService: NSObject, ObservableObject {
     private func savePhotoData(_ data: Data) {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
             guard status == .authorized || status == .limited else {
-                DispatchQueue.main.async {
-                    self?.lastSaveSucceeded = false
-                }
+                DispatchQueue.main.async { self?.lastSaveSucceeded = false }
                 return
             }
 
@@ -422,24 +617,8 @@ final class CameraService: NSObject, ObservableObject {
                 let request = PHAssetCreationRequest.forAsset()
                 request.addResource(with: .photo, data: data, options: nil)
             } completionHandler: { success, _ in
-                DispatchQueue.main.async {
-                    self?.lastSaveSucceeded = success
-                }
+                DispatchQueue.main.async { self?.lastSaveSucceeded = success }
             }
-        }
-    }
-
-    private func refreshPhotoFormats() {
-        var formats: [PhotoFormat] = [.heif, .jpeg]
-
-        if !photoOutput.availableRawPhotoPixelFormatTypes.isEmpty {
-            formats.append(.raw)
-        }
-
-        availablePhotoFormats = formats
-
-        if !formats.contains(photoFormat) {
-            photoFormat = .heif
         }
     }
 
@@ -452,48 +631,17 @@ final class CameraService: NSObject, ObservableObject {
         shutterSeconds = max(0.000001, CMTimeGetSeconds(device.exposureDuration))
         minISO = device.activeFormat.minISO
         maxISO = device.activeFormat.maxISO
-        minShutterSeconds = max(0.000001, CMTimeGetSeconds(device.activeFormat.minExposureDuration))
-        maxShutterSeconds = max(minShutterSeconds, CMTimeGetSeconds(device.activeFormat.maxExposureDuration))
-
+        minShutterSeconds = max(
+            0.000001,
+            CMTimeGetSeconds(device.activeFormat.minExposureDuration)
+        )
+        maxShutterSeconds = max(
+            minShutterSeconds,
+            CMTimeGetSeconds(device.activeFormat.maxExposureDuration)
+        )
         let whiteBalance = device.temperatureAndTintValues(for: device.deviceWhiteBalanceGains)
         whiteBalanceTemperature = whiteBalance.temperature
-    }
-
-    private func configureCaptureRotation(for device: AVCaptureDevice) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-
-            self.captureRotationObservation = nil
-
-            let coordinator = AVCaptureDevice.RotationCoordinator(
-                device: device,
-                previewLayer: nil
-            )
-            self.captureRotationCoordinator = coordinator
-
-            self.captureRotationObservation = coordinator.observe(
-                \.videoRotationAngleForHorizonLevelCapture,
-                options: [.initial, .new]
-            ) { [weak self] coordinator, _ in
-                self?.applyCaptureRotation(coordinator.videoRotationAngleForHorizonLevelCapture)
-            }
-        }
-    }
-
-    private func applyCaptureRotation(_ angle: CGFloat) {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-
-            if let videoConnection = self.videoOutput.connection(with: .video),
-               videoConnection.isVideoRotationAngleSupported(angle) {
-                videoConnection.videoRotationAngle = angle
-            }
-
-            if let photoConnection = self.photoOutput.connection(with: .video),
-               photoConnection.isVideoRotationAngleSupported(angle) {
-                photoConnection.videoRotationAngle = angle
-            }
-        }
+        publishManualCapabilities(for: device)
     }
 }
 
@@ -503,12 +651,11 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        if focusPeakingRequested,
-           let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-            focusPeaking.process(pixelBuffer: pixelBuffer)
-        }
-
-        coach.process(sampleBuffer: sampleBuffer, intensity: coachIntensity)
+        coach.process(
+            sampleBuffer: sampleBuffer,
+            intensity: coachIntensity,
+            scene: coachScene
+        )
     }
 }
 
@@ -519,12 +666,9 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
         error: Error?
     ) {
         guard error == nil, let data = photo.fileDataRepresentation() else {
-            DispatchQueue.main.async {
-                self.lastSaveSucceeded = false
-            }
+            DispatchQueue.main.async { self.lastSaveSucceeded = false }
             return
         }
-
         savePhotoData(data)
     }
 }
