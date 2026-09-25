@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreGraphics
+import Foundation
 import QuartzCore
 
 final class FocusPeakingEngine {
