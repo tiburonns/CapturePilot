@@ -3,7 +3,9 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var lutLibrary: LUTLibraryStore
     @State private var showingLUTImporter = false
+    @State private var showingLUTFolderPicker = false
     @State private var lutImportError: String?
     @EnvironmentObject private var hud: HUDLayoutStore
     @Environment(\.dismiss) private var dismiss
@@ -176,10 +178,13 @@ struct SettingsView: View {
                     Toggle(settings.text(.lut), isOn: $settings.lutEnabled)
                         .disabled(
                             !settings.rawShareEnabled
-                            || settings.selectedLUTURL == nil
+                            || (
+                                settings.selectedLUTURL == nil
+                                && lutLibrary.activeLUTURL == nil
+                            )
                         )
 
-                    if let name = settings.lutDisplayName {
+                    if let name = lutLibrary.activeDisplayName ?? settings.lutDisplayName {
                         LabeledContent(settings.text(.lut), value: name)
 
                         HStack {
@@ -197,10 +202,12 @@ struct SettingsView: View {
                         )
                         .disabled(!settings.rawShareEnabled || !settings.lutEnabled)
 
-                        Button(role: .destructive) {
-                            settings.removeLUT()
-                        } label: {
-                            Label(settings.text(.removeLUT), systemImage: "trash")
+                        if lutLibrary.activeLUTURL == nil {
+                            Button(role: .destructive) {
+                                settings.removeLUT()
+                            } label: {
+                                Label(settings.text(.removeLUT), systemImage: "trash")
+                            }
                         }
                     } else {
                         Text(settings.text(.noLUT))
@@ -218,6 +225,121 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 } header: {
                     Text(settings.text(.rawShare))
+                }
+
+                Section {
+                    Toggle(
+                        settings.text(.lutCoachRecommendations),
+                        isOn: $settings.lutCoachRecommendations
+                    )
+                    .disabled(lutLibrary.entries.isEmpty)
+
+                    LabeledContent(
+                        settings.text(.lutLibrary),
+                        value: lutLibrary.localFolderName
+                    )
+
+                    if let folder = lutLibrary.folderDisplayName {
+                        LabeledContent(
+                            settings.text(.externalLUTFolder),
+                            value: folder
+                        )
+                    }
+
+                    LabeledContent(
+                        settings.text(.lutCount),
+                        value: "\(lutLibrary.entries.count)"
+                    )
+
+                    if lutLibrary.invalidFileCount > 0 {
+                        LabeledContent(
+                            settings.text(.invalidLUTCount),
+                            value: "\(lutLibrary.invalidFileCount)"
+                        )
+                    }
+
+                    Picker(
+                        settings.text(.activeLUT),
+                        selection: Binding<String?>(
+                            get: { lutLibrary.activeEntryID },
+                            set: { newID in
+                                do {
+                                    if let newID,
+                                       let entry = lutLibrary.entry(withID: newID) {
+                                        try lutLibrary.activate(entry)
+                                        settings.lutEnabled = true
+                                    } else {
+                                        lutLibrary.clearActiveLUT()
+                                    }
+                                } catch {
+                                    lutImportError = error.localizedDescription
+                                }
+                            }
+                        )
+                    ) {
+                        Text(settings.text(.noLUT)).tag(Optional<String>.none)
+
+                        ForEach(lutLibrary.entries) { entry in
+                            Text(
+                                entry.source == .capturePilot
+                                    ? "\(entry.displayName) · CapturePilot"
+                                    : "\(entry.displayName) · \(settings.text(.externalLUTFolder))"
+                            )
+                            .tag(Optional(entry.id))
+                        }
+                    }
+
+                    if lutLibrary.folderDisplayName != nil {
+                        HStack {
+                            Button(settings.text(.changeLUTFolder)) {
+                                showingLUTFolderPicker = true
+                            }
+
+                            Spacer()
+
+                            Button(settings.text(.rescanLUTs)) {
+                                lutLibrary.refresh()
+                            }
+                        }
+
+                        Button(role: .destructive) {
+                            lutLibrary.clearFolder()
+                        } label: {
+                            Label(
+                                settings.text(.removeLUTFolder),
+                                systemImage: "folder.badge.minus"
+                            )
+                        }
+                    } else {
+                        HStack {
+                            Button {
+                                showingLUTFolderPicker = true
+                            } label: {
+                                Label(
+                                    settings.text(.chooseLUTFolder),
+                                    systemImage: "folder.badge.plus"
+                                )
+                            }
+
+                            Spacer()
+
+                            Button(settings.text(.rescanLUTs)) {
+                                lutLibrary.refresh()
+                            }
+                        }
+                    }
+
+                    if let scanError = lutLibrary.scanErrorDescription {
+                        Text(scanError)
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
+                    }
+
+                    Text(settings.text(.lutFolderDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.lutLibrary))
                 }
 
                 Section(settings.text(.privacy)) {
@@ -248,6 +370,19 @@ struct SettingsView: View {
             do {
                 guard let url = try result.get().first else { return }
                 try settings.importLUT(from: url)
+                lutLibrary.clearActiveLUT()
+            } catch {
+                lutImportError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $showingLUTFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first else { return }
+                try lutLibrary.setFolder(url)
             } catch {
                 lutImportError = error.localizedDescription
             }
@@ -266,8 +401,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.6.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "6"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.7.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "7"
         return "\(version) (\(build))"
     }
 }

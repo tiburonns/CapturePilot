@@ -7,7 +7,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El coach prioriza sugerencias prácticas; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
 
-> **Current main / main actual: 0.6.0 (6).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.7.0 (7).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -37,6 +37,16 @@ The RAW remains untouched. The processed companion can be exported as a 12/24/48
 The processed JPEG is available directly through the iOS Share Sheet after a successful save. Photos pairing is attempted as JPEG primary + RAW alternate, with a two-asset fallback.
 
 See [RAW + Share JPEG](docs/RAW_SHARE_WORKFLOW.md) for capability rules and validation limits.
+
+### LUT library and Coach recommendations
+
+CapturePilot can use a user-selected Files folder as a persistent LUT library. After the photographer grants access once, CapturePilot bookmarks that directory, scans valid 3D `.cube` LUTs recursively, refreshes on folder changes/foreground, and combines those entries with its local LUT folder.
+
+The Coach can optionally recommend one of the available LUTs in RAW+JPG mode. Recommendations are based on the LUT transform itself — warmth, contrast, saturation, shadow lift, highlight compression, and overall strength — plus the selected scene and current preview exposure signals. LUT filenames are not used as the decision model.
+
+CapturePilot never applies a recommendation automatically. The photographer must explicitly accept it.
+
+See [LUT library + Coach](docs/LUT_LIBRARY.md).
 
 ### Professional controls
 
@@ -170,7 +180,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.6.0 (6)**.
+- Current version/build: **0.7.0 (7)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -205,6 +215,16 @@ El RAW permanece intacto. El companion procesado puede exportarse con objetivo 1
 Después de guardar, el JPEG queda disponible directamente en Share Sheet. Fotos intenta conservar JPEG principal + RAW alternativo; si no acepta la combinación, se guardan dos assets.
 
 Consulta [RAW + JPEG para compartir](docs/RAW_SHARE_WORKFLOW.md).
+
+### Biblioteca LUT y recomendaciones del Coach
+
+CapturePilot puede usar una carpeta elegida en Archivos como biblioteca LUT persistente. Después de conceder acceso una vez, la app conserva un bookmark, escanea recursivamente LUT 3D `.cube` válidos, actualiza la biblioteca cuando cambia la carpeta o al volver al foreground y combina esos LUT con la carpeta local de CapturePilot.
+
+El Coach puede recomendar opcionalmente un LUT disponible en RAW+JPG. La recomendación usa el transform real del LUT —calidez, contraste, saturación, sombras, luces y fuerza— junto con la escena seleccionada y señales actuales de exposición. El nombre del archivo no decide la recomendación.
+
+CapturePilot nunca aplica el LUT automáticamente; el fotógrafo debe aceptarlo explícitamente.
+
+Consulta [Biblioteca LUT + Coach](docs/LUT_LIBRARY.md).
 
 ### Controles profesionales
 
@@ -338,7 +358,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.6.0 (6)**.
+- Versión/build actual: **0.7.0 (7)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.
@@ -348,6 +368,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [Architecture / Arquitectura](docs/ARCHITECTURE.md)
 - [Coach / Coach](docs/COACH.md)
 - [RAW + Share JPEG / RAW + JPEG](docs/RAW_SHARE_WORKFLOW.md)
+- [LUT library + Coach / Biblioteca LUT + Coach](docs/LUT_LIBRARY.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)

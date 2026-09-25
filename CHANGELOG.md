@@ -1,5 +1,35 @@
 # Changelog / Registro de cambios
 
+## 0.7.0 — LUT library + Coach recommendations / Biblioteca LUT + recomendaciones del Coach
+
+### English
+- Persistent user-selected LUT folder from Files.
+- Recursive discovery of valid 3D .cube LUTs.
+- Folder monitoring while CapturePilot is active.
+- Foreground refresh and manual rescan.
+- Combined local + external LUT library.
+- Invalid LUT counting.
+- Deterministic LUT profiling: warmth, contrast, saturation, shadow lift, highlight compression, strength.
+- Scene/exposure-aware Coach LUT recommendations.
+- Stabilized recommendation UI.
+- Explicit Apply action; no automatic LUT changes.
+- Active external LUT is validated and cached locally before capture.
+- Version/build 0.7.0 (7).
+
+### Español
+- Carpeta LUT persistente seleccionada en Archivos.
+- Descubrimiento recursivo de LUT 3D .cube válidos.
+- Monitoreo de carpeta mientras CapturePilot está activo.
+- Refresh al volver al foreground y rescan manual.
+- Biblioteca local + externa.
+- Conteo de LUT inválidos.
+- Perfil determinista de calidez, contraste, saturación, sombras, luces y fuerza.
+- Recomendaciones del Coach según escena/exposición.
+- UI de recomendación estabilizada.
+- Aplicación explícita; no hay cambios automáticos de LUT.
+- LUT externo validado y cacheado localmente antes de capturar.
+- Versión/build 0.7.0 (7).
+
 ## 0.6.0 — RAW + Share JPEG / RAW + JPEG para compartir
 
 ### English
