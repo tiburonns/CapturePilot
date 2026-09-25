@@ -17,9 +17,6 @@ struct CapturePilotApp: App {
                 .environmentObject(lutLibrary)
                 .environmentObject(rankings)
                 .environmentObject(social)
-                .task {
-                    await social.restoreIfPossible()
-                }
         }
     }
 }
