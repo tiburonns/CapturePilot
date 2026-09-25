@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PhotoScopeKind {
+enum PhotoScopeKind: Equatable {
     case waveform
     case rgbParade
     case vectorscope
