@@ -252,6 +252,8 @@ enum LocalizedKey: Hashable {
     case frameGuide, frameGuideDetail, frameSquare, frameFourThree, frameThreeTwo
     case frameSixteenNine, frameCinema239
     case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
+    case quickShare, rawPlusJPEG, rawMaster, shareJPEG, shareSize, lut
+    case importLUT, importedLUTs, lutImportError, quickShareDetail, shareReady, share
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -330,7 +332,14 @@ enum LocalizedKey: Hashable {
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
             .colorRed: "Rojo", .colorGreen: "Verde", .colorBlue: "Azul",
-            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco"
+            .colorYellow: "Amarillo", .colorCyan: "Cian", .colorWhite: "Blanco",
+            .quickShare: "RAW + JPEG rápido", .rawPlusJPEG: "RAW + JPG",
+            .rawMaster: "RAW master", .shareJPEG: "JPEG de entrega",
+            .shareSize: "Tamaño JPEG", .lut: "LUT",
+            .importLUT: "Importar LUTs .cube", .importedLUTs: "LUTs importados",
+            .lutImportError: "No se pudieron importar algunos LUTs.",
+            .quickShareDetail: "Un solo disparo genera un RAW/ProRAW master a la máxima resolución solicitada y un JPEG con LUT para compartir. El JPEG puede salir a 12, 24 o 48 MP según el master disponible.",
+            .shareReady: "JPEG listo para compartir", .share: "Compartir"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -409,7 +418,14 @@ enum LocalizedKey: Hashable {
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
             .colorRed: "Red", .colorGreen: "Green", .colorBlue: "Blue",
-            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White"
+            .colorYellow: "Yellow", .colorCyan: "Cyan", .colorWhite: "White",
+            .quickShare: "RAW + Quick JPEG", .rawPlusJPEG: "RAW + JPG",
+            .rawMaster: "RAW master", .shareJPEG: "Share JPEG",
+            .shareSize: "JPEG size", .lut: "LUT",
+            .importLUT: "Import .cube LUTs", .importedLUTs: "Imported LUTs",
+            .lutImportError: "Some LUTs could not be imported.",
+            .quickShareDetail: "One shutter press creates a RAW/ProRAW master at the requested maximum resolution plus a LUT-processed JPEG for sharing. JPEG output can be 12, 24, or 48 MP when the master resolution allows it.",
+            .shareReady: "JPEG ready to share", .share: "Share"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
