@@ -33,7 +33,7 @@ final class CameraPreviewView: UIView {
             rotationCoordinator = coordinator
 
             rotationObservation = coordinator.observe(
-                .videoRotationAngleForHorizonLevelPreview,
+                \.videoRotationAngleForHorizonLevelPreview,
                 options: [.initial, .new]
             ) { [weak self] _, _ in
                 self?.applyCurrentRotation()
