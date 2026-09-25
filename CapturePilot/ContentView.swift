@@ -3,7 +3,9 @@ import UIKit
 
 struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var hud: HUDLayoutStore
     @StateObject private var camera = CameraService()
+
     @State private var showingSettings = false
     @State private var showingProControls = false
 
@@ -25,6 +27,7 @@ struct ContentView: View {
         .onAppear {
             camera.setCoachIntensity(settings.coachIntensity)
             camera.start()
+            OrientationPolicy.applyCurrentPolicy()
         }
         .onDisappear {
             camera.stop()
@@ -32,9 +35,16 @@ struct ContentView: View {
         .onChange(of: settings.coachIntensity) { _, newValue in
             camera.setCoachIntensity(newValue)
         }
+        .onChange(of: hud.isEditing) { _, editing in
+            if editing {
+                showingProControls = false
+                camera.setFocusPeakingEnabled(false)
+            }
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
                 .environmentObject(settings)
+                .environmentObject(hud)
         }
         .overlay(alignment: .top) {
             saveStatusOverlay
@@ -42,96 +52,134 @@ struct ContentView: View {
     }
 
     private var cameraSurface: some View {
-        ZStack {
-            CameraPreview(session: camera.session) { point in
-                camera.focus(at: point)
-            }
-            .ignoresSafeArea()
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let safeRect = safeHUDRect(for: geometry)
 
-            CompositionOverlay(
-                grid: settings.grid,
-                horizonAngle: camera.coachState.horizonAngleDegrees,
-                saliencyCenter: camera.coachState.saliencyCenter,
-                showSubjectMarker: settings.coachIntensity == .teaching && camera.coachState.hasSubject
-            )
-            .ignoresSafeArea()
+            ZStack {
+                CameraPreview(session: camera.session) { point in
+                    guard !hud.isEditing else { return }
+                    camera.focus(at: point)
+                }
+                .ignoresSafeArea()
 
-            VStack(spacing: 10) {
-                topChrome
+                FocusPeakingOverlay(
+                    image: camera.focusPeakingImage,
+                    isEnabled: camera.isFocusPeakingEnabled
+                )
+                .ignoresSafeArea()
 
-                Spacer(minLength: 12)
+                CompositionOverlay(
+                    grid: settings.grid,
+                    horizonAngle: camera.coachState.horizonAngleDegrees,
+                    saliencyCenter: camera.coachState.saliencyCenter,
+                    showSubjectMarker: settings.coachIntensity == .teaching && camera.coachState.hasSubject
+                )
+                .ignoresSafeArea()
 
-                CoachBubble(state: camera.coachState)
-                    .padding(.horizontal, 12)
-
-                if settings.coachIntensity != .subtle {
-                    technicalReadout
+                ForEach(HUDItem.allCases) { item in
+                    if shouldRender(item) {
+                        HUDMovableItem(
+                            store: hud,
+                            item: item,
+                            safeRect: safeRect,
+                            isLandscape: isLandscape
+                        ) {
+                            hudElement(item)
+                        }
+                    }
                 }
 
-                if showingProControls {
-                    ManualControlsView(camera: camera)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                if showingProControls && !hud.isEditing {
+                    VStack {
+                        Spacer()
+                        ManualControlsView(camera: camera)
+                            .padding(.bottom, max(82, geometry.safeAreaInsets.bottom + 72))
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(50)
                 }
 
-                bottomControls
+                if hud.isEditing {
+                    VStack {
+                        Spacer()
+                        HUDCustomizationToolbar(store: hud)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom + 8)
+                    }
+                    .zIndex(500)
+                }
             }
-            .safeAreaPadding(.top, 6)
-            .safeAreaPadding(.bottom, 6)
         }
     }
 
-    private var topChrome: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                Button {
-                    withAnimation(.snappy) {
-                        showingProControls.toggle()
-                    }
-                } label: {
-                    Image(systemName: showingProControls ? "slider.horizontal.3" : "dial.medium")
-                        .frame(width: 42, height: 42)
-                        .background(.ultraThinMaterial, in: Circle())
+    @ViewBuilder
+    private func hudElement(_ item: HUDItem) -> some View {
+        switch item {
+        case .pro:
+            Button {
+                withAnimation(.snappy) {
+                    showingProControls.toggle()
                 }
-                .accessibilityLabel(settings.text(.pro))
-
-                Spacer(minLength: 8)
-
-                languageMenu
-
-                Button {
-                    showingSettings = true
-                } label: {
-                    Image(systemName: "gearshape.fill")
-                        .frame(width: 42, height: 42)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                .accessibilityLabel(settings.text(.settings))
+            } label: {
+                Image(systemName: showingProControls ? "slider.horizontal.3" : "dial.medium")
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial, in: Circle())
             }
+            .accessibilityLabel(settings.text(.pro))
 
-            if !camera.availableLenses.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(camera.availableLenses) { lens in
-                            Button(lens.title) {
-                                camera.selectLens(lens)
-                            }
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(camera.selectedLensID == lens.id ? .black : .white)
-                            .padding(.horizontal, 12)
-                            .frame(height: 34)
-                            .background(
-                                camera.selectedLensID == lens.id ? .white : .black.opacity(0.38),
-                                in: Capsule()
-                            )
-                        }
-                    }
-                    .padding(4)
-                }
+        case .language:
+            languageMenu
+
+        case .settings:
+            Button {
+                showingSettings = true
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel(settings.text(.settings))
+
+        case .lenses:
+            lensSelector
+
+        case .coach:
+            CoachBubble(state: camera.coachState)
                 .fixedSize(horizontal: false, vertical: true)
-                .background(.ultraThinMaterial, in: Capsule())
+                .frame(maxWidth: 320)
+
+        case .metrics:
+            technicalReadout
+
+        case .photoFormat:
+            formatMenu
+
+        case .shutter:
+            shutterButton
+
+        case .grid:
+            Button {
+                cycleGrid()
+            } label: {
+                Image(systemName: "grid")
+                    .frame(width: 58, height: 44)
+                    .background(.ultraThinMaterial, in: Capsule())
             }
+            .accessibilityLabel(settings.text(.grid))
+
+        case .focusPeaking:
+            Button {
+                camera.toggleFocusPeaking()
+            } label: {
+                Image(systemName: camera.isFocusPeakingEnabled ? "viewfinder.circle.fill" : "viewfinder.circle")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(camera.isFocusPeakingEnabled ? .orange : .white)
+                    .frame(width: 46, height: 46)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel(settings.text(.focusPeaking))
         }
-        .padding(.horizontal, 14)
     }
 
     private var languageMenu: some View {
@@ -154,15 +202,39 @@ struct ContentView: View {
                     .font(.caption2.weight(.bold))
                     .monospaced()
             }
-            .frame(minWidth: 54, minHeight: 42)
+            .frame(minWidth: 56, minHeight: 44)
             .padding(.horizontal, 3)
             .background(.ultraThinMaterial, in: Capsule())
         }
         .accessibilityLabel(settings.text(.language))
     }
 
+    private var lensSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(camera.availableLenses) { lens in
+                    Button(lens.title) {
+                        camera.selectLens(lens)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(camera.selectedLensID == lens.id ? .black : .white)
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(
+                        camera.selectedLensID == lens.id ? .white : .black.opacity(0.38),
+                        in: Capsule()
+                    )
+                }
+            }
+            .padding(4)
+        }
+        .frame(maxWidth: 260)
+        .fixedSize(horizontal: true, vertical: true)
+        .background(.ultraThinMaterial, in: Capsule())
+    }
+
     private var technicalReadout: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             metric(icon: "angle", value: String(format: "%+.1f°", camera.coachState.horizonAngleDegrees))
             metric(icon: "sun.max.fill", value: String(format: "%.0f%%", camera.coachState.averageLuma * 100))
 
@@ -173,7 +245,6 @@ struct ContentView: View {
                 )
             }
         }
-        .padding(.horizontal, 10)
     }
 
     private func metric(icon: String, value: String) -> some View {
@@ -187,51 +258,63 @@ struct ContentView: View {
         .background(.black.opacity(0.46), in: Capsule())
     }
 
-    private var bottomControls: some View {
-        HStack(alignment: .center) {
-            Menu {
-                ForEach(camera.availablePhotoFormats) { format in
-                    Button(format.shortLabel) {
-                        camera.photoFormat = format
-                    }
-                }
-            } label: {
-                Text(camera.photoFormat.shortLabel)
-                    .font(.caption.weight(.bold))
-                    .frame(width: 58, height: 42)
-                    .background(.ultraThinMaterial, in: Capsule())
-            }
-
-            Spacer(minLength: 12)
-
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                camera.capturePhoto()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 72, height: 72)
-                    Circle()
-                        .stroke(.black.opacity(0.55), lineWidth: 2)
-                        .frame(width: 62, height: 62)
+    private var formatMenu: some View {
+        Menu {
+            ForEach(camera.availablePhotoFormats) { format in
+                Button(format.shortLabel) {
+                    camera.photoFormat = format
                 }
             }
-            .disabled(!camera.isConfigured)
-            .accessibilityLabel(settings.text(.capture))
-
-            Spacer(minLength: 12)
-
-            Button {
-                cycleGrid()
-            } label: {
-                Image(systemName: "grid")
-                    .frame(width: 58, height: 42)
-                    .background(.ultraThinMaterial, in: Capsule())
-            }
-            .accessibilityLabel(settings.text(.grid))
+        } label: {
+            Text(camera.photoFormat.shortLabel)
+                .font(.caption.weight(.bold))
+                .frame(width: 60, height: 44)
+                .background(.ultraThinMaterial, in: Capsule())
         }
-        .padding(.horizontal, 24)
+    }
+
+    private var shutterButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            camera.capturePhoto()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(.white)
+                    .frame(width: 72, height: 72)
+                Circle()
+                    .stroke(.black.opacity(0.55), lineWidth: 2)
+                    .frame(width: 62, height: 62)
+            }
+        }
+        .disabled(!camera.isConfigured)
+        .accessibilityLabel(settings.text(.capture))
+    }
+
+    private func shouldRender(_ item: HUDItem) -> Bool {
+        if hud.isEditing { return true }
+        if !hud.isVisible(item) { return false }
+
+        switch item {
+        case .metrics:
+            return settings.coachIntensity != .subtle
+        case .lenses:
+            return !camera.availableLenses.isEmpty
+        default:
+            return true
+        }
+    }
+
+    private func safeHUDRect(for geometry: GeometryProxy) -> CGRect {
+        let margin: CGFloat = 10
+        let insets = geometry.safeAreaInsets
+
+        return CGRect(
+            x: insets.leading + margin,
+            y: insets.top + margin,
+            width: max(1, geometry.size.width - insets.leading - insets.trailing - margin * 2),
+            height: max(1, geometry.size.height - insets.top - insets.bottom - margin * 2)
+        )
     }
 
     @ViewBuilder

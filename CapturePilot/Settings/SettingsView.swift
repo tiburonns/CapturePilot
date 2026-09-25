@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var hud: HUDLayoutStore
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -14,6 +15,32 @@ struct SettingsView: View {
                         Text(settings.text(.spanish)).tag(AppSettings.Language.spanish)
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section {
+                    Toggle(settings.text(.landscape), isOn: $settings.allowLandscape)
+                    Toggle(settings.text(.upsideDown), isOn: $settings.allowUpsideDown)
+
+                    Text(settings.text(.orientationDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.orientation))
+                }
+
+                Section {
+                    Button {
+                        hud.isEditing = true
+                        dismiss()
+                    } label: {
+                        Label(settings.text(.customizeHUD), systemImage: "rectangle.3.group")
+                    }
+
+                    Text(settings.text(.hudDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text(settings.text(.hud))
                 }
 
                 Section(settings.text(.grid)) {
@@ -56,8 +83,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "3"
         return "\(version) (\(build))"
     }
 }

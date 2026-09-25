@@ -5,13 +5,52 @@ import UIKit
 final class CameraPreviewView: UIView {
     override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
 
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var rotationObservation: NSKeyValueObservation?
+
     var previewLayer: AVCaptureVideoPreviewLayer {
         layer as! AVCaptureVideoPreviewLayer
     }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        configureRotationIfNeeded()
+        applyCurrentRotation()
+    }
+
+    func configureRotationIfNeeded() {
+        guard let input = previewLayer.session?.inputs
+            .compactMap({ $0 as? AVCaptureDeviceInput })
+            .first else { return }
+
+        if rotationCoordinator?.device !== input.device {
+            rotationObservation = nil
+
+            let coordinator = AVCaptureDevice.RotationCoordinator(
+                device: input.device,
+                previewLayer: previewLayer
+            )
+            rotationCoordinator = coordinator
+
+            rotationObservation = coordinator.observe(
+                \.videoRotationAngleForHorizonLevelPreview,
+                options: [.initial, .new]
+            ) { [weak self] _, _ in
+                self?.applyCurrentRotation()
+            }
+        }
+    }
+
     func showFocusReticle(at point: CGPoint) {
         let size: CGFloat = 64
-        let reticle = UIView(frame: CGRect(x: point.x - size / 2, y: point.y - size / 2, width: size, height: size))
+        let reticle = UIView(
+            frame: CGRect(
+                x: point.x - size / 2,
+                y: point.y - size / 2,
+                width: size,
+                height: size
+            )
+        )
         reticle.layer.borderWidth = 1.5
         reticle.layer.borderColor = UIColor.systemYellow.cgColor
         reticle.layer.cornerRadius = 8
@@ -22,13 +61,27 @@ final class CameraPreviewView: UIView {
             reticle.alpha = 1
             reticle.transform = CGAffineTransform(scaleX: 0.82, y: 0.82)
         }) { _ in
-            UIView.animate(withDuration: 0.55, delay: 0.35, options: [.curveEaseOut], animations: {
-                reticle.alpha = 0
-                reticle.transform = .identity
-            }) { _ in
+            UIView.animate(
+                withDuration: 0.55,
+                delay: 0.35,
+                options: [.curveEaseOut],
+                animations: {
+                    reticle.alpha = 0
+                    reticle.transform = .identity
+                }
+            ) { _ in
                 reticle.removeFromSuperview()
             }
         }
+    }
+
+    private func applyCurrentRotation() {
+        guard let coordinator = rotationCoordinator,
+              let connection = previewLayer.connection else { return }
+
+        let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+        guard connection.isVideoRotationAngleSupported(angle) else { return }
+        connection.videoRotationAngle = angle
     }
 }
 
@@ -44,9 +97,11 @@ struct CameraPreview: UIViewRepresentable {
         let view = CameraPreviewView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
-        applyPortraitRotation(to: view.previewLayer)
 
-        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        let tap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap(_:))
+        )
         view.addGestureRecognizer(tap)
         return view
     }
@@ -55,14 +110,9 @@ struct CameraPreview: UIViewRepresentable {
         if uiView.previewLayer.session !== session {
             uiView.previewLayer.session = session
         }
-        applyPortraitRotation(to: uiView.previewLayer)
-        context.coordinator.onTapToFocus = onTapToFocus
-    }
 
-    private func applyPortraitRotation(to previewLayer: AVCaptureVideoPreviewLayer) {
-        guard let connection = previewLayer.connection,
-              connection.isVideoRotationAngleSupported(90) else { return }
-        connection.videoRotationAngle = 90
+        uiView.configureRotationIfNeeded()
+        context.coordinator.onTapToFocus = onTapToFocus
     }
 
     final class Coordinator: NSObject {

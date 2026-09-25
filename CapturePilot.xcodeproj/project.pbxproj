@@ -18,6 +18,11 @@
 		633CE43A6A980AF417BCDE3B /* ManualControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4449E9F542F038826D26A1 /* ManualControlsView.swift */; };
 		7B1CB62AC5CBB340E523A278 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */; };
 		B47620DCAAE3A086799472E8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030D4107D1F77988159FDEEB /* SettingsView.swift */; };
+		B10000000000000000000001 /* OrientationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* OrientationPolicy.swift */; };
+		B10000000000000000000002 /* HUDLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* HUDLayout.swift */; };
+		B10000000000000000000003 /* HUDMovableItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* HUDMovableItem.swift */; };
+		B10000000000000000000004 /* FocusPeakingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* FocusPeakingEngine.swift */; };
+		B10000000000000000000005 /* FocusPeakingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* FocusPeakingOverlay.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
@@ -36,6 +41,11 @@
 		BD4449E9F542F038826D26A1 /* ManualControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualControlsView.swift; sourceTree = "<group>"; };
 		EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		030D4107D1F77988159FDEEB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* OrientationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationPolicy.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* HUDLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDLayout.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* HUDMovableItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDMovableItem.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* FocusPeakingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusPeakingEngine.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* FocusPeakingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusPeakingOverlay.swift; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -66,6 +76,7 @@
 				069DCBAB5960938F95C1E96A /* Coach */,
 				88189ACCA3913C501CCC3799 /* UI */,
 				96D5947C9C1BE3D117F9A0E7 /* Settings */,
+				B30000000000000000000001 /* HUD */,
 				442440819FFC8BBD4010CCFB /* Info.plist */,
 				A20000000000000000000001 /* PrivacyInfo.xcprivacy */,
 				A20000000000000000000004 /* Assets.xcassets */,
@@ -78,6 +89,7 @@
 				D197BD980F0FA76EC92D758C /* CameraModels.swift */,
 				0EA2CF207E0B8B34D35659EF /* CameraService.swift */,
 				DD2EDA2CBFC0A3FC0C4825E0 /* CameraPreview.swift */,
+				B20000000000000000000004 /* FocusPeakingEngine.swift */,
 			); path = Camera; sourceTree = "<group>"; };
 		069DCBAB5960938F95C1E96A /* Coach */ = { isa = PBXGroup; children = (
 				5813792A309756B1DB2CC9A8 /* CoachModels.swift */,
@@ -87,11 +99,22 @@
 				437A370E3E1FC5AD561E15C5 /* CompositionOverlay.swift */,
 				FAE40C73C6A294C3ED8C16E0 /* CoachBubble.swift */,
 				BD4449E9F542F038826D26A1 /* ManualControlsView.swift */,
+				B20000000000000000000005 /* FocusPeakingOverlay.swift */,
 			); path = UI; sourceTree = "<group>"; };
 		96D5947C9C1BE3D117F9A0E7 /* Settings */ = { isa = PBXGroup; children = (
 				EBABC50B4E844B6FE3E8EEF2 /* AppSettings.swift */,
 				030D4107D1F77988159FDEEB /* SettingsView.swift */,
+				B20000000000000000000001 /* OrientationPolicy.swift */,
 			); path = Settings; sourceTree = "<group>"; };
+		B30000000000000000000001 /* HUD */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000002 /* HUDLayout.swift */,
+				B20000000000000000000003 /* HUDMovableItem.swift */,
+			);
+			path = HUD;
+			sourceTree = "<group>";
+		};
 		021F2B7F3E0C61452C987484 /* Products */ = { isa = PBXGroup; children = ( AEF63687048485D45524643C /* CapturePilot.app */, ); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -163,6 +186,11 @@
 				633CE43A6A980AF417BCDE3B /* ManualControlsView.swift in Sources */,
 				7B1CB62AC5CBB340E523A278 /* AppSettings.swift in Sources */,
 				B47620DCAAE3A086799472E8 /* SettingsView.swift in Sources */,
+				B10000000000000000000001 /* OrientationPolicy.swift in Sources */,
+				B10000000000000000000002 /* HUDLayout.swift in Sources */,
+				B10000000000000000000003 /* HUDMovableItem.swift in Sources */,
+				B10000000000000000000004 /* FocusPeakingEngine.swift in Sources */,
+				B10000000000000000000005 /* FocusPeakingOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,11 +203,11 @@
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 2;
+			CURRENT_PROJECT_VERSION = 3;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.2.0;
+			MARKETING_VERSION = 0.3.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;
@@ -190,11 +218,11 @@
 			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 2;
+			CURRENT_PROJECT_VERSION = 3;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.2.0;
+			MARKETING_VERSION = 0.3.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;
