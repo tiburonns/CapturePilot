@@ -21,6 +21,7 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
     case afaeLock
     case clippingWarnings
     case frameGuide
+    case rankings
 
     var id: String { rawValue }
 
@@ -55,6 +56,7 @@ enum HUDItem: String, CaseIterable, Codable, Identifiable {
         case .afaeLock: return .afaeLock
         case .clippingWarnings: return .clippingWarnings
         case .frameGuide: return .frameGuide
+        case .rankings: return .rankings
         }
     }
 }
@@ -182,7 +184,8 @@ final class HUDLayoutStore: ObservableObject {
             .vectorscope: config(false, portrait: (0.77, 0.66), landscape: (0.78, 0.52)),
             .afaeLock: config(false, portrait: (0.08, 0.50), landscape: (0.06, 0.48)),
             .clippingWarnings: config(false, portrait: (0.50, 0.82), landscape: (0.50, 0.76)),
-            .frameGuide: config(false, portrait: (0.10, 0.82), landscape: (0.10, 0.75))
+            .frameGuide: config(false, portrait: (0.10, 0.82), landscape: (0.10, 0.75)),
+            .rankings: config(portrait: (0.08, 0.18), landscape: (0.06, 0.28))
         ]
     }
 }
