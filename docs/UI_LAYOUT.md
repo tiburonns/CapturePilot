@@ -21,6 +21,7 @@
 - [ ] No control overlaps the island in portrait.
 - [ ] Landscape controls remain reachable.
 - [ ] Coach bubble does not become permanently clipped.
+- [ ] LUT recommendation card, when visible, remains inside the safe area and does not cover the shutter.
 - [ ] Scene selector and language controls remain usable.
 - [ ] Peaking overlay lines up with the viewfinder.
 
@@ -83,6 +84,7 @@ Source inspection cannot certify these physical checks.
 - [ ] Ningún control se superpone en vertical.
 - [ ] En horizontal todos siguen accesibles.
 - [ ] Coach no queda recortado.
+- [ ] La tarjeta de recomendación LUT permanece dentro del área segura y no cubre el disparador.
 - [ ] Escena e idioma son utilizables.
 - [ ] Peaking coincide con el preview.
 
