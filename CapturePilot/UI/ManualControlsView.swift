@@ -2,12 +2,49 @@ import SwiftUI
 
 struct ManualControlsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var lutStore: LUTStore
     @ObservedObject var camera: CameraService
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                if !camera.availableResolutions.isEmpty {
+                if camera.photoFormat == .rawPlusJPEG {
+                    controlCard(
+                        title: settings.text(.rawMaster),
+                        value: rawMasterLabel
+                    ) {
+                        Text("MAX")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    controlCard(
+                        title: settings.text(.shareSize),
+                        value: "\(camera.selectedShareJPEGMegapixels) MP"
+                    ) {
+                        Picker("", selection: shareMegapixelsBinding) {
+                            ForEach(camera.shareJPEGOptions, id: \.self) { megapixels in
+                                Text("\(megapixels) MP").tag(megapixels)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+
+                    controlCard(
+                        title: settings.text(.lut),
+                        value: lutStore.selectedCube.name
+                    ) {
+                        Picker("", selection: $lutStore.selectedID) {
+                            ForEach(lutStore.cubes) { cube in
+                                Text(cube.name).tag(cube.id)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                    .frame(maxWidth: 220)
+                } else if !camera.availableResolutions.isEmpty {
                     controlCard(
                         title: settings.text(.resolution),
                         value: selectedResolutionLabel
@@ -157,6 +194,20 @@ struct ManualControlsView: View {
             }
             .padding(.horizontal, 14)
         }
+    }
+
+    private var rawMasterLabel: String {
+        let dimensions = camera.rawMasterRequestedDimensions
+        guard dimensions.width > 0, dimensions.height > 0 else { return "—" }
+        let megapixels = Double(dimensions.width) * Double(dimensions.height) / 1_000_000
+        return "\(Int(megapixels.rounded())) MP"
+    }
+
+    private var shareMegapixelsBinding: Binding<Int> {
+        Binding(
+            get: { camera.selectedShareJPEGMegapixels },
+            set: { camera.selectShareJPEGMegapixels($0) }
+        )
     }
 
     private var selectedResolutionLabel: String {

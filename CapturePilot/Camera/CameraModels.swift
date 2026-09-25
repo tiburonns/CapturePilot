@@ -31,6 +31,7 @@ enum PhotoFormat: String, CaseIterable, Identifiable {
     case jpeg
     case raw
     case proRAW
+    case rawPlusJPEG
 
     var id: String { rawValue }
 
@@ -40,6 +41,7 @@ enum PhotoFormat: String, CaseIterable, Identifiable {
         case .jpeg: "JPEG"
         case .raw: "RAW"
         case .proRAW: "ProRAW"
+        case .rawPlusJPEG: "RAW+JPG"
         }
     }
 }

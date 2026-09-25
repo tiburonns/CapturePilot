@@ -1,4 +1,5 @@
 import AVFoundation
+import ImageIO
 import Photos
 import SwiftUI
 
@@ -29,6 +30,12 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var supportsAFAELock = false
     @Published private(set) var supportsHEVC = false
     @Published private(set) var supportsProRAW = false
+    @Published private(set) var shareJPEGOptions: [Int] = [12]
+    @Published private(set) var selectedShareJPEGMegapixels: Int = 12
+    @Published private(set) var rawMasterRequestedDimensions = CMVideoDimensions(width: 0, height: 0)
+    @Published private(set) var lastResolvedRawDimensions = CMVideoDimensions(width: 0, height: 0)
+    @Published private(set) var lastResolvedShareDimensions = CMVideoDimensions(width: 0, height: 0)
+    @Published private(set) var lastShareJPEGURL: URL?
 
     @Published var exposureBias: Float = 0
     @Published private(set) var minExposureBias: Float = -2
@@ -65,6 +72,11 @@ final class CameraService: NSObject, ObservableObject {
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
     private let photoOutput = AVCapturePhotoOutput()
     private let videoOutput = AVCaptureVideoDataOutput()
+    private let photoProcessingQueue = DispatchQueue(
+        label: "CapturePilot.PhotoProcessing",
+        qos: .userInitiated
+    )
+    private let pendingCaptureLock = NSLock()
 
     private var currentInput: AVCaptureDeviceInput?
     private var observerTokens: [NSObjectProtocol] = []
@@ -84,6 +96,21 @@ final class CameraService: NSObject, ObservableObject {
     private var peakingColor: (UInt8, UInt8, UInt8) = (255, 80, 30)
     private var afaeLockGeneration = 0
     private var captureDimensions = CMVideoDimensions(width: 0, height: 0)
+    private var pendingDualCaptures: [Int64: PendingDualCapture] = [:]
+
+    private struct PendingDualCapture {
+        let lut: LUTCube
+        let targetMegapixels: Int
+        var rawData: Data?
+        var processedData: Data?
+        var processedMetadata: [String: Any] = [:]
+        var rawDimensions = CMVideoDimensions(width: 0, height: 0)
+        var processedDimensions = CMVideoDimensions(width: 0, height: 0)
+
+        var isComplete: Bool {
+            rawData != nil && processedData != nil
+        }
+    }
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
     private var captureRotationObservation: NSKeyValueObservation?
@@ -539,6 +566,32 @@ final class CameraService: NSObject, ObservableObject {
         }
 
         refreshPhotoCapabilities(for: device, resolutions: options)
+
+        let maximumDimensions = supportedDimensions.last
+            ?? CMVideoDimensions(width: 0, height: 0)
+        let maxMP = Double(maximumDimensions.width)
+            * Double(maximumDimensions.height)
+            / 1_000_000.0
+        let quickSizes = [12, 24, 48].filter {
+            Double($0) <= maxMP + 3.0
+        }
+        let resolvedQuickSizes = quickSizes.isEmpty
+            ? [max(1, Int(maxMP.rounded()))]
+            : quickSizes
+
+        DispatchQueue.main.async {
+            self.rawMasterRequestedDimensions = maximumDimensions
+            self.shareJPEGOptions = resolvedQuickSizes
+
+            if !resolvedQuickSizes.contains(self.selectedShareJPEGMegapixels) {
+                self.selectedShareJPEGMegapixels =
+                    resolvedQuickSizes.contains(24)
+                    ? 24
+                    : (resolvedQuickSizes.last ?? 12)
+            }
+        }
+
+        prepareHighResolutionCaptureSettings()
     }
 
     private func refreshPhotoCapabilities(
@@ -555,6 +608,7 @@ final class CameraService: NSObject, ObservableObject {
         if hevc { formats.insert(.heif, at: 0) }
         if hasBayer { formats.append(.raw) }
         if hasProRAW { formats.append(.proRAW) }
+        if hasBayer || hasProRAW { formats.append(.rawPlusJPEG) }
 
         let selectedID = "\(captureDimensions.width)x\(captureDimensions.height)"
 
@@ -571,6 +625,11 @@ final class CameraService: NSObject, ObservableObject {
         }
     }
 
+    func selectShareJPEGMegapixels(_ megapixels: Int) {
+        guard shareJPEGOptions.contains(megapixels) else { return }
+        selectedShareJPEGMegapixels = megapixels
+    }
+
     func selectResolution(_ option: PhotoResolutionOption) {
         sessionQueue.async { [weak self] in
             guard let self, let device = self.currentInput?.device else { return }
@@ -584,6 +643,43 @@ final class CameraService: NSObject, ObservableObject {
                 self.selectedResolutionID = option.id
             }
         }
+    }
+
+    private func preferredRawPixelFormatType() -> OSType? {
+        let available = photoOutput.availableRawPhotoPixelFormatTypes
+
+        if photoOutput.isAppleProRAWEnabled,
+           let proRAW = available.first(where: AVCapturePhotoOutput.isAppleProRAWPixelFormat) {
+            return proRAW
+        }
+
+        return available.first(where: AVCapturePhotoOutput.isBayerRAWPixelFormat)
+    }
+
+    private func prepareHighResolutionCaptureSettings() {
+        let dimensions = photoOutput.maxPhotoDimensions
+        guard dimensions.width > 0, dimensions.height > 0 else { return }
+
+        var settingsToPrepare: [AVCapturePhotoSettings] = []
+
+        let jpeg = AVCapturePhotoSettings(
+            format: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+        )
+        jpeg.maxPhotoDimensions = dimensions
+        jpeg.photoQualityPrioritization = .quality
+        settingsToPrepare.append(jpeg)
+
+        if let rawType = preferredRawPixelFormatType() {
+            let dual = AVCapturePhotoSettings(
+                rawPixelFormatType: rawType,
+                processedFormat: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+            )
+            dual.maxPhotoDimensions = dimensions
+            dual.photoQualityPrioritization = .quality
+            settingsToPrepare.append(dual)
+        }
+
+        photoOutput.setPreparedPhotoSettingsArray(settingsToPrepare) { _, _ in }
     }
 
     private func publishManualCapabilities(for device: AVCaptureDevice) {
@@ -855,13 +951,22 @@ final class CameraService: NSObject, ObservableObject {
         }
     }
 
-    func capturePhoto() {
+    func capturePhoto(lut: LUTCube? = nil) {
         let requestedFormat = photoFormat
+        let quickShareMP = selectedShareJPEGMegapixels
+
+        DispatchQueue.main.async {
+            self.lastSaveSucceeded = nil
+            if requestedFormat != .rawPlusJPEG {
+                self.lastShareJPEGURL = nil
+            }
+        }
 
         sessionQueue.async { [weak self] in
             guard let self else { return }
 
             let settings: AVCapturePhotoSettings
+            var isDualCapture = false
 
             switch requestedFormat {
             case .raw:
@@ -899,9 +1004,36 @@ final class CameraService: NSObject, ObservableObject {
                 settings = AVCapturePhotoSettings(
                     format: [AVVideoCodecKey: AVVideoCodecType.hevc]
                 )
+
+            case .rawPlusJPEG:
+                guard let rawType = self.preferredRawPixelFormatType(),
+                      let lut else {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                    return
+                }
+
+                settings = AVCapturePhotoSettings(
+                    rawPixelFormatType: rawType,
+                    processedFormat: [AVVideoCodecKey: AVVideoCodecType.jpeg]
+                )
+                isDualCapture = true
+
+                let masterDimensions = self.photoOutput.maxPhotoDimensions
+                if masterDimensions.width > 0, masterDimensions.height > 0 {
+                    settings.maxPhotoDimensions = masterDimensions
+                }
+
+                self.pendingCaptureLock.lock()
+                self.pendingDualCaptures[settings.uniqueID] = PendingDualCapture(
+                    lut: lut,
+                    targetMegapixels: quickShareMP
+                )
+                self.pendingCaptureLock.unlock()
             }
 
-            if self.captureDimensions.width > 0, self.captureDimensions.height > 0 {
+            if !isDualCapture,
+               self.captureDimensions.width > 0,
+               self.captureDimensions.height > 0 {
                 settings.maxPhotoDimensions = self.captureDimensions
             }
 
@@ -925,6 +1057,151 @@ final class CameraService: NSObject, ObservableObject {
                 DispatchQueue.main.async { self?.lastSaveSucceeded = success }
             }
         }
+    }
+
+    private func finishDualCapture(_ pending: PendingDualCapture) {
+        guard let rawData = pending.rawData,
+              let processedData = pending.processedData else {
+            DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            return
+        }
+
+        photoProcessingQueue.async { [weak self] in
+            guard let self,
+                  let jpegData = LUTProcessor.makeJPEG(
+                    from: processedData,
+                    metadata: pending.processedMetadata,
+                    lut: pending.lut,
+                    targetMegapixels: pending.targetMegapixels
+                  ) else {
+                DispatchQueue.main.async { self?.lastSaveSucceeded = false }
+                return
+            }
+
+            let shareURL = self.writeQuickShareJPEG(
+                jpegData,
+                lutName: pending.lut.name
+            )
+
+            DispatchQueue.main.async {
+                self.lastResolvedRawDimensions = pending.rawDimensions
+                self.lastResolvedShareDimensions = self.imageDimensions(from: jpegData)
+                self.lastShareJPEGURL = shareURL
+            }
+
+            self.saveRAWJPEGPair(
+                jpegData: jpegData,
+                rawData: rawData,
+                lutName: pending.lut.name
+            )
+        }
+    }
+
+    private func saveRAWJPEGPair(
+        jpegData: Data,
+        rawData: Data,
+        lutName: String
+    ) {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
+            guard let self,
+                  status == .authorized || status == .limited else {
+                DispatchQueue.main.async { self?.lastSaveSucceeded = false }
+                return
+            }
+
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let jpegOptions = PHAssetResourceCreationOptions()
+            jpegOptions.originalFilename = "CapturePilot-\(timestamp)-\(self.fileSafe(lutName)).jpg"
+
+            let rawOptions = PHAssetResourceCreationOptions()
+            rawOptions.originalFilename = "CapturePilot-\(timestamp)-RAW.dng"
+
+            PHPhotoLibrary.shared().performChanges {
+                let request = PHAssetCreationRequest.forAsset()
+                request.addResource(
+                    with: .photo,
+                    data: jpegData,
+                    options: jpegOptions
+                )
+                request.addResource(
+                    with: .alternatePhoto,
+                    data: rawData,
+                    options: rawOptions
+                )
+            } completionHandler: { success, _ in
+                if success {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = true }
+                } else {
+                    self.saveRAWJPEGAsSeparateAssets(
+                        jpegData: jpegData,
+                        rawData: rawData,
+                        jpegOptions: jpegOptions,
+                        rawOptions: rawOptions
+                    )
+                }
+            }
+        }
+    }
+
+    private func saveRAWJPEGAsSeparateAssets(
+        jpegData: Data,
+        rawData: Data,
+        jpegOptions: PHAssetResourceCreationOptions,
+        rawOptions: PHAssetResourceCreationOptions
+    ) {
+        PHPhotoLibrary.shared().performChanges {
+            let jpegRequest = PHAssetCreationRequest.forAsset()
+            jpegRequest.addResource(
+                with: .photo,
+                data: jpegData,
+                options: jpegOptions
+            )
+
+            let rawRequest = PHAssetCreationRequest.forAsset()
+            rawRequest.addResource(
+                with: .photo,
+                data: rawData,
+                options: rawOptions
+            )
+        } completionHandler: { [weak self] success, _ in
+            DispatchQueue.main.async { self?.lastSaveSucceeded = success }
+        }
+    }
+
+    private func writeQuickShareJPEG(_ data: Data, lutName: String) -> URL? {
+        if let oldURL = lastShareJPEGURL {
+            try? FileManager.default.removeItem(at: oldURL)
+        }
+
+        let name = "CapturePilot-QuickShare-\(fileSafe(lutName))-\(UUID().uuidString.prefix(8)).jpg"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private func fileSafe(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: "\\", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .replacingOccurrences(of: " ", with: "_")
+    }
+
+    private func imageDimensions(from data: Data) -> CMVideoDimensions {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int else {
+            return CMVideoDimensions(width: 0, height: 0)
+        }
+
+        return CMVideoDimensions(width: Int32(width), height: Int32(height))
     }
 
     private func syncDeviceValues(_ device: AVCaptureDevice) {
@@ -1044,6 +1321,31 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
             DispatchQueue.main.async { self.lastSaveSucceeded = false }
             return
         }
+
+        let captureID = photo.resolvedSettings.uniqueID
+
+        pendingCaptureLock.lock()
+        if var pending = pendingDualCaptures[captureID] {
+            if photo.isRawPhoto {
+                pending.rawData = data
+                pending.rawDimensions = photo.resolvedSettings.rawPhotoDimensions
+            } else {
+                pending.processedData = data
+                pending.processedMetadata = photo.metadata
+                pending.processedDimensions = photo.resolvedSettings.photoDimensions
+            }
+
+            if pending.isComplete {
+                pendingDualCaptures.removeValue(forKey: captureID)
+                pendingCaptureLock.unlock()
+                finishDualCapture(pending)
+            } else {
+                pendingDualCaptures[captureID] = pending
+                pendingCaptureLock.unlock()
+            }
+            return
+        }
+        pendingCaptureLock.unlock()
 
         savePhotoData(data)
     }

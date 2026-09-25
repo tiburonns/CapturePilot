@@ -4,6 +4,7 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var hud: HUDLayoutStore
+    @EnvironmentObject private var lutStore: LUTStore
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var camera = CameraService()
 
@@ -102,6 +103,7 @@ struct ContentView: View {
             SettingsView()
                 .environmentObject(settings)
                 .environmentObject(hud)
+                .environmentObject(lutStore)
         }
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
@@ -592,7 +594,8 @@ struct ContentView: View {
         } label: {
             Text(camera.photoFormat.shortLabel)
                 .font(.caption.weight(.bold))
-                .frame(width: 64, height: 44)
+                .minimumScaleFactor(0.75)
+                .frame(width: 78, height: 44)
                 .background(.ultraThinMaterial, in: Capsule())
         }
     }
@@ -600,7 +603,11 @@ struct ContentView: View {
     private var shutterButton: some View {
         Button {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            camera.capturePhoto()
+            camera.capturePhoto(
+                lut: camera.photoFormat == .rawPlusJPEG
+                    ? lutStore.selectedCube
+                    : nil
+            )
         } label: {
             ZStack {
                 Circle()
@@ -652,18 +659,45 @@ struct ContentView: View {
     @ViewBuilder
     private var saveStatusOverlay: some View {
         if let saved = camera.lastSaveSucceeded {
-            Text(settings.text(saved ? .saved : .saveFailed))
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(.ultraThinMaterial, in: Capsule())
-                .safeAreaPadding(.top, 8)
-                .transition(.opacity)
-                .task(id: saved) {
-                    try? await Task.sleep(for: .seconds(1.5))
-                    camera.lastSaveSucceeded = nil
+            HStack(spacing: 10) {
+                Text(saveStatusText(saved: saved))
+                    .font(.subheadline.weight(.semibold))
+
+                if saved, let shareURL = camera.lastShareJPEGURL {
+                    ShareLink(item: shareURL) {
+                        Label(settings.text(.share), systemImage: "square.and.arrow.up")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.borderless)
                 }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial, in: Capsule())
+            .safeAreaPadding(.top, 8)
+            .transition(.opacity)
+            .task(id: camera.lastShareJPEGURL) {
+                try? await Task.sleep(
+                    for: .seconds(camera.lastShareJPEGURL == nil ? 1.5 : 6)
+                )
+                camera.lastSaveSucceeded = nil
+            }
         }
+    }
+
+    private func saveStatusText(saved: Bool) -> String {
+        guard saved else { return settings.text(.saveFailed) }
+        guard camera.lastShareJPEGURL != nil else { return settings.text(.saved) }
+
+        let raw = resolutionLabel(camera.lastResolvedRawDimensions)
+        let jpeg = resolutionLabel(camera.lastResolvedShareDimensions)
+        return "\(settings.text(.saved)) · RAW \(raw) + JPG \(jpeg)"
+    }
+
+    private func resolutionLabel(_ dimensions: CMVideoDimensions) -> String {
+        guard dimensions.width > 0, dimensions.height > 0 else { return "—" }
+        let mp = Double(dimensions.width) * Double(dimensions.height) / 1_000_000
+        return "\(Int(mp.rounded()))MP"
     }
 
     @ViewBuilder
