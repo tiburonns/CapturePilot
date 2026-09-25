@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var waveformExpanded = false
     @State private var rgbParadeExpanded = false
     @State private var vectorscopeExpanded = false
+    @State private var lutActionError: String?
 
     var body: some View {
         ZStack {
@@ -749,6 +750,8 @@ struct ContentView: View {
     private var sessionStatusOverlay: some View {
         if camera.sessionInterrupted {
             statusCapsule(settings.text(.cameraInterrupted))
+        } else if let lutActionError {
+            statusCapsule(lutActionError)
         } else if camera.runtimeErrorDescription != nil {
             statusCapsule(settings.text(.cameraRuntimeError))
         }
@@ -846,7 +849,11 @@ struct ContentView: View {
             settings.lutEnabled = true
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } catch {
-            camera.runtimeErrorDescription = error.localizedDescription
+            lutActionError = error.localizedDescription
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(3))
+                lutActionError = nil
+            }
         }
     }
 
