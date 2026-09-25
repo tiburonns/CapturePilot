@@ -21,7 +21,6 @@ struct LUTLibraryEntry: Identifiable, Equatable {
     let displayName: String
     let dimension: Int
     let profile: LUTProfile
-    let modifiedDate: Date?
 }
 
 private struct LUTScanResult {
@@ -414,8 +413,7 @@ final class LUTLibraryStore: ObservableObject {
             error: &coordinationError
         ) { coordinatedRoot in
             let keys: [URLResourceKey] = [
-                .isRegularFileKey,
-                .contentModificationDateKey
+                .isRegularFileKey
             ]
 
             guard let enumerator = FileManager.default.enumerator(
@@ -446,8 +444,7 @@ final class LUTLibraryStore: ObservableObject {
                             displayName: lut.title
                                 ?? fileURL.deletingPathExtension().lastPathComponent,
                             dimension: lut.dimension,
-                            profile: LUTProfileAnalyzer.profile(for: lut),
-                            modifiedDate: values.contentModificationDate
+                            profile: LUTProfileAnalyzer.profile(for: lut)
                         )
                     )
                 } catch {
