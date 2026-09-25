@@ -6,7 +6,7 @@
 
 CapturePilot 0.7.0 build 7 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
-The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, adaptive orientation, customizable HUD, and Focus Peaking.
+The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
 The candidate also includes a persistent LUT library from a user-selected Files folder and optional explainable LUT recommendations from the Coach.
 
@@ -25,6 +25,38 @@ At minimum use:
 - one smaller/notched or otherwise different-layout iPhone when available.
 
 Record actual dimensions for every resolution shown.
+
+### LUT library acceptance
+
+Before Archive, test at least:
+
+- select a LUT folder under On My iPhone;
+- select a LUT folder under iCloud Drive;
+- relaunch CapturePilot and verify the folder can be reopened;
+- add/remove/rename a .cube and verify refresh;
+- verify nested folders;
+- verify invalid LUTs are not offered;
+- apply a LUT recommended by the Coach;
+- confirm the RAW remains unaffected and the Share JPEG uses the selected LUT;
+- confirm the recommendation is never applied automatically.
+
+If a third-party File Provider is available, test it separately and record provider/app version.
+
+### Aceptación de biblioteca LUT
+
+Antes del Archive prueba al menos:
+
+- seleccionar carpeta LUT en En mi iPhone;
+- seleccionar carpeta LUT en iCloud Drive;
+- relanzar CapturePilot y comprobar que puede reabrirla;
+- agregar/eliminar/renombrar un .cube y comprobar refresh;
+- verificar subcarpetas;
+- comprobar que LUT inválidos no se ofrecen;
+- aplicar un LUT recomendado por el Coach;
+- confirmar que RAW no cambia y el JPEG para compartir usa el LUT activo;
+- confirmar que la recomendación nunca se aplica automáticamente.
+
+Si existe un File Provider de terceros, pruébalo por separado y registra proveedor/versión.
 
 ### Archive
 
@@ -45,6 +77,7 @@ Record actual dimensions for every resolution shown.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
 - Verify HEIF/JPEG/RAW/ProRAW labels match actual output on the test hardware.
+- Verify RAW+JPG output dimensions, LUT-library persistence, and Coach LUT recommendation/apply behavior.
 - Do not advertise 24/48 MP, ProRAW, telephoto, or manual modes on devices where CapturePilot does not expose those capabilities.
 
 ---
@@ -55,7 +88,7 @@ Record actual dimensions for every resolution shown.
 
 CapturePilot 0.7.0 build 7 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
-Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, orientación adaptativa, HUD y Focus Peaking.
+Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
 El candidato también incluye biblioteca LUT persistente desde una carpeta de Archivos y recomendaciones LUT explicables del Coach.
 
@@ -91,4 +124,5 @@ Registra las dimensiones reales de cada resolución mostrada.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.
 - Comprueba que HEIF/JPEG/RAW/ProRAW coincidan con el archivo real.
+- Verifica dimensiones RAW+JPG, persistencia de biblioteca LUT y comportamiento de recomendación/aplicación del Coach.
 - No anuncies 24/48 MP, ProRAW, telefoto o controles manuales en hardware donde CapturePilot no los exponga.
