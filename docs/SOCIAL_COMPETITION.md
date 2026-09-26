@@ -52,8 +52,8 @@ Only that iCloud account can access the private record by default.
 
 | Field | Type | Purpose |
 | --- | --- | --- |
-| userHash | String | Pseudonymous public identity key |
-| username | String | Automatic Pilot-* username |
+| socialID | String | Random pseudonymous CapturePilot social identity |
+| username | String | Automatic PILOT-* username |
 | createdAt | Date | Profile creation |
 
 #### FriendRequest
@@ -88,6 +88,7 @@ The addressee creates/owns the acceptance record. This avoids requiring one user
 | category | String |
 | score | Double |
 | capturedAt | Date |
+| scoreVersion | Int | Ranking formula version |
 
 CapturePilot stores at most one current best-score record per user/category record ID.
 
@@ -206,8 +207,8 @@ The Xcode target contains matching entitlements.
 
 During development, launch the signed app with the CloudKit development environment and exercise:
 
-1. sign in;
-2. profile creation;
+1. enable Friends Rankings with an available iCloud account;
+2. private SocialIdentity + public profile creation;
 3. send friend request;
 4. accept friend request;
 5. enable score sharing.
@@ -236,15 +237,15 @@ After the development schema is correct:
 
 1. review record types/fields/indexes in CloudKit Console;
 2. deploy schema changes to production;
-3. verify the distribution provisioning profile includes the Sign in with Apple and iCloud/CloudKit entitlements;
+3. verify the distribution provisioning profile includes the iCloud/CloudKit entitlements;
 4. test the distributed build with two real accounts/devices.
 
 ### Acceptance test
 
 Use two different Apple accounts/devices:
 
-- A signs in and receives a Pilot-* username;
-- B signs in and receives a different username;
+- A enables Friends and receives a PILOT-* username;
+- B enables Friends and receives a different username;
 - A sends B a request;
 - B accepts;
 - both enable score sharing;
@@ -310,7 +311,7 @@ No se sincronizan en 0.8:
 - LUT;
 - tags;
 - recomendaciones;
-- correo/nombre/contraseña del Apple ID.
+- correo/nombre/contraseña de la cuenta Apple.
 
 Sólo las fotos tomadas dentro de CapturePilot son elegibles para score social.
 
@@ -362,8 +363,8 @@ Después despliega el schema probado al entorno de producción antes de consider
 
 Con dos cuentas/dispositivos:
 
-1. login de A;
-2. login de B;
+1. A activa Amigos con iCloud disponible;
+2. B activa Amigos con otra cuenta iCloud;
 3. usernames distintos;
 4. solicitud A → B;
 5. aceptación;

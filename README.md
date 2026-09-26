@@ -3,9 +3,9 @@
 **Professional photography, guided — not automated.**  
 **Fotografía profesional, guiada — no automatizada.**
 
-CapturePilot is a free, ad-free iOS camera that combines professional capture controls with an on-device photography coach. The coach prioritizes practical suggestions and does not assign an aesthetic score or replace the photographer's creative decisions.
+CapturePilot is a free, ad-free iOS camera that combines professional capture controls with an on-device photography coach. The live framing Coach prioritizes practical suggestions and does not assign an aesthetic grade; the separate post-shot Rankings feature provides a relative Coach Score for comparing your own photographs.
 
-CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El coach prioriza sugerencias prácticas; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
+CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
 > **Current main / main actual: 0.8.0 (8).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
@@ -186,14 +186,14 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 
 ### Privacy
 
-- No CapturePilot account.
+- No account is required for camera, Coach, LUT, or private Rankings.
 - No ads.
 - No third-party analytics SDK.
-- No CapturePilot cloud service.
+- No CapturePilot-operated cloud service; optional Friends uses Apple's iCloud/CloudKit.
 - No live-frame upload.
 - Coach, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, Vectorscope, LUT parsing/profiling, and LUT recommendations run on-device.
 - External LUT folders are read only after the photographer explicitly selects one through the system Files picker.
-- Privacy Manifest declares no tracking or collected-data types.
+- Privacy Manifest declares no tracking. Optional Friends declares linked User ID and other user-content metadata for app functionality.
 - UserDefaults Required Reason API: CA92.1.
 
 ### Build / release status
@@ -383,14 +383,14 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 
 ### Privacidad
 
-- Sin cuenta.
+- Cámara, Coach, LUT y Ranking privado no requieren cuenta.
 - Sin publicidad.
 - Sin SDK de analítica de terceros.
-- Sin nube de CapturePilot.
+- Sin nube operada por CapturePilot; Amigos opcional usa iCloud/CloudKit de Apple.
 - Sin subida de frames.
 - Coach, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade, Vectorscope, parseo/perfilado LUT y recomendaciones LUT son locales.
 - Las carpetas LUT externas sólo se leen después de que el fotógrafo seleccione una explícitamente mediante el selector de Archivos.
-- Privacy Manifest sin tracking ni tipos de datos recopilados.
+- Privacy Manifest sin tracking; Amigos opcional declara User ID y otra metadata de contenido vinculada para funcionalidad.
 - Required Reason API de UserDefaults: CA92.1.
 
 ### Build / estado de publicación

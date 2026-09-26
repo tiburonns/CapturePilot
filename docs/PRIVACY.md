@@ -69,6 +69,17 @@ Imported-image scores are not eligible for social upload.
 
 See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
+### Privacy Manifest in 0.8
+
+CapturePilot still declares **no tracking**.
+
+Because the optional Friends feature writes pseudonymous identity/score metadata to CloudKit, the manifest declares:
+
+- User ID — linked, not used for tracking, app functionality;
+- Other User Content — linked, not used for tracking, app functionality.
+
+This declaration applies to the optional social layer; it does not mean camera frames or ranking thumbnails are uploaded.
+
 ### Local preferences
 
 UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, HUD layout, LUT recommendation preference, external-folder bookmark data, and active LUT identifiers/names.
@@ -152,6 +163,17 @@ Campos opcionales compartidos:
 Los scores de imágenes importadas no son elegibles para subida social.
 
 Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+
+### Privacy Manifest en 0.8
+
+CapturePilot sigue declarando **sin tracking**.
+
+Como Amigos opcional sincroniza identidad pseudónima y metadata de score en CloudKit, el manifest declara:
+
+- User ID — vinculado, sin tracking, funcionalidad;
+- Other User Content — vinculado, sin tracking, funcionalidad.
+
+Esto corresponde a la capa social opcional; no significa que se suban frames de cámara ni miniaturas del Ranking.
 
 ### Preferencias
 

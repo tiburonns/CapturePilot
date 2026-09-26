@@ -22,7 +22,7 @@ Test automatic ranking, imports, Top filters, category inference, per-photo reco
 Test the resolutions and formats that your device actually exposes, RAW+JPG output, LUT-folder persistence/refresh, explicit Coach LUT recommendation/apply behavior, physical lens switching, manual controls, orientation/session recovery, HUD persistence, Focus Peaking alignment, professional monitoring, composition guides, and each scene coach. Include iPhone model, iOS version, and File Provider when relevant.
 
 **Privacy Summary:**  
-No account, ads, third-party analytics, tracking, or CapturePilot cloud upload. Live analysis, scopes, LUT parsing/profiling, LUT recommendation, and Share-JPEG LUT processing run on-device. External LUT folders are accessed only after the photographer selects one through the system Files picker.
+Core photography requires no account. No ads, third-party analytics, or tracking. Optional Friends uses Apple iCloud/CloudKit for pseudonymous profile/friend/score metadata; photos are not uploaded. Live analysis, scopes, LUT parsing/profiling, LUT recommendation, and Share-JPEG LUT processing run on-device. External LUT folders are accessed only after the photographer selects one through the system Files picker.
 
 ---
 
@@ -48,4 +48,4 @@ Prueba ranking automático, importaciones, Tops, categorías, recomendaciones, R
 Prueba resoluciones/formatos reales, salida RAW+JPG, persistencia/refresh de la carpeta LUT, recomendación/aplicación explícita de LUT por el Coach, lentes, controles manuales, recuperación de sesión/orientación, HUD, Focus Peaking, monitoreo profesional, guías y cada Coach. Incluye modelo de iPhone, versión de iOS y File Provider cuando aplique.
 
 **Privacidad:**  
-Sin cuenta, anuncios, analítica de terceros, tracking ni nube de CapturePilot. Análisis, scopes, parseo/perfilado LUT, recomendaciones y aplicación del LUT al JPEG funcionan localmente. Las carpetas LUT externas sólo se leen después de que la persona seleccione una mediante el selector de Archivos.
+La fotografía principal no requiere cuenta. Sin anuncios, analítica de terceros ni tracking. Amigos opcional usa iCloud/CloudKit para metadata pseudónima de perfil/amistad/score; las fotos no se suben. Análisis, scopes, parseo/perfilado LUT, recomendaciones y aplicación del LUT al JPEG funcionan localmente. Las carpetas LUT externas sólo se leen después de que la persona seleccione una mediante el selector de Archivos.
