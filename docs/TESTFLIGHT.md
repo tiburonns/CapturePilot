@@ -58,6 +58,38 @@ Antes del Archive prueba al menos:
 
 Si existe un File Provider de terceros, pruébalo por separado y registra proveedor/versión.
 
+### Rankings acceptance
+
+Before Archive, verify on a physical iPhone:
+
+- automatic ranking after a CapturePilot HEIF/JPEG capture;
+- RAW/ProRAW ranking without crash;
+- RAW+JPG creates one ranking entry from the processed share JPEG;
+- Top 5/10/25/50;
+- every category filter;
+- imported photos remain local;
+- iOS 18+ shows Vision aesthetics as supplemental information without changing the cross-version Coach Score formula;
+- recommendations are sensible on a varied real photo set.
+
+### Friends/social acceptance
+
+The social layer requires Apple Developer + CloudKit configuration beyond source code.
+
+Before considering it TestFlight-ready:
+
+- enable iCloud + CloudKit for `com.tiburonns.CapturePilot`;
+- create/use `iCloud.com.tiburonns.CapturePilot`;
+- exercise the development schema;
+- add required QUERYABLE indexes;
+- deploy the tested schema for distribution;
+- verify the provisioning profile carries the iCloud/CloudKit entitlements;
+- test with two real iCloud accounts/devices;
+- confirm photos/thumbnails never appear in public CloudKit records;
+- confirm imported photos never affect shared scores;
+- test unavailable/signed-out iCloud state.
+
+See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+
 ### Archive
 
 1. Pull latest `main`.
@@ -72,7 +104,7 @@ Si existe un File Provider de terceros, pruébalo por separado y registra provee
 
 ### TestFlight
 
-- Confirm **0.7.0 (7)**.
+- Confirm **0.8.0 (8)**.
 - Complete export compliance as requested.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
@@ -81,6 +113,38 @@ Si existe un File Provider de terceros, pruébalo por separado y registra provee
 - Do not advertise 24/48 MP, ProRAW, telephoto, or manual modes on devices where CapturePilot does not expose those capabilities.
 
 ---
+
+### Aceptación del Ranking
+
+Antes del Archive verifica en iPhone real:
+
+- ranking automático tras captura HEIF/JPEG;
+- RAW/ProRAW sin crash;
+- RAW+JPG crea una sola entrada desde el JPEG procesado;
+- Top 5/10/25/50;
+- filtros por categoría;
+- importaciones permanecen locales;
+- iOS 18+ muestra estética Vision como información suplementaria sin cambiar la fórmula comparable del Coach Score;
+- recomendaciones razonables con fotos reales diversas.
+
+### Aceptación social
+
+La capa social requiere configuración Apple Developer/CloudKit adicional al código.
+
+Antes de considerarla lista para TestFlight:
+
+- activar iCloud + CloudKit para `com.tiburonns.CapturePilot`;
+- usar `iCloud.com.tiburonns.CapturePilot`;
+- crear/probar schema de desarrollo;
+- añadir índices QUERYABLE;
+- desplegar schema para distribución;
+- verificar entitlements en provisioning;
+- probar con dos cuentas/dispositivos iCloud;
+- confirmar que nunca se suben fotos/miniaturas;
+- confirmar que importaciones no cambian scores compartidos;
+- probar iCloud no disponible/cierre de sesión.
+
+Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ## Español
 
@@ -119,7 +183,7 @@ Registra las dimensiones reales de cada resolución mostrada.
 
 ### TestFlight
 
-- Confirma **0.7.0 (7)**.
+- Confirma **0.8.0 (8)**.
 - Completa export compliance.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.
