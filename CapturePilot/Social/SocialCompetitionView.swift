@@ -12,7 +12,6 @@ struct SocialCompetitionView: View {
     private var filteredLeaderboard: [SocialScore] {
         social.leaderboard.filter { $0.category == leaderboardCategory }
     }
-    @State private var leaderboardCategory = "overall"
     @State private var showingDeleteConfirmation = false
 
     var body: some View {
@@ -198,10 +197,7 @@ struct SocialCompetitionView: View {
                     }
                 }
 
-                let visibleScores = social.leaderboard
-                    .filter { $0.category == leaderboardCategory }
-
-                if visibleScores.isEmpty {
+                if filteredLeaderboard.isEmpty {
                     Text(localized(
                         "No shared scores yet.",
                         "Aún no hay scores compartidos."
@@ -209,7 +205,7 @@ struct SocialCompetitionView: View {
                     .foregroundStyle(.secondary)
                 } else {
                     ForEach(
-                        Array(visibleScores.prefix(50).enumerated()),
+                        Array(filteredLeaderboard.prefix(50).enumerated()),
                         id: \.element.id
                     ) { index, item in
                         HStack {
@@ -220,7 +216,7 @@ struct SocialCompetitionView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.username)
                                     .font(.subheadline.bold())
-                                Text(categoryDisplayName(item.category))
+                                Text(categoryName(item.category))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
