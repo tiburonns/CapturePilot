@@ -241,6 +241,7 @@ final class SocialCompetitionService: ObservableObject {
 
         let currentEntries = entries.filter {
             $0.scoreVersion == PhotoRankingEntry.currentScoreVersion
+            && $0.source == .capture
         }
 
         var submissions: [(String, PhotoRankingEntry)] = []
