@@ -7,7 +7,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El coach prioriza sugerencias prácticas; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
 
-> **Current main / main actual: 0.7.0 (7).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.8.0 (8).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -47,6 +47,24 @@ The Coach can optionally recommend one of the available LUTs in RAW+JPG mode. Re
 CapturePilot never applies a recommendation automatically. The photographer must explicitly accept it.
 
 See [LUT library + Coach](docs/LUT_LIBRARY.md).
+
+### Photo Rankings + Coach Review
+
+CapturePilot 0.8 adds a private post-shot ranking section. New CapturePilot captures are analyzed automatically, and the photographer can also import selected images through the system Photos picker.
+
+The section supports **Top 5 / 10 / 25 / 50**, category filters, per-photo Coach Score breakdowns, automatic category inference, and actionable suggestions for a stronger second attempt.
+
+Coach Score is a **relative review aid**, not an objective artistic grade. It combines explainable CapturePilot exposure/composition/detail heuristics and, on supported OS versions, Apple's Vision aesthetics signal.
+
+See [Photo Rankings + Coach Review](docs/RANKINGS.md).
+
+### Friends + social scores
+
+CapturePilot can optionally use **Sign in with Apple** to create a pseudonymous automatic `Pilot-...` username and CloudKit to compare best CapturePilot-capture scores with accepted friends.
+
+0.8 synchronizes score metadata only — **not photos**. Imported images remain eligible for private local ranking but are excluded from social score submission.
+
+See [Friends + social scores](docs/SOCIAL_COMPETITION.md).
 
 ### Professional controls
 
@@ -181,7 +199,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.7.0 (7)**.
+- Current version/build: **0.8.0 (8)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -226,6 +244,24 @@ El Coach puede recomendar opcionalmente un LUT disponible en RAW+JPG. La recomen
 CapturePilot nunca aplica el LUT automáticamente; el fotógrafo debe aceptarlo explícitamente.
 
 Consulta [Biblioteca LUT + Coach](docs/LUT_LIBRARY.md).
+
+### Ranking de fotos + revisión del Coach
+
+CapturePilot 0.8 agrega una sección privada de análisis posterior al disparo. Las nuevas capturas se analizan automáticamente y también pueden importarse imágenes seleccionadas mediante el selector de Fotos.
+
+Permite **Top 5 / 10 / 25 / 50**, filtros por categoría, desglose del Coach Score, clasificación automática y recomendaciones concretas para mejorar o explorar una segunda toma.
+
+Coach Score es una **ayuda de comparación relativa**, no una calificación objetiva del valor artístico.
+
+Consulta [Ranking + Coach Review](docs/RANKINGS.md).
+
+### Amigos + scores sociales
+
+Opcionalmente CapturePilot usa **Sign in with Apple** para crear un username pseudónimo automático `Pilot-...` y CloudKit para comparar mejores scores con amigos aceptados.
+
+0.8 sincroniza sólo metadata de score, **no fotografías**. Las imágenes importadas participan en el ranking local pero no pueden subir score social.
+
+Consulta [Amigos + scores sociales](docs/SOCIAL_COMPETITION.md).
 
 ### Controles profesionales
 
@@ -360,7 +396,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.7.0 (7)**.
+- Versión/build actual: **0.8.0 (8)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.
@@ -371,6 +407,8 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [Coach / Coach](docs/COACH.md)
 - [RAW + Share JPEG / RAW + JPEG](docs/RAW_SHARE_WORKFLOW.md)
 - [LUT library + Coach / Biblioteca LUT + Coach](docs/LUT_LIBRARY.md)
+- [Photo Rankings / Ranking de fotos](docs/RANKINGS.md)
+- [Friends + social scores / Amigos + scores sociales](docs/SOCIAL_COMPETITION.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)
