@@ -130,7 +130,7 @@ struct SocialCompetitionView: View {
             }
 
             Section(localized("Add friend", "Agregar amigo")) {
-                TextField("PILOT-XXXXXXXXXX", text: $friendUsername)
+                TextField("PILOT-XXXXXXXXXXXX", text: $friendUsername)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
 
