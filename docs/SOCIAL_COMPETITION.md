@@ -6,25 +6,21 @@ CapturePilot 0.8 introduces an opt-in social score layer for friendly comparison
 
 ## English
 
-### Identity: Sign in with Apple
+### Identity: private iCloud-backed CapturePilot identity
 
-CapturePilot does **not** read a person's Apple ID email, password, or account name.
+CapturePilot does **not** read a person's Apple Account email, password, or account name.
 
-The social flow uses **Sign in with Apple**. After successful authentication, Apple provides an `ASAuthorizationAppleIDCredential.user` identifier.
+When the photographer explicitly enables Friends Rankings, CapturePilot checks that an iCloud account is available and creates a random social identifier inside that user's **private CloudKit database**.
 
-CapturePilot hashes that opaque identifier locally and derives an automatic public CapturePilot username such as:
+A fixed private record ID lets the same iCloud account restore the same CapturePilot social identity on another device using the same container.
+
+The automatic username is derived from that random private social identifier, for example:
 
 ```text
-Pilot-A1B2C3D4E5
+PILOT-A1B2C3D4E5F6
 ```
 
-The username is therefore tied to the stable Sign in with Apple identity available to the developer, not to the person's visible Apple ID address.
-
-### Local identity state
-
-The current implementation stores the returned Apple user identifier locally so CapturePilot can ask Apple for credential state on later launches.
-
-If Apple reports that the authorization is no longer valid, CapturePilot clears the local social session.
+This is the feasible privacy-preserving interpretation of “linked to the Apple ID”: the identity follows the signed-in iCloud/Apple account through its private CloudKit database, while CapturePilot never receives the visible Apple Account identifier.
 
 ### CloudKit
 
@@ -38,6 +34,20 @@ and the container's **public CloudKit database**.
 
 Current record types:
 
+### Private database
+
+#### SocialIdentity
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| socialID | String | Random CapturePilot social identifier |
+| username | String | Automatic PILOT-* username |
+| createdAt | Date | Identity creation |
+
+Only that iCloud account can access the private record by default.
+
+### Public database
+
 #### CapturePilotProfile
 
 | Field | Type | Purpose |
@@ -46,24 +56,34 @@ Current record types:
 | username | String | Automatic Pilot-* username |
 | createdAt | Date | Profile creation |
 
-#### FriendConnection
+#### FriendRequest
 
 | Field | Type |
 | --- | --- |
-| requesterHash | String |
+| requesterID | String |
 | requesterUsername | String |
-| addresseeHash | String |
-| addresseeUsername | String |
-| status | String: pending/accepted |
+| addresseeID | String |
 | createdAt | Date |
 
-The deterministic record ID is based on the sorted pair of user hashes, preventing multiple parallel accepted connections for the same pair.
+The requester owns this public record.
+
+#### FriendAcceptance
+
+| Field | Type |
+| --- | --- |
+| requestRecordName | String |
+| requesterID | String |
+| addresseeID | String |
+| active | Bool/Int |
+| updatedAt | Date |
+
+The addressee creates/owns the acceptance record. This avoids requiring one user to modify another user's CloudKit record.
 
 #### RankingScore
 
 | Field | Type |
 | --- | --- |
-| ownerHash | String |
+| ownerID | String |
 | username | String |
 | category | String |
 | score | Double |
@@ -73,13 +93,14 @@ CapturePilot stores at most one current best-score record per user/category reco
 
 ### Friend flow
 
-1. Sign in with Apple.
-2. CapturePilot creates/restores the pseudonymous profile.
-3. Search/add by exact CapturePilot username.
-4. The other user sees an incoming request.
-5. Accept.
-6. Accepted users appear in the friends list.
-7. The leaderboard contains the current user's and accepted friends' shared best scores.
+1. Enable Friends Rankings while signed into iCloud.
+2. CapturePilot creates/restores the private SocialIdentity.
+3. A minimal public profile exposes only the automatic username/social ID.
+4. Search/add by exact CapturePilot username.
+5. Requester creates a FriendRequest.
+6. Addressee accepts by creating their own FriendAcceptance record.
+7. Accepted users appear in the friends list.
+8. The leaderboard contains the current user's and accepted friends' shared best scores.
 
 ### Leaderboard filters
 
@@ -170,7 +191,6 @@ com.tiburonns.CapturePilot
 
 enable:
 
-- Sign in with Apple;
 - iCloud;
 - CloudKit.
 
@@ -201,13 +221,12 @@ Before distribution, verify queryable indexes in CloudKit Console for fields use
 **CapturePilotProfile**
 - username
 
-**FriendConnection**
-- requesterHash
-- addresseeHash
-- status
+**FriendRequest**
+- requesterID
+- addresseeID
 
 **RankingScore**
-- ownerHash
+- ownerID
 
 Additional indexes may be added for operational/debugging needs, but do not index unused fields without a reason.
 
@@ -233,7 +252,7 @@ Use two different Apple accounts/devices:
 - verify overall/category leaderboard;
 - disable sharing and verify own cloud score records disappear;
 - remove friendship and verify the friend disappears from the local leaderboard query scope;
-- revoke Sign in with Apple authorization and verify CapturePilot clears the local social session.
+- sign out of iCloud / test unavailable account state and verify the social layer fails gracefully while local Rankings keep working.
 
 ---
 
@@ -243,15 +262,15 @@ Use two different Apple accounts/devices:
 
 CapturePilot **no puede ni intenta leer directamente el Apple ID visible, correo o contraseña**.
 
-Usa **Sign in with Apple**. Apple entrega un identificador opaco `credential.user`.
+Al activar Amigos, CapturePilot verifica una cuenta iCloud disponible y crea un identificador social aleatorio dentro de la **base privada de CloudKit** de esa cuenta.
 
-CapturePilot lo hashea localmente para generar un username automático:
+El username automático se deriva de esa identidad privada:
 
 ```text
-Pilot-A1B2C3D4E5
+PILOT-A1B2C3D4E5F6
 ```
 
-Por tanto, el username queda ligado a la identidad privada que Sign in with Apple entrega a nuestro equipo, no al correo visible del Apple ID.
+Así la identidad puede seguir a la misma cuenta iCloud entre dispositivos sin que CapturePilot reciba correo, contraseña o nombre visible de la cuenta Apple.
 
 ### CloudKit
 
@@ -265,8 +284,13 @@ en la base pública de CloudKit.
 
 Tipos de registro:
 
+**Privado**
+- `SocialIdentity`
+
+**Público**
 - `CapturePilotProfile`
-- `FriendConnection`
+- `FriendRequest`
+- `FriendAcceptance`
 - `RankingScore`
 
 ### Qué se sincroniza
@@ -316,7 +340,6 @@ Antes de activar fotos sociales deben existir filtrado, reportes, bloqueo, moder
 
 Para `com.tiburonns.CapturePilot`:
 
-- Sign in with Apple;
 - iCloud;
 - CloudKit;
 - contenedor `iCloud.com.tiburonns.CapturePilot`.
@@ -326,13 +349,12 @@ En CloudKit Console verifica índices QUERYABLE:
 **CapturePilotProfile**
 - username
 
-**FriendConnection**
-- requesterHash
-- addresseeHash
-- status
+**FriendRequest**
+- requesterID
+- addresseeID
 
 **RankingScore**
-- ownerHash
+- ownerID
 
 Después despliega el schema probado al entorno de producción antes de considerar lista la función social para distribución.
 
@@ -350,4 +372,4 @@ Con dos cuentas/dispositivos:
 8. comparar Overall y categorías;
 9. desactivar compartir;
 10. eliminar amistad;
-11. probar revocación de Sign in with Apple.
+11. probar cierre/no disponibilidad de iCloud sin romper el ranking local.
