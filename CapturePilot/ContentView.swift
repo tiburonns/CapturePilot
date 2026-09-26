@@ -5,10 +5,13 @@ struct ContentView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var hud: HUDLayoutStore
     @EnvironmentObject private var lutLibrary: LUTLibraryStore
+    @EnvironmentObject private var rankingStore: PhotoRankingStore
+    @EnvironmentObject private var social: SocialCompetitionService
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var camera = CameraService()
 
     @State private var showingSettings = false
+    @State private var showingRankings = false
     @State private var showingProControls = false
     @State private var histogramExpanded = false
     @State private var waveformExpanded = false
@@ -36,6 +39,15 @@ struct ContentView: View {
         .persistentSystemOverlays(.hidden)
         .onAppear {
             camera.setCoachIntensity(settings.coachIntensity)
+            camera.setRankingHandler { data, category in
+                Task { @MainActor in
+                    await rankingStore.ingest(
+                        data: data,
+                        source: .capture,
+                        sceneHint: category
+                    )
+                }
+            }
             camera.setCoachScene(settings.sceneCoach)
             applyMonitoringSettings()
             syncMonitoringHUD()
@@ -123,6 +135,12 @@ struct ContentView: View {
             } else {
                 syncMonitoringHUD()
             }
+        }
+        .fullScreenCover(isPresented: $showingRankings) {
+            RankingView()
+                .environmentObject(settings)
+                .environmentObject(rankingStore)
+                .environmentObject(social)
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -370,6 +388,16 @@ struct ContentView: View {
 
         case .frameGuide:
             frameGuideMenu
+
+        case .rankings:
+            Button {
+                showingRankings = true
+            } label: {
+                Image(systemName: "trophy.fill")
+                    .frame(width: 46, height: 46)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel(settings.text(.rankings))
         }
     }
 
@@ -670,7 +698,8 @@ struct ContentView: View {
             camera.capturePhoto(
                 rawShareConfiguration: settings.rawShareConfiguration(
                     libraryLUTURL: lutLibrary.activeLUTURL
-                )
+                ),
+                rankingScene: settings.sceneCoach
             )
         } label: {
             ZStack {

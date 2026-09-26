@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.7.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.8.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -81,6 +81,51 @@ Recommendations are stabilized in `ContentView` and are never applied automatica
 The RAW/ProRAW resource bypasses this LUT path. Only the Share JPEG can receive the active look.
 
 See [LUT_LIBRARY.md](LUT_LIBRARY.md).
+
+### Post-shot Rankings pipeline
+
+CapturePilot 0.8 adds a separate still-photo analysis path after capture.
+
+```text
+captured/imported image
+        ↓
+ImageIO decode
+        ↓
+Vision classification + saliency + face capture quality
+        ↓
+grayscale exposure/detail heuristics
+        ↓
+optional Vision aesthetics request (iOS 18+)
+        ↓
+category + Coach Score + recommendations
+        ↓
+private ranking index + small thumbnail
+```
+
+`PhotoRankingStore` persists ranking metadata under Application Support and stores a reduced JPEG thumbnail rather than a second full-resolution original.
+
+New CapturePilot captures call the ranking handler after `AVCapturePhoto` data becomes available. In RAW+Share mode the final processed Share JPEG is ranked; the RAW remains untouched. Imported images are analyzed through `PhotosPicker`.
+
+The live scene mode is used only as a fallback category hint when post-shot analysis does not infer a stronger category.
+
+See [RANKINGS.md](RANKINGS.md).
+
+### Social score architecture
+
+The optional social layer is intentionally separate from photo storage.
+
+`SocialCompetitionService` uses:
+- a random social identity stored in the user's private CloudKit database;
+- an automatic PILOT-* username derived from that private identity;
+- CloudKit public-database records for the minimal discoverable profile, friend request/acceptance edges and best scores.
+
+Only the current user's best **CapturePilot-capture** score per category is eligible for social sync. Imported images never contribute to the friends leaderboard.
+
+No image asset is stored in CloudKit in 0.8.
+
+The current client-side model is suitable for friendly comparison but is not anti-cheat certified.
+
+See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Lens model
 
@@ -166,7 +211,7 @@ No frame leaves the process in the current source. Coach analysis, Hough-style g
 
 ## Español
 
-CapturePilot 0.7.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.8.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 
@@ -236,6 +281,51 @@ Las recomendaciones se estabilizan en `ContentView` y nunca se aplican automáti
 El RAW/ProRAW no pasa por este pipeline; sólo el JPEG para compartir puede recibir el look.
 
 Consulta [LUT_LIBRARY.md](LUT_LIBRARY.md).
+
+### Pipeline de Ranking post-shot
+
+CapturePilot 0.8 agrega un pipeline separado después de la captura:
+
+```text
+imagen capturada/importada
+        ↓
+ImageIO
+        ↓
+Vision: clasificación + saliencia + face capture quality
+        ↓
+heurísticas de exposición/detalle
+        ↓
+estética Vision opcional (iOS 18+)
+        ↓
+categoría + Coach Score + recomendaciones
+        ↓
+índice privado + miniatura
+```
+
+`PhotoRankingStore` guarda metadata y miniatura reducida en Application Support, no otra copia full-resolution.
+
+Las capturas nuevas se analizan automáticamente. En RAW+Share se evalúa el JPEG procesado final; el RAW permanece intacto. Las importaciones usan `PhotosPicker`.
+
+El modo de escena sólo actúa como fallback si el análisis post-shot no encuentra una categoría más fuerte.
+
+Consulta [RANKINGS.md](RANKINGS.md).
+
+### Arquitectura social de scores
+
+La capa social opcional está separada del almacenamiento fotográfico.
+
+`SocialCompetitionService` usa:
+- identidad social aleatoria almacenada en la base privada de CloudKit del usuario;
+- username automático PILOT-* derivado de esa identidad;
+- CloudKit público para perfil mínimo descubrible, solicitud/aceptación de amistad y mejores scores.
+
+Sólo mejores scores de **capturas hechas en CapturePilot** pueden sincronizarse. Las importaciones nunca suben al ranking social.
+
+0.8 no guarda imágenes en CloudKit.
+
+Es competencia amistosa, no un sistema anti-cheat certificado.
+
+Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Lentes
 

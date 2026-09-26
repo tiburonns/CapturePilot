@@ -22,6 +22,8 @@
 - [ ] Landscape controls remain reachable.
 - [ ] Coach bubble does not become permanently clipped.
 - [ ] LUT recommendation card, when visible, remains inside the safe area and does not cover the shutter.
+- [ ] Rankings trophy button remains reachable in portrait, upside-down portrait, and landscape.
+- [ ] Rankings full-screen view respects safe areas and remains usable in all enabled orientations.
 - [ ] Scene selector and language controls remain usable.
 - [ ] Peaking overlay lines up with the viewfinder.
 
@@ -85,6 +87,8 @@ Source inspection cannot certify these physical checks.
 - [ ] En horizontal todos siguen accesibles.
 - [ ] Coach no queda recortado.
 - [ ] La tarjeta de recomendación LUT permanece dentro del área segura y no cubre el disparador.
+- [ ] El botón de Ranking permanece accesible en vertical, vertical invertido y horizontal.
+- [ ] La vista full-screen de Ranking respeta área segura en todas las orientaciones activas.
 - [ ] Escena e idioma son utilizables.
 - [ ] Peaking coincide con el preview.
 

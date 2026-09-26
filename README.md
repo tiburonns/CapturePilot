@@ -3,11 +3,11 @@
 **Professional photography, guided — not automated.**  
 **Fotografía profesional, guiada — no automatizada.**
 
-CapturePilot is a free, ad-free iOS camera that combines professional capture controls with an on-device photography coach. The coach prioritizes practical suggestions and does not assign an aesthetic score or replace the photographer's creative decisions.
+CapturePilot is a free, ad-free iOS camera that combines professional capture controls with an on-device photography coach. The live framing Coach prioritizes practical suggestions and does not assign an aesthetic grade; the separate post-shot Rankings feature provides a relative Coach Score for comparing your own photographs.
 
-CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El coach prioriza sugerencias prácticas; no asigna una puntuación estética ni sustituye las decisiones creativas del fotógrafo.
+CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.7.0 (7).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.8.0 (8).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -47,6 +47,24 @@ The Coach can optionally recommend one of the available LUTs in RAW+JPG mode. Re
 CapturePilot never applies a recommendation automatically. The photographer must explicitly accept it.
 
 See [LUT library + Coach](docs/LUT_LIBRARY.md).
+
+### Photo Rankings + Coach Review
+
+CapturePilot 0.8 adds a private post-shot ranking section. New CapturePilot captures are analyzed automatically, and the photographer can also import selected images through the system Photos picker.
+
+The section supports **Top 5 / 10 / 25 / 50**, category filters, per-photo Coach Score breakdowns, automatic category inference, and actionable suggestions for a stronger second attempt.
+
+Coach Score is a **relative review aid**, not an objective artistic grade. The primary score uses the same explainable CapturePilot exposure/composition/detail formula across supported iOS versions. On iOS 18+, Apple's Vision aesthetics score is shown separately as supplemental information.
+
+See [Photo Rankings + Coach Review](docs/RANKINGS.md).
+
+### Friends + social scores
+
+CapturePilot can optionally use the signed-in **iCloud account** to create a private random CapturePilot identity in CloudKit, derive an automatic `PILOT-...` username, and compare best CapturePilot-capture scores with accepted friends. CapturePilot never receives the visible Apple Account email or password.
+
+0.8 synchronizes score metadata only — **not photos**. Imported images remain eligible for private local ranking but are excluded from social score submission.
+
+See [Friends + social scores](docs/SOCIAL_COMPETITION.md).
 
 ### Professional controls
 
@@ -168,20 +186,20 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 
 ### Privacy
 
-- No CapturePilot account.
+- No account is required for camera, Coach, LUT, or private Rankings.
 - No ads.
 - No third-party analytics SDK.
-- No CapturePilot cloud service.
+- No CapturePilot-operated cloud service; optional Friends uses Apple's iCloud/CloudKit.
 - No live-frame upload.
 - Coach, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, Vectorscope, LUT parsing/profiling, and LUT recommendations run on-device.
 - External LUT folders are read only after the photographer explicitly selects one through the system Files picker.
-- Privacy Manifest declares no tracking or collected-data types.
+- Privacy Manifest declares no tracking. Optional Friends declares linked User ID and other user-content metadata for app functionality.
 - UserDefaults Required Reason API: CA92.1.
 
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.7.0 (7)**.
+- Current version/build: **0.8.0 (8)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -226,6 +244,24 @@ El Coach puede recomendar opcionalmente un LUT disponible en RAW+JPG. La recomen
 CapturePilot nunca aplica el LUT automáticamente; el fotógrafo debe aceptarlo explícitamente.
 
 Consulta [Biblioteca LUT + Coach](docs/LUT_LIBRARY.md).
+
+### Ranking de fotos + revisión del Coach
+
+CapturePilot 0.8 agrega una sección privada de análisis posterior al disparo. Las nuevas capturas se analizan automáticamente y también pueden importarse imágenes seleccionadas mediante el selector de Fotos.
+
+Permite **Top 5 / 10 / 25 / 50**, filtros por categoría, desglose del Coach Score, clasificación automática y recomendaciones concretas para mejorar o explorar una segunda toma.
+
+Coach Score es una **ayuda de comparación relativa**, no una calificación objetiva del valor artístico. La puntuación principal usa la misma fórmula explicable de exposición/composición/detalle en todas las versiones compatibles; en iOS 18+ la estética de Vision se muestra aparte como información suplementaria.
+
+Consulta [Ranking + Coach Review](docs/RANKINGS.md).
+
+### Amigos + scores sociales
+
+Opcionalmente CapturePilot usa la **cuenta iCloud** iniciada en el dispositivo para crear una identidad privada aleatoria en CloudKit, derivar un username automático `PILOT-...` y comparar mejores scores con amigos aceptados. CapturePilot no recibe el correo visible ni la contraseña de la cuenta Apple.
+
+0.8 sincroniza sólo metadata de score, **no fotografías**. Las imágenes importadas participan en el ranking local pero no pueden subir score social.
+
+Consulta [Amigos + scores sociales](docs/SOCIAL_COMPETITION.md).
 
 ### Controles profesionales
 
@@ -347,20 +383,20 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 
 ### Privacidad
 
-- Sin cuenta.
+- Cámara, Coach, LUT y Ranking privado no requieren cuenta.
 - Sin publicidad.
 - Sin SDK de analítica de terceros.
-- Sin nube de CapturePilot.
+- Sin nube operada por CapturePilot; Amigos opcional usa iCloud/CloudKit de Apple.
 - Sin subida de frames.
 - Coach, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade, Vectorscope, parseo/perfilado LUT y recomendaciones LUT son locales.
 - Las carpetas LUT externas sólo se leen después de que el fotógrafo seleccione una explícitamente mediante el selector de Archivos.
-- Privacy Manifest sin tracking ni tipos de datos recopilados.
+- Privacy Manifest sin tracking; Amigos opcional declara User ID y otra metadata de contenido vinculada para funcionalidad.
 - Required Reason API de UserDefaults: CA92.1.
 
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.7.0 (7)**.
+- Versión/build actual: **0.8.0 (8)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.
@@ -371,6 +407,8 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [Coach / Coach](docs/COACH.md)
 - [RAW + Share JPEG / RAW + JPEG](docs/RAW_SHARE_WORKFLOW.md)
 - [LUT library + Coach / Biblioteca LUT + Coach](docs/LUT_LIBRARY.md)
+- [Photo Rankings / Ranking de fotos](docs/RANKINGS.md)
+- [Friends + social scores / Amigos + scores sociales](docs/SOCIAL_COMPETITION.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)

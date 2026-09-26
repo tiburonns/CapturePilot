@@ -116,6 +116,35 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate LUT profile/recommendation sanity against known references.
 - [ ] Validate large LUT libraries and 65³ cubes.
 
+### 0.8 — Rankings + friends scores
+
+- [x] Automatic post-shot analysis for CapturePilot captures.
+- [x] PhotosPicker import without full-library browsing.
+- [x] Top 5 / 10 / 25 / 50.
+- [x] Category filters.
+- [x] Automatic category inference with scene-mode fallback.
+- [x] Coach Score breakdown.
+- [x] Vision aesthetics signal on supported OS versions.
+- [x] iOS 17 scoring fallback.
+- [x] Per-photo improvement/interest recommendations.
+- [x] Private local thumbnail/index persistence.
+- [x] Private iCloud-backed social identity.
+- [x] Automatic Pilot-* username.
+- [x] Friend requests/accept/remove.
+- [x] Friends leaderboard by category.
+- [x] Opt-in best-score sharing.
+- [x] Imported images excluded from social score submission.
+- [x] No social photo upload in 0.8.
+- [ ] Validate ranking with a diverse real-world photo set.
+- [ ] Validate RAW/ProRAW post-shot decoding/ranking.
+- [ ] Configure iCloud/CloudKit resources in Apple Developer.
+- [ ] Create/verify CloudKit development schema and queryable indexes.
+- [ ] Deploy CloudKit schema for distribution.
+- [ ] Validate social flow with two real Apple accounts/devices.
+- [ ] Validate iCloud unavailable/sign-out behavior.
+- [ ] Evaluate trusted server-side score validation before any prize/high-stakes competition.
+- [ ] Add moderation/report/block infrastructure before any future social photo sharing.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -257,6 +286,35 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar altas/bajas/renombres en vivo.
 - [ ] Validar perfiles/recomendaciones contra LUT conocidos.
 - [ ] Validar bibliotecas grandes y cubos 65³.
+
+### 0.8 — Ranking + scores con amigos
+
+- [x] Análisis automático post-shot.
+- [x] Importación PhotosPicker.
+- [x] Top 5 / 10 / 25 / 50.
+- [x] Filtros por categoría.
+- [x] Clasificación automática con fallback de escena.
+- [x] Desglose Coach Score.
+- [x] Señal estética Vision cuando está disponible.
+- [x] Fallback iOS 17.
+- [x] Recomendaciones por foto.
+- [x] Índice/miniaturas privadas locales.
+- [x] Identidad social privada respaldada por iCloud.
+- [x] Username Pilot-* automático.
+- [x] Solicitudes/aceptación/eliminación de amigos.
+- [x] Ranking de amigos por categoría.
+- [x] Compartir mejores scores opcional.
+- [x] Importaciones excluidas del score social.
+- [x] Sin subida social de fotos en 0.8.
+- [ ] Validar ranking con fotos reales diversas.
+- [ ] Validar RAW/ProRAW.
+- [ ] Configurar iCloud/CloudKit en Apple Developer.
+- [ ] Crear/verificar schema e índices CloudKit.
+- [ ] Desplegar schema para distribución.
+- [ ] Probar con dos cuentas/dispositivos.
+- [ ] Probar cuenta iCloud no disponible/cierre de sesión.
+- [ ] Evaluar validación confiable antes de competencias con premios.
+- [ ] Añadir moderación/report/block antes de compartir fotos socialmente.
 
 ### Gates pendientes
 

@@ -33,6 +33,53 @@ When access is available, CapturePilot uses security-scoped file access and coor
 
 Removing the external LUT folder from CapturePilot clears the stored directory bookmark. If an active LUT came from that external folder, its active selection/cache is also cleared.
 
+### Rankings data
+
+Private photo ranking runs on-device.
+
+CapturePilot may locally store:
+- reduced JPEG thumbnails;
+- Coach Score breakdowns;
+- categories/tags;
+- recommendation identifiers;
+- capture/import source;
+- timestamps;
+- SHA-256 duplicate fingerprints.
+
+Imported full-resolution originals are not copied into the ranking store.
+
+### Optional social identity and scores
+
+Core photography and private Rankings do not require an account.
+
+If the photographer opts into Friends, CapturePilot requires an available iCloud account and creates a random CapturePilot social identity in that account's private CloudKit database. CapturePilot does not receive the person's Apple Account email or password.
+
+A minimal discoverable profile plus friend/score records use the public CloudKit database. Because that database is public, synchronized social metadata must not be treated as secret.
+
+0.8 uploads **no photo pixels or thumbnails** to the social database.
+
+Optional shared fields are:
+- automatic Pilot-* username;
+- category;
+- Coach Score;
+- capture date;
+- pseudonymous identifiers needed for friendship records.
+
+Imported-image scores are not eligible for social upload.
+
+See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+
+### Privacy Manifest in 0.8
+
+CapturePilot still declares **no tracking**.
+
+Because the optional Friends feature writes pseudonymous identity/score metadata to CloudKit, the manifest declares:
+
+- User ID — linked, not used for tracking, app functionality;
+- Other User Content — linked, not used for tracking, app functionality.
+
+This declaration applies to the optional social layer; it does not mean camera frames or ranking thumbnails are uploaded.
+
 ### Local preferences
 
 UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, HUD layout, LUT recommendation preference, external-folder bookmark data, and active LUT identifiers/names.
@@ -81,6 +128,53 @@ Cuando hay acceso, CapturePilot usa security-scoped access y coordinación de ar
 
 Eliminar la carpeta externa desde CapturePilot borra el bookmark guardado. Si el LUT activo provenía de esa carpeta, también se limpia su selección/cache activo.
 
+### Datos del Ranking
+
+El ranking privado se analiza localmente.
+
+CapturePilot puede guardar localmente:
+- miniaturas JPEG reducidas;
+- desglose Coach Score;
+- categorías/tags;
+- recomendaciones;
+- origen captura/importación;
+- fechas;
+- fingerprints SHA-256 para duplicados.
+
+El original full-resolution importado no se copia al almacén del ranking.
+
+### Identidad y scores sociales opcionales
+
+La cámara y el ranking privado no requieren cuenta.
+
+Si el fotógrafo activa Amigos, CapturePilot requiere una cuenta iCloud disponible y crea una identidad social aleatoria en la base privada de CloudKit de esa cuenta. CapturePilot no recibe correo ni contraseña visibles de la cuenta Apple.
+
+Un perfil mínimo descubrible y los registros de amistad/score usan la base pública de CloudKit. Esa metadata debe tratarse como social/pública dentro del servicio, no como información secreta.
+
+0.8 **no sube píxeles ni miniaturas**.
+
+Campos opcionales compartidos:
+- username Pilot-*;
+- categoría;
+- Coach Score;
+- fecha;
+- identificadores pseudónimos necesarios para amistad.
+
+Los scores de imágenes importadas no son elegibles para subida social.
+
+Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+
+### Privacy Manifest en 0.8
+
+CapturePilot sigue declarando **sin tracking**.
+
+Como Amigos opcional sincroniza identidad pseudónima y metadata de score en CloudKit, el manifest declara:
+
+- User ID — vinculado, sin tracking, funcionalidad;
+- Other User Content — vinculado, sin tracking, funcionalidad.
+
+Esto corresponde a la capa social opcional; no significa que se suban frames de cámara ni miniaturas del Ranking.
+
 ### Preferencias
 
 UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, HUD, preferencia de recomendaciones LUT, bookmark de carpeta externa e identificadores/nombres del LUT activo.
@@ -89,7 +183,8 @@ UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, 
 
 - Tracking: falso.
 - Dominios: ninguno.
-- Tipos de datos recopilados: ninguno.
+- User ID — vinculado, sin tracking, funcionalidad.
+- Other User Content — vinculado, sin tracking, funcionalidad.
 - Required Reason API: UserDefaults / CA92.1.
 
 Si en el futuro se agregan red, cuentas, analytics, SDK de crashes, IA cloud u otras Required Reason APIs, se debe revisar este documento y el manifest.

@@ -399,6 +399,7 @@ enum LocalizedKey: Hashable {
     case lutReasonPortrait, lutReasonHighlights, lutReasonShadows, lutReasonNight
     case lutReasonLandscape, lutReasonArchitecture, lutReasonAutomotive
     case lutReasonStreet, lutReasonMacro, lutReasonGeneral
+    case rankings
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -407,7 +408,7 @@ enum LocalizedKey: Hashable {
             .spanish: "Español", .done: "Listo", .off: "Desactivada",
             .subtle: "Sutil", .balanced: "Equilibrado", .teaching: "Didáctico",
             .privacy: "Privacidad",
-            .privacyDetail: "El análisis del coach se realiza en el dispositivo. Sin cuenta, anuncios, analítica ni rastreadores.",
+            .privacyDetail: "La cámara, el Coach y el Ranking privado funcionan sin cuenta. Amigos es opcional y usa iCloud/CloudKit. Sin anuncios, analítica ni rastreadores.",
             .version: "Versión", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG",
             .raw: "RAW", .proRAW: "ProRAW", .exposure: "Exposición", .iso: "ISO",
             .shutter: "Obturación", .whiteBalance: "Balance de blancos", .focus: "Enfoque",
@@ -507,7 +508,8 @@ enum LocalizedKey: Hashable {
             .lutReasonAutomotive: "Favorece contraste y separación de color.",
             .lutReasonStreet: "Favorece estructura y contraste para calle.",
             .lutReasonMacro: "Favorece separación de color y microcontraste.",
-            .lutReasonGeneral: "Look equilibrado para la escena actual."
+            .lutReasonGeneral: "Look equilibrado para la escena actual.",
+            .rankings: "Ranking"
         ]
 
         let en: [LocalizedKey: String] = [
@@ -516,7 +518,7 @@ enum LocalizedKey: Hashable {
             .spanish: "Spanish", .done: "Done", .off: "Off",
             .subtle: "Subtle", .balanced: "Balanced", .teaching: "Teaching",
             .privacy: "Privacy",
-            .privacyDetail: "Coach analysis runs on-device. No account, ads, analytics, or trackers.",
+            .privacyDetail: "Camera, Coach, and private Rankings work without an account. Friends is optional and uses iCloud/CloudKit. No ads, analytics, or trackers.",
             .version: "Version", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG",
             .raw: "RAW", .proRAW: "ProRAW", .exposure: "Exposure", .iso: "ISO",
             .shutter: "Shutter", .whiteBalance: "White balance", .focus: "Focus",
@@ -616,7 +618,8 @@ enum LocalizedKey: Hashable {
             .lutReasonAutomotive: "Favors contrast and color separation.",
             .lutReasonStreet: "Favors structure and contrast for street.",
             .lutReasonMacro: "Favors color separation and microcontrast.",
-            .lutReasonGeneral: "Balanced look for the current scene."
+            .lutReasonGeneral: "Balanced look for the current scene.",
+            .rankings: "Rankings"
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)

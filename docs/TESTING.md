@@ -102,6 +102,51 @@ On every lens where RAW+JPG becomes available:
 - [ ] RAW output remains unaffected by the selected/recommended LUT.
 - [ ] Share JPEG uses the accepted library LUT.
 
+### Photo Rankings
+
+- [ ] Every new HEIF capture creates one ranking entry.
+- [ ] Every new JPEG capture creates one ranking entry.
+- [ ] Bayer RAW and ProRAW can be decoded/analyzed without crash.
+- [ ] RAW+JPG produces one ranking entry from the final Share JPEG rather than duplicate RAW/JPEG ranking entries.
+- [ ] Imported PhotosPicker images analyze without full Photo Library permission.
+- [ ] Import up to 50 images.
+- [ ] Re-importing identical file data is deduplicated.
+- [ ] Top 5/10/25/50 count/order is correct.
+- [ ] Category filter returns only requested category.
+- [ ] Face-heavy images tend to Portrait.
+- [ ] Dark images can classify as Night.
+- [ ] Automotive/Architecture/Landscape/Macro/Street classifications are reasonable across a varied test set.
+- [ ] Scene selector acts only as fallback when stronger image evidence exists.
+- [ ] Coach Score remains 0–100.
+- [ ] iOS 18+ records Vision aesthetics contribution.
+- [ ] iOS 17 fallback does not require aesthetics request.
+- [ ] Recommendations are actionable and do not imply objective artistic correctness.
+- [ ] Delete removes local index/thumbnail but does not delete the original photo.
+- [ ] Relaunch preserves rankings and thumbnails.
+- [ ] Repeated 48 MP analysis does not cause unacceptable memory/thermal behavior.
+
+### Friends + social scores
+
+- [ ] Core camera and local ranking work without signing in.
+- [ ] Enabling Friends with an available iCloud account creates/restores the private social identity.
+- [ ] Automatic usernames are different for two accounts.
+- [ ] Friend search uses exact Pilot-* username.
+- [ ] A can request B.
+- [ ] B sees and accepts A.
+- [ ] Accepted friendship appears on both clients after refresh.
+- [ ] Remove friendship works.
+- [ ] Score sharing defaults/behaves as opt-in.
+- [ ] Only CapturePilot-captured entries are considered for social best scores.
+- [ ] Imported image score never replaces a social best score.
+- [ ] Overall leaderboard contains one best record per user.
+- [ ] Portrait/Architecture/Automotive/Macro/Street/Landscape/Night filters show the correct category.
+- [ ] Disabling sharing removes own social score records.
+- [ ] Friend photos/thumbnails are never uploaded.
+- [ ] No email/password/full Apple ID name is displayed or stored as public profile metadata.
+- [ ] Sign out of iCloud / make the account unavailable and verify the social layer fails gracefully while local Rankings keep working.
+- [ ] CloudKit unavailable/not-authenticated state is controlled and does not break local Rankings.
+- [ ] Test two real devices/accounts after production schema/index deployment.
+
 ### Manual controls
 
 - [ ] Unsupported controls are absent.
@@ -204,7 +249,7 @@ Test all eight scene modes and record false positives, false negatives, and time
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.7.0 (7).
+- [ ] Version/build is 0.8.0 (8).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -311,6 +356,48 @@ En cada lente donde RAW+JPG esté disponible:
 - [ ] RAW no cambia por el LUT.
 - [ ] JPEG para compartir usa el LUT aceptado.
 
+### Ranking de fotos
+
+- [ ] Cada HEIF/JPEG nuevo crea una entrada.
+- [ ] Bayer RAW/ProRAW se analiza sin crash.
+- [ ] RAW+JPG crea una entrada usando el JPEG final, sin duplicar RAW/JPEG.
+- [ ] PhotosPicker funciona sin acceso completo a Fototeca.
+- [ ] Importar hasta 50 imágenes.
+- [ ] Duplicados idénticos se omiten.
+- [ ] Top 5/10/25/50 correcto.
+- [ ] Filtros correctos.
+- [ ] Retrato/Noche y demás categorías razonables en set diverso.
+- [ ] Escena seleccionada sólo como fallback.
+- [ ] Coach Score siempre 0–100.
+- [ ] iOS 18+ usa señal estética Vision.
+- [ ] iOS 17 funciona sin ella.
+- [ ] Recomendaciones útiles sin presentarse como verdad artística.
+- [ ] Borrar no elimina original.
+- [ ] Persistencia tras relanzar.
+- [ ] Análisis repetido 48 MP sin memoria/temperatura inaceptables.
+
+### Amigos + scores sociales
+
+- [ ] Cámara/ranking local funcionan sin login.
+- [ ] Activar Amigos con iCloud disponible crea/restaura la identidad social privada.
+- [ ] Dos cuentas reciben usernames distintos.
+- [ ] Búsqueda por Pilot-* exacto.
+- [ ] Solicitud A → B.
+- [ ] B acepta.
+- [ ] Amistad aparece en ambos tras refresh.
+- [ ] Eliminar amistad funciona.
+- [ ] Compartir score es opt-in.
+- [ ] Sólo capturas CapturePilot pueden subir score.
+- [ ] Importación nunca sustituye el mejor score social.
+- [ ] Overall muestra mejor score por usuario.
+- [ ] Filtros por categoría correctos.
+- [ ] Desactivar compartir elimina scores propios.
+- [ ] Nunca se suben fotos/miniaturas.
+- [ ] No se publica correo/contraseña/nombre de Apple ID.
+- [ ] Cuenta iCloud no disponible/cierre de sesión no rompe el Ranking local.
+- [ ] CloudKit no disponible no rompe ranking local.
+- [ ] Prueba final con dos dispositivos/cuentas tras desplegar schema/índices.
+
 ### Controles manuales
 
 - [ ] Controles no soportados no aparecen.
@@ -411,7 +498,7 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.7.0 (7).
+- [ ] 0.8.0 (8).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.

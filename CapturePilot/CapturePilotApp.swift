@@ -6,6 +6,8 @@ struct CapturePilotApp: App {
     @StateObject private var settings = AppSettings()
     @StateObject private var hud = HUDLayoutStore()
     @StateObject private var lutLibrary = LUTLibraryStore()
+    @StateObject private var rankings = PhotoRankingStore()
+    @StateObject private var social = SocialCompetitionService()
 
     var body: some Scene {
         WindowGroup {
@@ -13,6 +15,8 @@ struct CapturePilotApp: App {
                 .environmentObject(settings)
                 .environmentObject(hud)
                 .environmentObject(lutLibrary)
+                .environmentObject(rankings)
+                .environmentObject(social)
         }
     }
 }
