@@ -8,6 +8,11 @@ struct SocialCompetitionView: View {
 
     @State private var friendUsername = ""
     @State private var leaderboardCategory = "overall"
+
+    private var filteredLeaderboard: [SocialScore] {
+        social.leaderboard.filter { $0.category == leaderboardCategory }
+    }
+    @State private var leaderboardCategory = "overall"
     @State private var showingDeleteConfirmation = false
 
     var body: some View {
@@ -215,7 +220,7 @@ struct SocialCompetitionView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.username)
                                     .font(.subheadline.bold())
-                                Text(categoryName(item.category))
+                                Text(categoryDisplayName(item.category))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
