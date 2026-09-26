@@ -1,5 +1,47 @@
 # Changelog / Registro de cambios
 
+## 0.8.0 — Rankings + friends / Ranking + amigos
+
+### English
+- New private Rankings section.
+- Automatic analysis of CapturePilot captures.
+- PhotosPicker import for selected existing photos.
+- Top 5 / 10 / 25 / 50.
+- Category filtering: General, Portrait, Architecture, Automotive, Macro, Street, Landscape, Night.
+- Coach Score with exposure/composition/detail signals.
+- Vision aesthetics signal on supported OS versions with iOS 17 fallback.
+- Portrait face-capture quality contribution when available.
+- Per-photo Coach recommendations.
+- Local thumbnail/index persistence and duplicate fingerprinting.
+- Optional Sign in with Apple social identity.
+- Automatic Pilot-* username.
+- CloudKit friend requests and accepted friends list.
+- Overall/category friend leaderboard.
+- Opt-in best-score sharing.
+- Only CapturePilot captures can contribute social scores.
+- No social photo upload in 0.8.
+- Version/build 0.8.0 (8).
+
+### Español
+- Nueva sección privada Ranking.
+- Análisis automático de capturas.
+- Importación PhotosPicker.
+- Top 5 / 10 / 25 / 50.
+- Filtros General/Retrato/Arquitectura/Automotriz/Macro/Calle/Paisaje/Noche.
+- Coach Score con exposición/composición/detalle.
+- Señal estética Vision en sistemas compatibles y fallback iOS 17.
+- Calidad de captura facial para Retrato cuando está disponible.
+- Recomendaciones por fotografía.
+- Miniaturas/índice local y fingerprint de duplicados.
+- Sign in with Apple opcional.
+- Username Pilot-* automático.
+- Solicitudes/amigos mediante CloudKit.
+- Ranking social Overall/categorías.
+- Compartir mejores scores opt-in.
+- Sólo capturas CapturePilot aportan score social.
+- Sin fotos sociales en 0.8.
+- Versión/build 0.8.0 (8).
+
 ## 0.7.0 — LUT library + Coach recommendations / Biblioteca LUT + recomendaciones del Coach
 
 ### English
