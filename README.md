@@ -60,7 +60,7 @@ See [Photo Rankings + Coach Review](docs/RANKINGS.md).
 
 ### Friends + social scores
 
-CapturePilot can optionally use **Sign in with Apple** to create a pseudonymous automatic `Pilot-...` username and CloudKit to compare best CapturePilot-capture scores with accepted friends.
+CapturePilot can optionally use the signed-in **iCloud account** to create a private random CapturePilot identity in CloudKit, derive an automatic `PILOT-...` username, and compare best CapturePilot-capture scores with accepted friends. CapturePilot never receives the visible Apple Account email or password.
 
 0.8 synchronizes score metadata only — **not photos**. Imported images remain eligible for private local ranking but are excluded from social score submission.
 
@@ -257,7 +257,7 @@ Consulta [Ranking + Coach Review](docs/RANKINGS.md).
 
 ### Amigos + scores sociales
 
-Opcionalmente CapturePilot usa **Sign in with Apple** para crear un username pseudónimo automático `Pilot-...` y CloudKit para comparar mejores scores con amigos aceptados.
+Opcionalmente CapturePilot usa la **cuenta iCloud** iniciada en el dispositivo para crear una identidad privada aleatoria en CloudKit, derivar un username automático `PILOT-...` y comparar mejores scores con amigos aceptados. CapturePilot no recibe el correo visible ni la contraseña de la cuenta Apple.
 
 0.8 sincroniza sólo metadata de score, **no fotografías**. Las imágenes importadas participan en el ranking local pero no pueden subir score social.
 
