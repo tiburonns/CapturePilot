@@ -54,7 +54,7 @@ CapturePilot 0.8 adds a private post-shot ranking section. New CapturePilot capt
 
 The section supports **Top 5 / 10 / 25 / 50**, category filters, per-photo Coach Score breakdowns, automatic category inference, and actionable suggestions for a stronger second attempt.
 
-Coach Score is a **relative review aid**, not an objective artistic grade. It combines explainable CapturePilot exposure/composition/detail heuristics and, on supported OS versions, Apple's Vision aesthetics signal.
+Coach Score is a **relative review aid**, not an objective artistic grade. The primary score uses the same explainable CapturePilot exposure/composition/detail formula across supported iOS versions. On iOS 18+, Apple's Vision aesthetics score is shown separately as supplemental information.
 
 See [Photo Rankings + Coach Review](docs/RANKINGS.md).
 
@@ -251,7 +251,7 @@ CapturePilot 0.8 agrega una sección privada de análisis posterior al disparo. 
 
 Permite **Top 5 / 10 / 25 / 50**, filtros por categoría, desglose del Coach Score, clasificación automática y recomendaciones concretas para mejorar o explorar una segunda toma.
 
-Coach Score es una **ayuda de comparación relativa**, no una calificación objetiva del valor artístico.
+Coach Score es una **ayuda de comparación relativa**, no una calificación objetiva del valor artístico. La puntuación principal usa la misma fórmula explicable de exposición/composición/detalle en todas las versiones compatibles; en iOS 18+ la estética de Vision se muestra aparte como información suplementaria.
 
 Consulta [Ranking + Coach Review](docs/RANKINGS.md).
 

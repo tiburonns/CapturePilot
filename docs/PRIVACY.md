@@ -183,7 +183,8 @@ UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, 
 
 - Tracking: falso.
 - Dominios: ninguno.
-- Tipos de datos recopilados: ninguno.
+- User ID — vinculado, sin tracking, funcionalidad.
+- Other User Content — vinculado, sin tracking, funcionalidad.
 - Required Reason API: UserDefaults / CA92.1.
 
 Si en el futuro se agregan red, cuentas, analytics, SDK de crashes, IA cloud u otras Required Reason APIs, se debe revisar este documento y el manifest.

@@ -24,13 +24,13 @@ This is the feasible privacy-preserving interpretation of “linked to the Apple
 
 ### CloudKit
 
-Social metadata uses:
+Social data uses:
 
 ```text
 iCloud.com.tiburonns.CapturePilot
 ```
 
-and the container's **public CloudKit database**.
+The private database stores the per-account CapturePilot identity. The public database stores the minimal discoverable profile, friendship edges, and opt-in best-score metadata.
 
 Current record types:
 

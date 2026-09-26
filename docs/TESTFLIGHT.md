@@ -4,13 +4,13 @@
 
 ### Candidate
 
-CapturePilot 0.7.0 build 7 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.8.0 build 8 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
-The candidate also includes a persistent LUT library from a user-selected Files folder and optional explainable LUT recommendations from the Coach.
+The candidate also includes a persistent LUT library, private Top 5/10/25/50 Rankings with post-shot Coach review, and an optional iCloud/CloudKit friends-score layer that does not upload photos.
 
-Compilation does not prove physical camera behavior, external File Provider persistence, LUT recommendation quality, or App Store acceptance.
+Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, CloudKit production configuration, or App Store acceptance.
 
 ### Before Archive
 
@@ -41,22 +41,6 @@ Before Archive, test at least:
 - confirm the recommendation is never applied automatically.
 
 If a third-party File Provider is available, test it separately and record provider/app version.
-
-### Aceptación de biblioteca LUT
-
-Antes del Archive prueba al menos:
-
-- seleccionar carpeta LUT en En mi iPhone;
-- seleccionar carpeta LUT en iCloud Drive;
-- relanzar CapturePilot y comprobar que puede reabrirla;
-- agregar/eliminar/renombrar un .cube y comprobar refresh;
-- verificar subcarpetas;
-- comprobar que LUT inválidos no se ofrecen;
-- aplicar un LUT recomendado por el Coach;
-- confirmar que RAW no cambia y el JPEG para compartir usa el LUT activo;
-- confirmar que la recomendación nunca se aplica automáticamente.
-
-Si existe un File Provider de terceros, pruébalo por separado y registra proveedor/versión.
 
 ### Rankings acceptance
 
@@ -114,6 +98,45 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ---
 
+## Español
+
+### Candidato
+
+CapturePilot 0.8.0 build 8 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+
+Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
+
+El candidato también incluye biblioteca LUT persistente desde una carpeta de Archivos y recomendaciones LUT explicables del Coach.
+
+Compilar no demuestra comportamiento físico, persistencia de File Providers externos, calidad de recomendaciones ni aceptación de App Store.
+
+### Antes del Archive
+
+Completa:
+
+- `docs/TESTING.md`
+- `docs/UI_LAYOUT.md`
+
+Usa al menos un iPhone Pro reciente capaz de ProRAW/alta resolución y, cuando sea posible, otro modelo con geometría de pantalla distinta.
+
+Registra las dimensiones reales de cada resolución mostrada.
+
+### Aceptación de biblioteca LUT
+
+Antes del Archive prueba al menos:
+
+- seleccionar carpeta LUT en En mi iPhone;
+- seleccionar carpeta LUT en iCloud Drive;
+- relanzar CapturePilot y comprobar que puede reabrirla;
+- agregar/eliminar/renombrar un .cube y comprobar refresh;
+- verificar subcarpetas;
+- comprobar que LUT inválidos no se ofrecen;
+- aplicar un LUT recomendado por el Coach;
+- confirmar que RAW no cambia y el JPEG para compartir usa el LUT activo;
+- confirmar que la recomendación nunca se aplica automáticamente.
+
+Si existe un File Provider de terceros, pruébalo por separado y registra proveedor/versión.
+
 ### Aceptación del Ranking
 
 Antes del Archive verifica en iPhone real:
@@ -145,29 +168,6 @@ Antes de considerarla lista para TestFlight:
 - probar iCloud no disponible/cierre de sesión.
 
 Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
-
-## Español
-
-### Candidato
-
-CapturePilot 0.7.0 build 7 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
-
-Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
-
-El candidato también incluye biblioteca LUT persistente desde una carpeta de Archivos y recomendaciones LUT explicables del Coach.
-
-Compilar no demuestra comportamiento físico, persistencia de File Providers externos, calidad de recomendaciones ni aceptación de App Store.
-
-### Antes del Archive
-
-Completa:
-
-- `docs/TESTING.md`
-- `docs/UI_LAYOUT.md`
-
-Usa al menos un iPhone Pro reciente capaz de ProRAW/alta resolución y, cuando sea posible, otro modelo con geometría de pantalla distinta.
-
-Registra las dimensiones reales de cada resolución mostrada.
 
 ### Archive
 
