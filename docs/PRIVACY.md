@@ -52,9 +52,9 @@ Imported full-resolution originals are not copied into the ranking store.
 
 Core photography and private Rankings do not require an account.
 
-If the photographer opts into Friends, CapturePilot uses Sign in with Apple. Apple provides an opaque user identifier; CapturePilot does not receive the person's Apple ID password.
+If the photographer opts into Friends, CapturePilot requires an available iCloud account and creates a random CapturePilot social identity in that account's private CloudKit database. CapturePilot does not receive the person's Apple Account email or password.
 
-The friends layer uses a public CloudKit database for pseudonymous profile/friend/score records. Because the database is public, synchronized social metadata must not be treated as secret.
+A minimal discoverable profile plus friend/score records use the public CloudKit database. Because that database is public, synchronized social metadata must not be treated as secret.
 
 0.8 uploads **no photo pixels or thumbnails** to the social database.
 
@@ -136,9 +136,9 @@ El original full-resolution importado no se copia al almacén del ranking.
 
 La cámara y el ranking privado no requieren cuenta.
 
-Si el fotógrafo activa Amigos, CapturePilot usa Sign in with Apple. Apple entrega un identificador opaco; CapturePilot no recibe la contraseña del Apple ID.
+Si el fotógrafo activa Amigos, CapturePilot requiere una cuenta iCloud disponible y crea una identidad social aleatoria en la base privada de CloudKit de esa cuenta. CapturePilot no recibe correo ni contraseña visibles de la cuenta Apple.
 
-La capa social usa la base pública de CloudKit para perfiles pseudónimos, amistades y scores. Esa metadata debe tratarse como social/pública dentro del servicio, no como información secreta.
+Un perfil mínimo descubrible y los registros de amistad/score usan la base pública de CloudKit. Esa metadata debe tratarse como social/pública dentro del servicio, no como información secreta.
 
 0.8 **no sube píxeles ni miniaturas**.
 
