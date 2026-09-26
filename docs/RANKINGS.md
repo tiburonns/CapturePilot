@@ -67,32 +67,19 @@ Each photo receives a **Coach Score from 0–100**.
 
 The score is intentionally presented as a **relative ranking aid**, not an objective measure of artistic value.
 
-#### iOS 18 and later
+#### Cross-version scoring formula
 
-When available, CapturePilot uses Apple's Vision image-aesthetics observation as one signal.
-
-Base weights:
+The primary Coach Score deliberately uses the same base formula on every supported iOS version:
 
 | Signal | Weight |
 | --- | ---: |
-| Exposure heuristic | 26% |
-| Composition heuristic | 28% |
-| Detail heuristic | 22% |
-| Vision aesthetics signal | 24% |
-
-Apple Vision's aesthetics `overallScore` is returned from -1 to 1. CapturePilot maps that range linearly to 0–100 before combining it with the other signals.
-
-If Vision marks an image as a utility image, CapturePilot currently applies a small 4-point ranking penalty. Utility does not mean the image is technically bad; it means Vision considers it less memorable/exciting for the aesthetics task.
-
-#### iOS 17 fallback
-
-When the Vision aesthetics request is unavailable:
-
-| Signal | Weight |
-| --- | ---: |
-| Exposure heuristic | 32% |
+| Exposure heuristic | 34% |
 | Composition heuristic | 38% |
-| Detail heuristic | 30% |
+| Detail heuristic | 28% |
+
+On iOS 18 and later CapturePilot also calculates Apple's Vision aesthetics `overallScore`, maps the documented -1...1 range to 0...100, and displays it as **supplemental information**. It can help trigger an exploratory recommendation such as trying another viewpoint, but it does **not** alter the main Coach Score.
+
+This keeps Top lists and friends scores comparable between iOS 17 and iOS 18+ devices.
 
 #### Portrait adjustment
 
@@ -253,30 +240,19 @@ Cada fotografía recibe un **Coach Score de 0–100**.
 
 Es una ayuda de ranking relativo, no una medida objetiva de valor artístico.
 
-#### iOS 18+
+#### Fórmula comparable entre versiones
 
-Cuando está disponible se añade la señal de estética de Apple Vision.
-
-Pesos base:
+Coach Score usa la misma fórmula base en todas las versiones de iOS compatibles:
 
 | Señal | Peso |
 | --- | ---: |
-| Exposición heurística | 26% |
-| Composición heurística | 28% |
-| Detalle heurístico | 22% |
-| Señal estética Vision | 24% |
-
-Vision entrega `overallScore` entre -1 y 1; CapturePilot lo transforma linealmente a 0–100.
-
-Si Vision marca una imagen como utility, se resta actualmente una pequeña penalización de 4 puntos. Utility no significa necesariamente mala calidad técnica.
-
-#### Fallback iOS 17
-
-| Señal | Peso |
-| --- | ---: |
-| Exposición | 32% |
+| Exposición | 34% |
 | Composición | 38% |
-| Detalle | 30% |
+| Detalle | 28% |
+
+En iOS 18+ CapturePilot también calcula `overallScore` de estética de Vision, transforma el rango documentado -1...1 a 0...100 y lo muestra como **información suplementaria**. Puede apoyar una recomendación exploratoria, pero **no cambia el Coach Score principal**.
+
+Así los Tops y rankings de amigos siguen siendo comparables entre iOS 17 e iOS 18+.
 
 #### Retrato
 
