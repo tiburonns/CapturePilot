@@ -33,6 +33,42 @@ When access is available, CapturePilot uses security-scoped file access and coor
 
 Removing the external LUT folder from CapturePilot clears the stored directory bookmark. If an active LUT came from that external folder, its active selection/cache is also cleared.
 
+### Rankings data
+
+Private photo ranking runs on-device.
+
+CapturePilot may locally store:
+- reduced JPEG thumbnails;
+- Coach Score breakdowns;
+- categories/tags;
+- recommendation identifiers;
+- capture/import source;
+- timestamps;
+- SHA-256 duplicate fingerprints.
+
+Imported full-resolution originals are not copied into the ranking store.
+
+### Optional social identity and scores
+
+Core photography and private Rankings do not require an account.
+
+If the photographer opts into Friends, CapturePilot uses Sign in with Apple. Apple provides an opaque user identifier; CapturePilot does not receive the person's Apple ID password.
+
+The friends layer uses a public CloudKit database for pseudonymous profile/friend/score records. Because the database is public, synchronized social metadata must not be treated as secret.
+
+0.8 uploads **no photo pixels or thumbnails** to the social database.
+
+Optional shared fields are:
+- automatic Pilot-* username;
+- category;
+- Coach Score;
+- capture date;
+- pseudonymous identifiers needed for friendship records.
+
+Imported-image scores are not eligible for social upload.
+
+See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+
 ### Local preferences
 
 UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, HUD layout, LUT recommendation preference, external-folder bookmark data, and active LUT identifiers/names.
@@ -80,6 +116,42 @@ Cuando la persona selecciona una carpeta LUT externa, CapturePilot guarda bookma
 Cuando hay acceso, CapturePilot usa security-scoped access y coordinación de archivos de Foundation. Los LUT externos no se suben. El LUT elegido para captura se valida y se copia al almacenamiento local de la app antes de usarlo en el disparo.
 
 Eliminar la carpeta externa desde CapturePilot borra el bookmark guardado. Si el LUT activo provenía de esa carpeta, también se limpia su selección/cache activo.
+
+### Datos del Ranking
+
+El ranking privado se analiza localmente.
+
+CapturePilot puede guardar localmente:
+- miniaturas JPEG reducidas;
+- desglose Coach Score;
+- categorías/tags;
+- recomendaciones;
+- origen captura/importación;
+- fechas;
+- fingerprints SHA-256 para duplicados.
+
+El original full-resolution importado no se copia al almacén del ranking.
+
+### Identidad y scores sociales opcionales
+
+La cámara y el ranking privado no requieren cuenta.
+
+Si el fotógrafo activa Amigos, CapturePilot usa Sign in with Apple. Apple entrega un identificador opaco; CapturePilot no recibe la contraseña del Apple ID.
+
+La capa social usa la base pública de CloudKit para perfiles pseudónimos, amistades y scores. Esa metadata debe tratarse como social/pública dentro del servicio, no como información secreta.
+
+0.8 **no sube píxeles ni miniaturas**.
+
+Campos opcionales compartidos:
+- username Pilot-*;
+- categoría;
+- Coach Score;
+- fecha;
+- identificadores pseudónimos necesarios para amistad.
+
+Los scores de imágenes importadas no son elegibles para subida social.
+
+Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Preferencias
 
