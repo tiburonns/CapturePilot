@@ -33,14 +33,10 @@ final class PostShotAnalyzer {
         )
 
         let aesthetics: Double?
-        let utility: Bool
         if #available(iOS 18.0, *) {
-            let result = aestheticsScore(image)
-            aesthetics = result.score
-            utility = result.isUtility
+            aesthetics = aestheticsScore(image).score
         } else {
             aesthetics = nil
-            utility = false
         }
 
         let exposure = exposureScore(metrics: pixelMetrics)
@@ -62,9 +58,10 @@ final class PostShotAnalyzer {
             weighted.append((faceQuality, 0.14))
         }
 
-        var overall = weighted.reduce(0) { $0 + $1.0 * $1.1 }
-        if utility { overall -= 4 }
-        overall = min(100, max(0, overall))
+        let overall = min(
+            100,
+            max(0, weighted.reduce(0) { $0 + $1.0 * $1.1 })
+        )
 
         let score = CoachScoreBreakdown(
             overall: overall,
