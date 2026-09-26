@@ -128,7 +128,7 @@ On every lens where RAW+JPG becomes available:
 ### Friends + social scores
 
 - [ ] Core camera and local ranking work without signing in.
-- [ ] Sign in with Apple returns/restores a social profile.
+- [ ] Enabling Friends with an available iCloud account creates/restores the private social identity.
 - [ ] Automatic usernames are different for two accounts.
 - [ ] Friend search uses exact Pilot-* username.
 - [ ] A can request B.
@@ -143,7 +143,7 @@ On every lens where RAW+JPG becomes available:
 - [ ] Disabling sharing removes own social score records.
 - [ ] Friend photos/thumbnails are never uploaded.
 - [ ] No email/password/full Apple ID name is displayed or stored as public profile metadata.
-- [ ] Revoke Sign in with Apple and verify local social session clears.
+- [ ] Sign out of iCloud / make the account unavailable and verify the social layer fails gracefully while local Rankings keep working.
 - [ ] CloudKit unavailable/not-authenticated state is controlled and does not break local Rankings.
 - [ ] Test two real devices/accounts after production schema/index deployment.
 
@@ -379,7 +379,7 @@ En cada lente donde RAW+JPG esté disponible:
 ### Amigos + scores sociales
 
 - [ ] Cámara/ranking local funcionan sin login.
-- [ ] Sign in with Apple crea/restaura perfil.
+- [ ] Activar Amigos con iCloud disponible crea/restaura la identidad social privada.
 - [ ] Dos cuentas reciben usernames distintos.
 - [ ] Búsqueda por Pilot-* exacto.
 - [ ] Solicitud A → B.
@@ -394,7 +394,7 @@ En cada lente donde RAW+JPG esté disponible:
 - [ ] Desactivar compartir elimina scores propios.
 - [ ] Nunca se suben fotos/miniaturas.
 - [ ] No se publica correo/contraseña/nombre de Apple ID.
-- [ ] Revocar Sign in with Apple limpia sesión local.
+- [ ] Cuenta iCloud no disponible/cierre de sesión no rompe el Ranking local.
 - [ ] CloudKit no disponible no rompe ranking local.
 - [ ] Prueba final con dos dispositivos/cuentas tras desplegar schema/índices.
 
