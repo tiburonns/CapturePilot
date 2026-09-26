@@ -13,7 +13,7 @@
 - Portrait face-capture quality contribution when available.
 - Per-photo Coach recommendations.
 - Local thumbnail/index persistence and duplicate fingerprinting.
-- Optional Sign in with Apple social identity.
+- Optional private iCloud-backed social identity.
 - Automatic Pilot-* username.
 - CloudKit friend requests and accepted friends list.
 - Overall/category friend leaderboard.
@@ -33,7 +33,7 @@
 - Calidad de captura facial para Retrato cuando está disponible.
 - Recomendaciones por fotografía.
 - Miniaturas/índice local y fingerprint de duplicados.
-- Sign in with Apple opcional.
+- Identidad social privada respaldada por iCloud opcional.
 - Username Pilot-* automático.
 - Solicitudes/amigos mediante CloudKit.
 - Ranking social Overall/categorías.
