@@ -115,9 +115,9 @@ See [RANKINGS.md](RANKINGS.md).
 The optional social layer is intentionally separate from photo storage.
 
 `SocialCompetitionService` uses:
-- Sign in with Apple for pseudonymous identity;
-- a deterministic automatic Pilot-* username;
-- CloudKit public database records for profiles, friendships and best scores.
+- a random social identity stored in the user's private CloudKit database;
+- an automatic PILOT-* username derived from that private identity;
+- CloudKit public-database records for the minimal discoverable profile, friend request/acceptance edges and best scores.
 
 Only the current user's best **CapturePilot-capture** score per category is eligible for social sync. Imported images never contribute to the friends leaderboard.
 
@@ -315,9 +315,9 @@ Consulta [RANKINGS.md](RANKINGS.md).
 La capa social opcional está separada del almacenamiento fotográfico.
 
 `SocialCompetitionService` usa:
-- Sign in with Apple;
-- username automático Pilot-*;
-- CloudKit público para perfiles, amistades y mejores scores.
+- identidad social aleatoria almacenada en la base privada de CloudKit del usuario;
+- username automático PILOT-* derivado de esa identidad;
+- CloudKit público para perfil mínimo descubrible, solicitud/aceptación de amistad y mejores scores.
 
 Sólo mejores scores de **capturas hechas en CapturePilot** pueden sincronizarse. Las importaciones nunca suben al ranking social.
 
