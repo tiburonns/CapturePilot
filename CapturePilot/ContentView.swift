@@ -23,6 +23,10 @@ struct ContentView: View {
     @State private var pendingLUTRecommendationCount = 0
 
     var body: some View {
+        presentationLayer
+    }
+
+    private var baseCameraLayer: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
@@ -37,128 +41,144 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
-        .onAppear {
-            camera.setCoachIntensity(settings.coachIntensity)
-            camera.setRankingHandler { data, category in
-                Task { @MainActor in
-                    await rankingStore.ingest(
-                        data: data,
-                        source: .capture,
-                        sceneHint: category
-                    )
+    }
+
+    private var lifecycleLayer: some View {
+        baseCameraLayer
+            .onAppear {
+                camera.setCoachIntensity(settings.coachIntensity)
+                camera.setRankingHandler { data, category in
+                    Task { @MainActor in
+                        await rankingStore.ingest(
+                            data: data,
+                            source: .capture,
+                            sceneHint: category
+                        )
+                    }
                 }
-            }
-            camera.setCoachScene(settings.sceneCoach)
-            applyMonitoringSettings()
-            syncMonitoringHUD()
-            lutLibrary.startMonitoring()
-            updateLUTRecommendation()
-            camera.resumeIfPossible()
-            OrientationPolicy.applyCurrentPolicy()
-        }
-        .onDisappear {
-            camera.stop()
-            lutLibrary.stopMonitoring()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .active:
+                camera.setCoachScene(settings.sceneCoach)
                 applyMonitoringSettings()
                 syncMonitoringHUD()
                 lutLibrary.startMonitoring()
+                updateLUTRecommendation()
                 camera.resumeIfPossible()
-            case .inactive, .background:
+                OrientationPolicy.applyCurrentPolicy()
+            }
+            .onDisappear {
                 camera.stop()
                 lutLibrary.stopMonitoring()
-            @unknown default:
-                break
             }
-        }
-        .onChange(of: settings.coachIntensity) { _, value in
-            camera.setCoachIntensity(value)
-            updateLUTRecommendation()
-        }
-        .onChange(of: settings.sceneCoach) { _, value in
-            camera.setCoachScene(value)
-            camera.clearCreativeSpark()
-            resetAndUpdateLUTRecommendation()
-        }
-        .onChange(of: camera.selectedLensID) { _, _ in
-            camera.clearCreativeSpark()
-        }
-        .onChange(of: camera.coachState) { _, _ in
-            updateLUTRecommendation()
-        }
-        .onChange(of: lutLibrary.entries) { _, _ in
-            resetAndUpdateLUTRecommendation()
-        }
-        .onChange(of: settings.rawShareEnabled) { _, _ in
-            resetAndUpdateLUTRecommendation()
-        }
-        .onChange(of: settings.lutCoachRecommendations) { _, _ in
-            resetAndUpdateLUTRecommendation()
-        }
-        .onChange(of: settings.zebraLevel) { _, value in
-            if settings.dualZebra, settings.zebraLowLevel > value {
-                settings.zebraLowLevel = value
+            .onChange(of: scenePhase) { _, phase in
+                switch phase {
+                case .active:
+                    applyMonitoringSettings()
+                    syncMonitoringHUD()
+                    lutLibrary.startMonitoring()
+                    camera.resumeIfPossible()
+                case .inactive, .background:
+                    camera.stop()
+                    lutLibrary.stopMonitoring()
+                @unknown default:
+                    break
+                }
             }
-            applyMonitoringSettings()
-        }
-        .onChange(of: settings.zebraLowLevel) { _, value in
-            if settings.dualZebra, value > settings.zebraLevel {
-                settings.zebraLevel = value
+            .onChange(of: settings.coachIntensity) { _, value in
+                camera.setCoachIntensity(value)
+                updateLUTRecommendation()
             }
-            applyMonitoringSettings()
-        }
-        .onChange(of: settings.dualZebra) { _, _ in
-            applyMonitoringSettings()
-        }
-        .onChange(of: settings.peakingThreshold) { _, _ in
-            applyMonitoringSettings()
-        }
-        .onChange(of: settings.peakingColor) { _, _ in
-            applyMonitoringSettings()
-        }
-        .onChange(of: hud.configurations) { _, _ in
-            syncMonitoringHUD()
-        }
-        .onChange(of: hud.isEditing) { _, editing in
-            if editing {
+            .onChange(of: settings.sceneCoach) { _, value in
+                camera.setCoachScene(value)
                 camera.clearCreativeSpark()
-                showingProControls = false
-                histogramExpanded = false
-                waveformExpanded = false
-                rgbParadeExpanded = false
-                vectorscopeExpanded = false
-                camera.setFocusPeakingEnabled(false)
-                camera.setZebraEnabled(false)
-                camera.setFalseColorEnabled(false)
-                camera.setHistogramEnabled(false)
-                camera.setWaveformEnabled(false)
-                camera.setRGBParadeEnabled(false)
-                camera.setVectorscopeEnabled(false)
-            } else {
+                resetAndUpdateLUTRecommendation()
+            }
+            .onChange(of: camera.selectedLensID) { _, _ in
+                camera.clearCreativeSpark()
+            }
+    }
+
+    private var analysisObservationLayer: some View {
+        lifecycleLayer
+            .onChange(of: camera.coachState) { _, _ in
+                updateLUTRecommendation()
+            }
+            .onChange(of: lutLibrary.entries) { _, _ in
+                resetAndUpdateLUTRecommendation()
+            }
+            .onChange(of: settings.rawShareEnabled) { _, _ in
+                resetAndUpdateLUTRecommendation()
+            }
+            .onChange(of: settings.lutCoachRecommendations) { _, _ in
+                resetAndUpdateLUTRecommendation()
+            }
+            .onChange(of: settings.zebraLevel) { _, value in
+                if settings.dualZebra, settings.zebraLowLevel > value {
+                    settings.zebraLowLevel = value
+                }
+                applyMonitoringSettings()
+            }
+            .onChange(of: settings.zebraLowLevel) { _, value in
+                if settings.dualZebra, value > settings.zebraLevel {
+                    settings.zebraLevel = value
+                }
+                applyMonitoringSettings()
+            }
+            .onChange(of: settings.dualZebra) { _, _ in
+                applyMonitoringSettings()
+            }
+            .onChange(of: settings.peakingThreshold) { _, _ in
+                applyMonitoringSettings()
+            }
+            .onChange(of: settings.peakingColor) { _, _ in
+                applyMonitoringSettings()
+            }
+    }
+
+    private var hudObservationLayer: some View {
+        analysisObservationLayer
+            .onChange(of: hud.configurations) { _, _ in
                 syncMonitoringHUD()
             }
-        }
-        .fullScreenCover(isPresented: $showingRankings) {
-            RankingView()
-                .environmentObject(settings)
-                .environmentObject(rankingStore)
-                .environmentObject(social)
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environmentObject(settings)
-                .environmentObject(hud)
-                .environmentObject(lutLibrary)
-        }
-        .overlay(alignment: .top) {
-            VStack(spacing: 8) {
-                saveStatusOverlay
-                sessionStatusOverlay
+            .onChange(of: hud.isEditing) { _, editing in
+                if editing {
+                    camera.clearCreativeSpark()
+                    showingProControls = false
+                    histogramExpanded = false
+                    waveformExpanded = false
+                    rgbParadeExpanded = false
+                    vectorscopeExpanded = false
+                    camera.setFocusPeakingEnabled(false)
+                    camera.setZebraEnabled(false)
+                    camera.setFalseColorEnabled(false)
+                    camera.setHistogramEnabled(false)
+                    camera.setWaveformEnabled(false)
+                    camera.setRGBParadeEnabled(false)
+                    camera.setVectorscopeEnabled(false)
+                } else {
+                    syncMonitoringHUD()
+                }
             }
-        }
+    }
+
+    private var presentationLayer: some View {
+        hudObservationLayer
+            .fullScreenCover(isPresented: $showingRankings) {
+                RankingView()
+                    .environmentObject(settings)
+                    .environmentObject(rankingStore)
+                    .environmentObject(social)
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+                    .environmentObject(settings)
+                    .environmentObject(hud)
+                    .environmentObject(lutLibrary)
+            }
+            .overlay(alignment: .top) {
+                VStack(spacing: 8) {
+                    saveStatusOverlay
+                    sessionStatusOverlay
+                }
+            }
     }
 
     private var cameraSurface: some View {
