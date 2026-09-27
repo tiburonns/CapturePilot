@@ -161,21 +161,6 @@ final class CreativeSparkEngine {
             if selected.count == 4 { break }
         }
 
-        if selected.count < 2 {
-            let fallbacks: [(CGPoint, CreativeSparkKind, Double)] = [
-                (CGPoint(x: 0.33, y: 0.38), .subject, 0.30),
-                (CGPoint(x: 0.67, y: 0.62), .negativeSpace, 0.28)
-            ]
-
-            for fallback in fallbacks {
-                let tooClose = selected.contains {
-                    hypot($0.0.x - fallback.0.x, $0.0.y - fallback.0.y) < 0.12
-                }
-                if !tooClose { selected.append(fallback) }
-                if selected.count >= 2 { break }
-            }
-        }
-
         return selected.enumerated().map { offset, item in
             CreativeInterestPoint(
                 id: "spark-\(offset)-\(item.1.rawValue)",
