@@ -8,21 +8,13 @@ final class CreativeSparkEngine {
         qos: .userInitiated
     )
 
-    private var isProcessing = false
-
     func scan(
         pixelBuffer: CVPixelBuffer,
         coachState: CoachState,
         scene: AppSettings.SceneCoach,
         completion: @escaping (CreativeSparkResult) -> Void
     ) {
-        guard !isProcessing else { return }
-        isProcessing = true
-
-        queue.async { [weak self] in
-            guard let self else { return }
-            defer { self.isProcessing = false }
-
+        queue.async {
             var candidates: [(CGPoint, CreativeSparkKind, Double)] = []
 
             let saliency = VNGenerateAttentionBasedSaliencyImageRequest()
