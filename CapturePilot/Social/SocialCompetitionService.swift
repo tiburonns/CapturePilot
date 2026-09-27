@@ -141,7 +141,7 @@ final class SocialCompetitionService: ObservableObject {
                 field: "requesterID",
                 value: me.id
             )
-            if let existing = outgoing.first(
+            if outgoing.contains(
                 where: { ($0["addresseeID"] as? String) == target.id }
             ) {
                 errorDescription = nil
