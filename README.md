@@ -7,7 +7,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.8.0 (8).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.9.0 (9).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -122,6 +122,14 @@ Current signals include:
 
 The geometric analysis is intentionally heuristic. It is guidance, not a claim that every detected line, vanishing point, or compositional judgment is objectively correct.
 
+### Creative Spark (optional)
+
+CapturePilot 0.9 adds a separate **on-demand creative-unblock scan**. Tapping ✦ analyzes one live frame, then stops. It can mark up to four evidence-backed creative anchors and show up to three exploratory ideas based on saliency, people, leading lines, vanishing geometry, light, symmetry, negative space, and scene context.
+
+Creative Spark never changes exposure, focus, lens, LUT, crop, or framing automatically. The photographer can rescan, dismiss it, or hide the ✦ control entirely through HUD customization. If no reliable point is found, CapturePilot does not fabricate a marker.
+
+See [Creative Spark](docs/CREATIVE_SPARK.md).
+
 ### Scene-specific coaches
 
 The photographer explicitly chooses the scene coach; CapturePilot does not pretend to classify every scene automatically.
@@ -156,7 +164,7 @@ Each mode changes the priority of real analysis signals. For example, Architectu
 - Customizable HUD with separate portrait and landscape positions.
 - HUD items stay clamped to the safe area.
 - Optional dedicated Focus Peaking button.
-- Optional Zebra, Histogram, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping-warning, and frame-guide controls.
+- Optional Zebra, Histogram, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping-warning, frame-guide, Rankings, and Creative Spark controls.
 - Settings and shutter remain non-hideable recovery controls.
 
 ### Focus Peaking
@@ -191,7 +199,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - No third-party analytics SDK.
 - No CapturePilot-operated cloud service; optional Friends uses Apple's iCloud/CloudKit.
 - No live-frame upload.
-- Coach, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, Vectorscope, LUT parsing/profiling, and LUT recommendations run on-device.
+- Coach, Creative Spark, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, Vectorscope, LUT parsing/profiling, and LUT recommendations run on-device.
 - External LUT folders are read only after the photographer explicitly selects one through the system Files picker.
 - Privacy Manifest declares no tracking. Optional Friends declares linked User ID and other user-content metadata for app functionality.
 - UserDefaults Required Reason API: CA92.1.
@@ -199,7 +207,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.8.0 (8)**.
+- Current version/build: **0.9.0 (9)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -319,6 +327,14 @@ Se analizan:
 
 El análisis geométrico es deliberadamente heurístico: es una ayuda fotográfica, no una afirmación de que cada línea, punto de fuga o decisión compositiva sea objetivamente correcta.
 
+### Chispa creativa (opcional)
+
+CapturePilot 0.9 agrega un **scan creativo bajo demanda** separado del Coach. Al tocar ✦ analiza un solo frame y se detiene. Puede mostrar hasta cuatro anchors con evidencia y hasta tres ideas de exploración basadas en saliencia, personas, líneas, punto de fuga, luz, simetría, espacio negativo y contexto de escena.
+
+Nunca cambia exposición, foco, lente, LUT, crop ni encuadre automáticamente. Puedes reescanear, cerrarlo u ocultar ✦ desde la personalización del HUD. Si no existe un punto fiable, no inventa un marcador.
+
+Consulta [Chispa creativa](docs/CREATIVE_SPARK.md).
+
 ### Coaches específicos
 
 La persona elige explícitamente el tipo de escena; CapturePilot no finge clasificar automáticamente cualquier situación.
@@ -353,7 +369,7 @@ Cada modo cambia la prioridad de señales reales. Arquitectura enfatiza horizont
 - HUD personalizable con posiciones separadas vertical/horizontal.
 - Los elementos permanecen dentro del área segura.
 - Botón opcional dedicado a Focus Peaking.
-- Controles opcionales para Zebra, Histograma, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping y guía de formato.
+- Controles opcionales para Zebra, Histograma, False Color, Waveform, RGB Parade, Vectorscope, AF/AE Lock, clipping, guía de formato, Ranking y Chispa creativa.
 - Ajustes y disparador no pueden ocultarse.
 
 ### Focus Peaking
@@ -388,7 +404,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - Sin SDK de analítica de terceros.
 - Sin nube operada por CapturePilot; Amigos opcional usa iCloud/CloudKit de Apple.
 - Sin subida de frames.
-- Coach, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade, Vectorscope, parseo/perfilado LUT y recomendaciones LUT son locales.
+- Coach, Chispa creativa, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade, Vectorscope, parseo/perfilado LUT y recomendaciones LUT son locales.
 - Las carpetas LUT externas sólo se leen después de que el fotógrafo seleccione una explícitamente mediante el selector de Archivos.
 - Privacy Manifest sin tracking; Amigos opcional declara User ID y otra metadata de contenido vinculada para funcionalidad.
 - Required Reason API de UserDefaults: CA92.1.
@@ -396,7 +412,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.8.0 (8)**.
+- Versión/build actual: **0.9.0 (9)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.

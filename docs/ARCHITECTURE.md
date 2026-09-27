@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.8.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.9.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -150,7 +150,8 @@ The single `AVCaptureVideoDataOutput` stream is shared by:
 
 - `CoachEngine`;
 - `FocusPeakingEngine`;
-- `ProfessionalMonitoringEngine`.
+- `ProfessionalMonitoringEngine`;
+- `CreativeSparkEngine` only when explicitly requested.
 
 `CoachEngine` throttles analysis to approximately one frame every 0.28 s and prevents overlapping analyses. It combines Vision requests with lightweight local luminance/geometry analysis.
 
@@ -161,6 +162,38 @@ The Coach does not turn these values into one aesthetic score. A deterministic p
 See [COACH.md](COACH.md) for current thresholds and decision branches.
 
 These values are heuristics intended for coaching.
+
+### Creative Spark pipeline
+
+Creative Spark is separate from the continuous Coach decision tree.
+
+```text
+user taps ✦
+   ↓
+next AVCaptureVideoDataOutput frame
+   ↓
+CreativeSparkEngine
+   ├─ Vision saliency
+   ├─ face/person anchor
+   ├─ Coach vanishing point / leading line / symmetry / negative space
+   └─ sparse luma search for an interesting light region
+   ↓
+distinct evidence-backed anchors (0...4)
+   ↓
+scene-aware exploratory prompts (up to 3)
+   ↓
+one static result until dismiss/rescan
+```
+
+The engine does not run continuously. CameraService stores a one-shot request for the selected scene, consumes it on the next video frame, and publishes the result on the main thread.
+
+The result stores source-frame aspect ratio. `CreativeSparkOverlay` maps normalized points through aspect-fill geometry so full-screen preview crop is compensated.
+
+No synthetic detected point is created when the scan lacks evidence. A prompt can exist without a numbered anchor.
+
+Changing physical lens, scene mode, or entering HUD edit mode clears the current result.
+
+See [CREATIVE_SPARK.md](CREATIVE_SPARK.md).
 
 ### Scene coaches
 
@@ -211,7 +244,7 @@ No frame leaves the process in the current source. Coach analysis, Hough-style g
 
 ## Español
 
-CapturePilot 0.8.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.9.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 

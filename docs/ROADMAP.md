@@ -145,6 +145,24 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Evaluate trusted server-side score validation before any prize/high-stakes competition.
 - [ ] Add moderation/report/block infrastructure before any future social photo sharing.
 
+### 0.9 — Creative Spark
+
+- [x] Dedicated optional ✦ HUD control.
+- [x] One-shot scan; no continuous Creative Spark processing.
+- [x] Vision saliency plus face/person anchors.
+- [x] Reuse of current vanishing point, leading-line, symmetry and negative-space signals.
+- [x] Sparse interesting-light-region detection.
+- [x] Up to four distinct numbered anchors.
+- [x] Up to three scene-aware exploratory prompts.
+- [x] Rescan and dismiss.
+- [x] Clear stale result after lens/scene change or HUD editing.
+- [x] Aspect-fill-aware marker mapping.
+- [x] No automatic capture-setting changes.
+- [x] No synthetic detected marker when evidence is absent.
+- [ ] Validate marker alignment on physical devices/lenses/orientations.
+- [ ] Validate prompt usefulness with varied real scenes.
+- [ ] Validate performance/thermal impact of repeated scans.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -315,6 +333,24 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Probar cuenta iCloud no disponible/cierre de sesión.
 - [ ] Evaluar validación confiable antes de competencias con premios.
 - [ ] Añadir moderación/report/block antes de compartir fotos socialmente.
+
+### 0.9 — Chispa creativa
+
+- [x] Control ✦ opcional.
+- [x] Scan único; sin procesamiento creativo continuo.
+- [x] Saliencia Vision + rostro/persona.
+- [x] Reutiliza punto de fuga, líneas, simetría y espacio negativo.
+- [x] Detección dispersa de región de luz.
+- [x] Hasta cuatro anchors numerados.
+- [x] Hasta tres ideas según escena.
+- [x] Reescanear/cerrar.
+- [x] Limpieza al cambiar lente/escena o editar HUD.
+- [x] Mapeo compatible con aspect-fill.
+- [x] Sin cambios automáticos de parámetros.
+- [x] Sin marcador detectado sintético cuando falta evidencia.
+- [ ] Validar alineación física por lente/orientación.
+- [ ] Validar utilidad de ideas con escenas reales.
+- [ ] Validar rendimiento/temperatura con scans repetidos.
 
 ### Gates pendientes
 
