@@ -21,13 +21,51 @@ struct CreativeSparkOverlay: View {
                             .foregroundStyle(.yellow)
                     }
                     .position(
-                        x: point.position.x * geometry.size.width,
-                        y: point.position.y * geometry.size.height
+                        aspectFillPosition(
+                            point.position,
+                            sourceAspectRatio: result.sourceAspectRatio,
+                            in: geometry.size
+                        )
                     )
                 }
             }
         }
         .allowsHitTesting(false)
+    }
+
+    private func aspectFillPosition(
+        _ normalized: CGPoint,
+        sourceAspectRatio: CGFloat,
+        in size: CGSize
+    ) -> CGPoint {
+        guard size.width > 0,
+              size.height > 0,
+              sourceAspectRatio > 0 else {
+            return CGPoint(
+                x: normalized.x * size.width,
+                y: normalized.y * size.height
+            )
+        }
+
+        let viewAspectRatio = size.width / size.height
+
+        if sourceAspectRatio > viewAspectRatio {
+            let scaledWidth = size.height * sourceAspectRatio
+            let cropX = (scaledWidth - size.width) / 2
+
+            return CGPoint(
+                x: normalized.x * scaledWidth - cropX,
+                y: normalized.y * size.height
+            )
+        }
+
+        let scaledHeight = size.width / sourceAspectRatio
+        let cropY = (scaledHeight - size.height) / 2
+
+        return CGPoint(
+            x: normalized.x * size.width,
+            y: normalized.y * scaledHeight - cropY
+        )
     }
 }
 
