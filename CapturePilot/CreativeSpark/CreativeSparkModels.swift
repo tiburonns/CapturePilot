@@ -44,5 +44,6 @@ struct CreativeSparkIdea: Identifiable, Equatable {
 struct CreativeSparkResult: Equatable {
     let points: [CreativeInterestPoint]
     let ideas: [CreativeSparkIdea]
+    let sourceAspectRatio: CGFloat
     let scannedAt: Date
 }
