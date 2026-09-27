@@ -119,10 +119,15 @@ final class CreativeSparkEngine {
                 coachState: coachState
             )
 
+            let sourceWidth = max(1, CVPixelBufferGetWidth(pixelBuffer))
+            let sourceHeight = max(1, CVPixelBufferGetHeight(pixelBuffer))
+
             completion(
                 CreativeSparkResult(
                     points: points,
                     ideas: ideas,
+                    sourceAspectRatio:
+                        CGFloat(sourceWidth) / CGFloat(sourceHeight),
                     scannedAt: Date()
                 )
             )
