@@ -335,6 +335,16 @@ When a suggestion is shown, the photographer must explicitly apply it. CapturePi
 
 See [LUT_LIBRARY.md](LUT_LIBRARY.md).
 
+### 15. Creative Spark is not the Coach
+
+CapturePilot 0.9 keeps creative ideation outside the core Coach priority tree.
+
+The Coach continues to handle capture fundamentals and explainable scene guidance. Creative Spark only runs after explicit ✦ input and can present multiple possible directions instead of one corrective recommendation.
+
+A Creative Spark result does not alter `CoachState`, Coach stabilization, exposure decisions, or scene priority.
+
+See [CREATIVE_SPARK.md](CREATIVE_SPARK.md).
+
 ---
 
 ## Español
@@ -602,3 +612,14 @@ El motor puede decidir devolver **ninguna recomendación**.
 Cuando existe una sugerencia, el fotógrafo debe aplicarla explícitamente. CapturePilot nunca cambia el look automáticamente.
 
 Consulta [LUT_LIBRARY.md](LUT_LIBRARY.md).
+
+
+### 15. Chispa creativa no es el Coach
+
+CapturePilot 0.9 mantiene la ideación creativa fuera del árbol principal del Coach.
+
+El Coach sigue atendiendo fundamentos y guía explicable. Chispa creativa sólo corre al tocar ✦ y puede ofrecer varias direcciones posibles en vez de una corrección.
+
+No modifica `CoachState`, estabilización del Coach, decisiones de exposición ni prioridades por escena.
+
+Consulta [CREATIVE_SPARK.md](CREATIVE_SPARK.md).

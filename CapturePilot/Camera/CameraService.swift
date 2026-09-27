@@ -7,6 +7,7 @@ final class CameraService: NSObject, ObservableObject {
     let coach = CoachEngine()
     let focusPeaking = FocusPeakingEngine()
     let monitoring = ProfessionalMonitoringEngine()
+    let creativeSpark = CreativeSparkEngine()
 
     @Published private(set) var isConfigured = false
     @Published private(set) var permissionDenied = false
@@ -64,6 +65,8 @@ final class CameraService: NSObject, ObservableObject {
     @Published private(set) var rgbParadeImage: CGImage? = nil
     @Published private(set) var vectorscopeImage: CGImage? = nil
     @Published private(set) var isAFAELocked = false
+    @Published private(set) var creativeSparkResult: CreativeSparkResult?
+    @Published private(set) var isCreativeSparkScanning = false
 
     private let sessionQueue = DispatchQueue(label: "CapturePilot.CameraSession", qos: .userInitiated)
     private let videoQueue = DispatchQueue(label: "CapturePilot.VideoFrames", qos: .userInitiated)
@@ -86,6 +89,7 @@ final class CameraService: NSObject, ObservableObject {
     private var waveformRequested = false
     private var rgbParadeRequested = false
     private var vectorscopeRequested = false
+    private var creativeSparkRequestedScene: AppSettings.SceneCoach?
     private var zebraLevel: Double = 95
     private var zebraLowLevel: Double = 70
     private var dualZebra = true
@@ -200,6 +204,24 @@ final class CameraService: NSObject, ObservableObject {
         _ handler: @escaping (Data, PhotoCategory?) -> Void
     ) {
         rankingHandler = handler
+    }
+
+    func requestCreativeSpark(scene: AppSettings.SceneCoach) {
+        isCreativeSparkScanning = true
+        creativeSparkResult = nil
+
+        videoQueue.async { [weak self] in
+            self?.creativeSparkRequestedScene = scene
+        }
+    }
+
+    func clearCreativeSpark() {
+        creativeSparkResult = nil
+        isCreativeSparkScanning = false
+
+        videoQueue.async { [weak self] in
+            self?.creativeSparkRequestedScene = nil
+        }
     }
 
     func toggleZebra() {
@@ -1210,6 +1232,22 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            if let requestedScene = creativeSparkRequestedScene {
+                creativeSparkRequestedScene = nil
+                let stateSnapshot = coachState
+
+                creativeSpark.scan(
+                    pixelBuffer: pixelBuffer,
+                    coachState: stateSnapshot,
+                    scene: requestedScene
+                ) { [weak self] result in
+                    DispatchQueue.main.async {
+                        self?.creativeSparkResult = result
+                        self?.isCreativeSparkScanning = false
+                    }
+                }
+            }
+
             if focusPeakingRequested {
                 focusPeaking.process(
                     pixelBuffer: pixelBuffer,

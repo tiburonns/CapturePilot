@@ -249,7 +249,7 @@ Test all eight scene modes and record false positives, false negatives, and time
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.8.0 (8).
+- [ ] Version/build is 0.9.0 (9).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -434,6 +434,27 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 - [ ] Coach/geometría se mantiene alineado en orientaciones y lentes físicas.
 - [ ] Coach + Peaking + scopes mantienen carga térmica aceptable en prueba prolongada.
 
+### Chispa creativa
+
+- [ ] ✦ no analiza hasta tocarlo.
+- [ ] Cada scan termina después de un frame/resultado.
+- [ ] Cerrar elimina puntos e ideas.
+- [ ] Reescanear sustituye el resultado anterior.
+- [ ] Rostro/persona coincide con el sujeto visible.
+- [ ] Anchors de saliencia son plausibles.
+- [ ] Punto de fuga coincide con convergencia.
+- [ ] Línea guía coincide con la escena.
+- [ ] Anchor de luz cae en una región localmente más brillante sin clipping cuando existe.
+- [ ] Espacio negativo es plausible cuando se informa.
+- [ ] No aparece un punto numerado inventado cuando no existe señal fiable.
+- [ ] Las ideas siguen siendo exploratorias en todos los modos.
+- [ ] Nunca cambia exposición, foco, lente, LUT, resolución, crop, guía ni disparador.
+- [ ] Cambiar lente/escena limpia el scan.
+- [ ] Editar HUD limpia el scan.
+- [ ] Alineación correcta en vertical, ambos horizontales e invertido.
+- [ ] Aspect-fill correcto en iPhone pequeño/notch.
+- [ ] Scans repetidos no bloquean preview/captura.
+
 ### Guías
 
 - [ ] Tercios.
@@ -498,7 +519,7 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.8.0 (8).
+- [ ] 0.9.0 (9).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.

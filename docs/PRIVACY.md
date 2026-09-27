@@ -110,6 +110,7 @@ CapturePilot no crea cuenta, no sirve publicidad, no incluye analítica de terce
 Se ejecutan localmente:
 
 - Vision para rostro/persona/saliencia/horizonte;
+- scan bajo demanda de Chispa creativa con saliencia/rostro/persona;
 - luminancia y clipping;
 - líneas/simetría/punto de fuga/espacio negativo;
 - Focus Peaking;

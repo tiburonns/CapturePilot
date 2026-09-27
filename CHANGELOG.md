@@ -1,5 +1,37 @@
 # Changelog / Registro de cambios
 
+## 0.9.0 — Creative Spark / Chispa creativa
+
+### English
+- Optional on-demand ✦ Creative Spark control.
+- One-frame scan; no continuous Creative Spark processing.
+- Up to four evidence-backed numbered creative anchors.
+- Up to three exploratory prompts.
+- Uses Vision saliency, face/person, existing vanishing/line/symmetry/negative-space signals, and a local light-region heuristic.
+- Scene-aware idea variants.
+- Rescan and dismiss.
+- Clears on lens/scene changes and HUD editing.
+- Aspect-fill-aware point mapping.
+- No automatic camera/LUT/framing changes.
+- No synthetic detected point when evidence is absent.
+- English / Spanish / System presentation.
+- Version/build 0.9.0 (9).
+
+### Español
+- Control ✦ opcional y bajo demanda.
+- Scan de un frame; sin procesamiento creativo continuo.
+- Hasta cuatro anchors numerados con evidencia.
+- Hasta tres ideas de exploración.
+- Usa saliencia Vision, rostro/persona, punto de fuga/líneas/simetría/espacio y una heurística local de luz.
+- Ideas según escena.
+- Reescanear/cerrar.
+- Limpieza al cambiar lente/escena o editar HUD.
+- Puntos alineados considerando aspect-fill.
+- Sin cambios automáticos de cámara/LUT/encuadre.
+- Sin puntos detectados sintéticos cuando no hay evidencia.
+- Presentación EN/ES/Sistema.
+- Versión/build 0.9.0 (9).
+
 ## 0.8.0 — Rankings + friends / Ranking + amigos
 
 ### English

@@ -40,6 +40,9 @@
 		H10000000000000000000004 /* RankingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H20000000000000000000004 /* RankingView.swift */; };
 		I10000000000000000000001 /* SocialCompetitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = I20000000000000000000001 /* SocialCompetitionService.swift */; };
 		I10000000000000000000002 /* SocialCompetitionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = I20000000000000000000002 /* SocialCompetitionView.swift */; };
+		J10000000000000000000001 /* CreativeSparkModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = J20000000000000000000001 /* CreativeSparkModels.swift */; };
+		J10000000000000000000002 /* CreativeSparkEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = J20000000000000000000002 /* CreativeSparkEngine.swift */; };
+		J10000000000000000000003 /* CreativeSparkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = J20000000000000000000003 /* CreativeSparkView.swift */; };
 		A10000000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* PrivacyInfo.xcprivacy */; };
 		A10000000000000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* InfoPlist.strings */; };
 		A10000000000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* Assets.xcassets */; };
@@ -81,6 +84,9 @@
 		I20000000000000000000001 /* SocialCompetitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialCompetitionService.swift; sourceTree = "<group>"; };
 		I20000000000000000000002 /* SocialCompetitionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialCompetitionView.swift; sourceTree = "<group>"; };
 		I20000000000000000000003 /* CapturePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CapturePilot.entitlements; sourceTree = "<group>"; };
+		J20000000000000000000001 /* CreativeSparkModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreativeSparkModels.swift; sourceTree = "<group>"; };
+		J20000000000000000000002 /* CreativeSparkEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreativeSparkEngine.swift; sourceTree = "<group>"; };
+		J20000000000000000000003 /* CreativeSparkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreativeSparkView.swift; sourceTree = "<group>"; };
 		442440819FFC8BBD4010CCFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -114,6 +120,7 @@
 				B30000000000000000000001 /* HUD */,
 				H30000000000000000000001 /* Ranking */,
 				I30000000000000000000001 /* Social */,
+				J30000000000000000000001 /* CreativeSpark */,
 				I20000000000000000000003 /* CapturePilot.entitlements */,
 				442440819FFC8BBD4010CCFB /* Info.plist */,
 				A20000000000000000000001 /* PrivacyInfo.xcprivacy */,
@@ -155,6 +162,11 @@
 				B20000000000000000000001 /* OrientationPolicy.swift */,
 				G20000000000000000000001 /* LUTLibraryStore.swift */,
 			); path = Settings; sourceTree = "<group>"; };
+		J30000000000000000000001 /* CreativeSpark */ = { isa = PBXGroup; children = (
+				J20000000000000000000001 /* CreativeSparkModels.swift */,
+				J20000000000000000000002 /* CreativeSparkEngine.swift */,
+				J20000000000000000000003 /* CreativeSparkView.swift */,
+			); path = CreativeSpark; sourceTree = "<group>"; };
 		I30000000000000000000001 /* Social */ = { isa = PBXGroup; children = (
 				I20000000000000000000001 /* SocialCompetitionService.swift */,
 				I20000000000000000000002 /* SocialCompetitionView.swift */,
@@ -267,6 +279,9 @@
 				H10000000000000000000004 /* RankingView.swift in Sources */,
 				I10000000000000000000001 /* SocialCompetitionService.swift in Sources */,
 				I10000000000000000000002 /* SocialCompetitionView.swift in Sources */,
+				J10000000000000000000001 /* CreativeSparkModels.swift in Sources */,
+				J10000000000000000000002 /* CreativeSparkEngine.swift in Sources */,
+				J10000000000000000000003 /* CreativeSparkView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -280,11 +295,11 @@
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 8;
+			CURRENT_PROJECT_VERSION = 9;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.8.0;
+			MARKETING_VERSION = 0.9.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;
@@ -296,11 +311,11 @@
 			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 			CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;
 			CODE_SIGN_STYLE = Automatic;
-			CURRENT_PROJECT_VERSION = 8;
+			CURRENT_PROJECT_VERSION = 9;
 			GENERATE_INFOPLIST_FILE = NO;
 			INFOPLIST_FILE = CapturePilot/Info.plist;
 			IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-			MARKETING_VERSION = 0.8.0;
+			MARKETING_VERSION = 0.9.0;
 			PRODUCT_BUNDLE_IDENTIFIER = com.tiburonns.CapturePilot;
 			PRODUCT_NAME = "$(TARGET_NAME)";
 			SWIFT_EMIT_LOC_STRINGS = YES;

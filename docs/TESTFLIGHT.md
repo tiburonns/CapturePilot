@@ -4,7 +4,7 @@
 
 ### Candidate
 
-CapturePilot 0.8.0 build 8 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.9.0 build 9 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
@@ -41,6 +41,18 @@ Before Archive, test at least:
 - confirm the recommendation is never applied automatically.
 
 If a third-party File Provider is available, test it separately and record provider/app version.
+
+### Creative Spark acceptance
+
+Before Archive:
+- verify ✦ is optional/hideable;
+- scan in every supported orientation;
+- verify markers against faces, salient objects, lines and vanishing geometry;
+- verify aspect-fill alignment on at least two different screen geometries;
+- verify changing lens/scene clears stale results;
+- verify a low-signal scene does not invent numbered interest points;
+- verify no camera parameter changes after a Creative Spark scan;
+- repeat scans while monitoring preview responsiveness.
 
 ### Rankings acceptance
 
@@ -88,7 +100,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirm **0.8.0 (8)**.
+- Confirm **0.9.0 (9)**.
 - Complete export compliance as requested.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
@@ -102,7 +114,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Candidato
 
-CapturePilot 0.8.0 build 8 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.9.0 build 9 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
@@ -136,6 +148,18 @@ Antes del Archive prueba al menos:
 - confirmar que la recomendación nunca se aplica automáticamente.
 
 Si existe un File Provider de terceros, pruébalo por separado y registra proveedor/versión.
+
+### Aceptación de Chispa creativa
+
+Antes del Archive:
+- comprobar que ✦ es opcional/ocultable;
+- escanear en todas las orientaciones;
+- verificar puntos contra rostros, saliencia, líneas y punto de fuga;
+- verificar aspect-fill en al menos dos geometrías de pantalla;
+- comprobar limpieza al cambiar lente/escena;
+- comprobar que una escena sin señal fiable no genera puntos inventados;
+- confirmar que no cambia parámetros de cámara;
+- repetir scans y observar fluidez del preview.
 
 ### Aceptación del Ranking
 
@@ -183,7 +207,7 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirma **0.8.0 (8)**.
+- Confirma **0.9.0 (9)**.
 - Completa export compliance.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.

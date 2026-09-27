@@ -81,6 +81,22 @@ struct SettingsView: View {
                             Text(settings.sceneName(scene)).tag(scene)
                         }
                     }
+
+                    Divider()
+
+                    Label(
+                        settings.text(.creativeSpark),
+                        systemImage: "sparkles"
+                    )
+                    .font(.subheadline.weight(.semibold))
+
+                    Text(settings.text(.creativeSparkDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Text(settings.text(.creativeSparkOnDemand))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section {
@@ -401,8 +417,8 @@ struct SettingsView: View {
     }
 
     private var versionAndBuild: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.8.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "8"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.9.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "9"
         return "\(version) (\(build))"
     }
 }

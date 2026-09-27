@@ -23,9 +23,11 @@
 - [ ] Coach bubble does not become permanently clipped.
 - [ ] LUT recommendation card, when visible, remains inside the safe area and does not cover the shutter.
 - [ ] Rankings trophy button remains reachable in portrait, upside-down portrait, and landscape.
+- [ ] Creative Spark ✦ control and expanded prompt card remain inside the safe area.
 - [ ] Rankings full-screen view respects safe areas and remains usable in all enabled orientations.
 - [ ] Scene selector and language controls remain usable.
 - [ ] Peaking overlay lines up with the viewfinder.
+- [ ] Creative Spark numbered points line up with the viewfinder crop.
 
 #### Notched/smaller iPhone
 
@@ -88,9 +90,11 @@ Source inspection cannot certify these physical checks.
 - [ ] Coach no queda recortado.
 - [ ] La tarjeta de recomendación LUT permanece dentro del área segura y no cubre el disparador.
 - [ ] El botón de Ranking permanece accesible en vertical, vertical invertido y horizontal.
+- [ ] El control ✦ y la tarjeta expandida de Chispa creativa permanecen dentro del área segura.
 - [ ] La vista full-screen de Ranking respeta área segura en todas las orientaciones activas.
 - [ ] Escena e idioma son utilizables.
 - [ ] Peaking coincide con el preview.
+- [ ] Los puntos numerados de Chispa creativa coinciden con el crop del visor.
 
 #### iPhone pequeño/notch
 
