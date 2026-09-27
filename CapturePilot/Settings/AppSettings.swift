@@ -400,6 +400,7 @@ enum LocalizedKey: Hashable {
     case lutReasonLandscape, lutReasonArchitecture, lutReasonAutomotive
     case lutReasonStreet, lutReasonMacro, lutReasonGeneral
     case rankings
+    case creativeSpark, creativeSparkDetail, creativeSparkOnDemand
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -509,7 +510,10 @@ enum LocalizedKey: Hashable {
             .lutReasonStreet: "Favorece estructura y contraste para calle.",
             .lutReasonMacro: "Favorece separación de color y microcontraste.",
             .lutReasonGeneral: "Look equilibrado para la escena actual.",
-            .rankings: "Ranking"
+            .rankings: "Ranking",
+            .creativeSpark: "Chispa creativa",
+            .creativeSparkDetail: "Escaneo opcional para desbloqueo creativo. Marca puntos potencialmente interesantes y propone caminos alternativos sin cambiar exposición, lente, foco ni encuadre por ti.",
+            .creativeSparkOnDemand: "Sólo se ejecuta cuando tocas el botón ✦. Puedes ocultarlo desde Personalizar HUD."
         ]
 
         let en: [LocalizedKey: String] = [
@@ -619,7 +623,10 @@ enum LocalizedKey: Hashable {
             .lutReasonStreet: "Favors structure and contrast for street.",
             .lutReasonMacro: "Favors color separation and microcontrast.",
             .lutReasonGeneral: "Balanced look for the current scene.",
-            .rankings: "Rankings"
+            .rankings: "Rankings",
+            .creativeSpark: "Creative Spark",
+            .creativeSparkDetail: "Optional creative-unblock scan. It marks potentially interesting points and proposes alternative directions without changing exposure, lens, focus, or framing for you.",
+            .creativeSparkOnDemand: "It runs only when you tap the ✦ button. You can hide it from Customize HUD."
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)
