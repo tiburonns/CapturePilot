@@ -15,10 +15,17 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Xcode version
         run: xcodebuild -version
+
+      - name: Validate release contract
+        run: |
+          plutil -lint CapturePilot/Info.plist
+          plutil -lint CapturePilot/CapturePilot.entitlements
+          plutil -lint CapturePilot/PrivacyInfo.xcprivacy
+          python3 Tests/validate-release-contract.py
 
       - name: Build Release for iOS Simulator
         run: |
@@ -29,6 +36,7 @@ jobs:
             -configuration Release \
             -sdk iphonesimulator \
             CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
             build
 
       - name: Build Release for iPhoneOS
@@ -40,4 +48,5 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=YES \
             build
