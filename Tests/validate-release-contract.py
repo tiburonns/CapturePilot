@@ -57,6 +57,10 @@ for token in ("0.9.0 build 9", "## English", "## Español"):
     require(token in testflight, f"TestFlight guide missing token: {token}")
 
 require((ROOT / "LICENSE").exists(), "LICENSE is required for the public repository.")
+require((ROOT / "Tests/run-lut-recommendation-tests.sh").exists(),
+        "Deterministic LUT recommendation test runner is missing.")
+require("Run LUT recommendation tests" in read(".github/workflows/ios-build.yml"),
+        "CI must execute deterministic LUT recommendation tests.")
 
 if failures:
     print("CapturePilot release contract FAILED:")

@@ -27,6 +27,9 @@ jobs:
           plutil -lint CapturePilot/PrivacyInfo.xcprivacy
           python3 Tests/validate-release-contract.py
 
+      - name: Run LUT recommendation tests
+        run: Tests/run-lut-recommendation-tests.sh
+
       - name: Build Release for iOS Simulator
         run: |
           set -o pipefail
