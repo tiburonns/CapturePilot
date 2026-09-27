@@ -80,7 +80,11 @@ struct ContentView: View {
         }
         .onChange(of: settings.sceneCoach) { _, value in
             camera.setCoachScene(value)
+            camera.clearCreativeSpark()
             resetAndUpdateLUTRecommendation()
+        }
+        .onChange(of: camera.selectedLensID) { _, _ in
+            camera.clearCreativeSpark()
         }
         .onChange(of: camera.coachState) { _, _ in
             updateLUTRecommendation()
@@ -120,6 +124,7 @@ struct ContentView: View {
         }
         .onChange(of: hud.isEditing) { _, editing in
             if editing {
+                camera.clearCreativeSpark()
                 showingProControls = false
                 histogramExpanded = false
                 waveformExpanded = false
@@ -193,6 +198,9 @@ struct ContentView: View {
                     isEnabled: camera.isFocusPeakingEnabled
                 )
                 .ignoresSafeArea()
+
+                CreativeSparkOverlay(result: camera.creativeSparkResult)
+                    .ignoresSafeArea()
 
                 CompositionOverlay(
                     grid: settings.grid,
@@ -398,6 +406,21 @@ struct ContentView: View {
                     .background(.ultraThinMaterial, in: Circle())
             }
             .accessibilityLabel(settings.text(.rankings))
+
+        case .creativeSpark:
+            CreativeSparkControl(
+                result: hud.isEditing ? nil : camera.creativeSparkResult,
+                isScanning: hud.isEditing ? false : camera.isCreativeSparkScanning,
+                language: settings.language,
+                onScan: {
+                    guard !hud.isEditing else { return }
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    camera.requestCreativeSpark(scene: settings.sceneCoach)
+                },
+                onDismiss: {
+                    camera.clearCreativeSpark()
+                }
+            )
         }
     }
 
