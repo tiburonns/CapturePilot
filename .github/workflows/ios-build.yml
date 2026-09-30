@@ -20,6 +20,39 @@ jobs:
       - name: Xcode version
         run: xcodebuild -version
 
+      - name: Validate App Store Connect toolchain
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          import re
+          import sys
+
+          xcode = subprocess.check_output(["xcodebuild", "-version"], text=True)
+          sdk = subprocess.check_output(
+              ["xcrun", "--sdk", "iphoneos", "--show-sdk-version"],
+              text=True
+          ).strip()
+
+          xcode_match = re.search(r"Xcode\s+(\d+)(?:\.(\d+))?", xcode)
+          if not xcode_match:
+              print("Unable to parse Xcode version:", xcode)
+              sys.exit(1)
+
+          xcode_major = int(xcode_match.group(1))
+          sdk_major = int(sdk.split(".")[0])
+
+          print(xcode.strip())
+          print("iPhoneOS SDK:", sdk)
+
+          if xcode_major < 26:
+              print("App Store Connect currently requires Xcode 26 or later.")
+              sys.exit(1)
+
+          if sdk_major < 26:
+              print("App Store Connect currently requires the iOS 26 SDK or later.")
+              sys.exit(1)
+          PY
+
       - name: Validate release contract
         run: |
           plutil -lint CapturePilot/Info.plist
