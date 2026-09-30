@@ -14,6 +14,17 @@ For Creative Spark 0.9.1, specifically validate frame-within-frame false positiv
 
 Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, CloudKit production configuration, or App Store acceptance.
 
+### Current Apple upload requirements
+
+As of September 2026:
+
+- App Store Connect uploads require Xcode 26 or later and the iOS 26 SDK or later.
+- CapturePilot's CI currently uses Xcode 26.6 and the iOS 26.5 SDK, which satisfies that floor.
+- Apple currently requires uploaded iOS apps to target iOS 13 or later; CapturePilot targets iOS 17.
+- Starting April 2027 Apple has announced an iOS 27 SDK requirement, so recheck this gate before future releases.
+
+See [RELEASE_READINESS.md](RELEASE_READINESS.md) for the complete go/no-go matrix.
+
 ### Before Archive
 
 Complete the physical checklists in:
@@ -104,7 +115,9 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 - Confirm **0.9.1 (10)**.
 - Complete export compliance as requested.
-- Fill beta description, feedback contact, and review contact.
+- Fill beta description, What to Test, feedback email, and review contact.
+- Complete the current age-rating questionnaire.
+- Complete App Privacy answers so they match the Privacy Manifest and optional Friends data flow.
 - Start with Internal Testing.
 - Verify HEIF/JPEG/RAW/ProRAW labels match actual output on the test hardware.
 - Verify RAW+JPG output dimensions, LUT-library persistence, and Coach LUT recommendation/apply behavior.
@@ -123,6 +136,17 @@ Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW 
 El candidato también incluye biblioteca LUT persistente desde una carpeta de Archivos y recomendaciones LUT explicables del Coach.
 
 Compilar no demuestra comportamiento físico, persistencia de File Providers externos, calidad de recomendaciones ni aceptación de App Store.
+
+### Requisitos actuales de subida
+
+A septiembre de 2026:
+
+- App Store Connect requiere Xcode 26 o superior y SDK iOS 26 o superior.
+- CI usa actualmente Xcode 26.6 y SDK iOS 26.5, por encima de ese mínimo.
+- Apple exige actualmente target iOS 13 o superior; CapturePilot usa iOS 17.
+- Apple anunció SDK iOS 27 para abril de 2027; hay que volver a comprobar este gate en futuras versiones.
+
+Consulta [RELEASE_READINESS.md](RELEASE_READINESS.md) para la matriz completa.
 
 ### Antes del Archive
 
@@ -211,7 +235,9 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 - Confirma **0.9.1 (10)**.
 - Completa export compliance.
-- Completa descripción beta y contactos.
+- Completa descripción beta, Qué probar, email de feedback y contacto de review.
+- Completa el cuestionario vigente de age rating.
+- Completa App Privacy de forma consistente con el Privacy Manifest y Amigos opcional.
 - Empieza con Internal Testing.
 - Comprueba que HEIF/JPEG/RAW/ProRAW coincidan con el archivo real.
 - Verifica dimensiones RAW+JPG, persistencia de biblioteca LUT y comportamiento de recomendación/aplicación del Coach.
