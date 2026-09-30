@@ -8,6 +8,7 @@ enum CreativeSparkKind: String, Equatable {
     case light
     case negativeSpace
     case foreground
+    case frame
     case symmetry
     case detail
 }
@@ -28,6 +29,7 @@ enum CreativeSparkPrompt: String, Equatable {
     case exposeForLight
     case leaveSpace
     case addForeground
+    case frameWithinFrame
     case breakSymmetry
     case lowerAngle
     case changeHeight
