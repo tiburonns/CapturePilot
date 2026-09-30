@@ -20,6 +20,10 @@ final class CreativeSparkEngine {
             let saliency = VNGenerateAttentionBasedSaliencyImageRequest()
             let face = VNDetectFaceRectanglesRequest()
             let human = VNDetectHumanRectanglesRequest()
+            let rectangles = VNDetectRectanglesRequest()
+            rectangles.maximumObservations = 5
+            rectangles.minimumConfidence = 0.55
+            rectangles.minimumSize = 0.12
 
             let handler = VNImageRequestHandler(
                 cvPixelBuffer: pixelBuffer,
@@ -28,7 +32,7 @@ final class CreativeSparkEngine {
             )
 
             do {
-                try handler.perform([saliency, face, human])
+                try handler.perform([saliency, face, human, rectangles])
 
                 if let observations = saliency.results?.first?.salientObjects {
                     let sorted = observations.sorted { $0.confidence > $1.confidence }
@@ -39,6 +43,21 @@ final class CreativeSparkEngine {
                             CGPoint(x: box.midX, y: 1 - box.midY),
                             scene == .macro ? .detail : .subject,
                             Double(observation.confidence)
+                        ))
+                    }
+                }
+
+                if let rectangleResults = rectangles.results {
+                    for rectangle in rectangleResults.prefix(3) {
+                        let box = rectangle.boundingBox
+                        let area = box.width * box.height
+
+                        guard area > 0.07, area < 0.72 else { continue }
+
+                        candidates.append((
+                            CGPoint(x: box.midX, y: 1 - box.midY),
+                            .frame,
+                            min(0.90, max(0.58, Double(rectangle.confidence)))
                         ))
                     }
                 }
@@ -104,11 +123,12 @@ final class CreativeSparkEngine {
             }
 
             if [.landscape, .street, .architecture, .automotive, .general]
-                .contains(scene) {
+                .contains(scene),
+               let foregroundPoint = Self.foregroundDetailPoint(in: pixelBuffer) {
                 candidates.append((
-                    CGPoint(x: 0.5, y: 0.84),
+                    foregroundPoint,
                     .foreground,
-                    0.52
+                    0.60
                 ))
             }
 
@@ -216,6 +236,9 @@ final class CreativeSparkEngine {
             case .foreground:
                 add(.addForeground, point: point)
 
+            case .frame:
+                add(.frameWithinFrame, point: point)
+
             case .symmetry:
                 add(.breakSymmetry, point: point)
 
@@ -267,12 +290,99 @@ final class CreativeSparkEngine {
         case .detail: 5
         case .negativeSpace: 4
         case .symmetry: 3
+        case .frame: 5
         case .foreground: 2
         }
     }
 
     private static func lineLength(_ line: NormalizedLine) -> CGFloat {
         hypot(line.end.x - line.start.x, line.end.y - line.start.y)
+    }
+
+    private static func foregroundDetailPoint(
+        in pixelBuffer: CVPixelBuffer
+    ) -> CGPoint? {
+        guard CVPixelBufferGetPlaneCount(pixelBuffer) > 0 else { return nil }
+
+        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+
+        guard let base = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0) else {
+            return nil
+        }
+
+        let width = CVPixelBufferGetWidthOfPlane(pixelBuffer, 0)
+        let height = CVPixelBufferGetHeightOfPlane(pixelBuffer, 0)
+        let stride = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0)
+        let pointer = base.assumingMemoryBound(to: UInt8.self)
+
+        guard width > 8, height > 8 else { return nil }
+
+        let columns = 8
+        let rows = 4
+        let startY = Int(Double(height) * 0.62)
+        let scanHeight = max(1, height - startY)
+
+        var samples: [(energy: Double, column: Int, row: Int)] = []
+        var totalEnergy = 0.0
+
+        for row in 0..<rows {
+            for column in 0..<columns {
+                let x = min(
+                    width - 2,
+                    max(
+                        1,
+                        (column * 2 + 1) * width / (columns * 2)
+                    )
+                )
+                let y = min(
+                    height - 2,
+                    max(
+                        1,
+                        startY
+                            + (row * 2 + 1) * scanHeight / (rows * 2)
+                    )
+                )
+
+                let center = Int(pointer[y * stride + x])
+                let left = Int(pointer[y * stride + x - 1])
+                let right = Int(pointer[y * stride + x + 1])
+                let up = Int(pointer[(y - 1) * stride + x])
+                let down = Int(pointer[(y + 1) * stride + x])
+
+                let localContrast =
+                    abs(right - left)
+                    + abs(down - up)
+                    + abs(center - left)
+                    + abs(center - right)
+
+                let energy = Double(localContrast) / (255.0 * 4.0)
+                samples.append((energy, column, row))
+                totalEnergy += energy
+            }
+        }
+
+        guard !samples.isEmpty else { return nil }
+
+        let average = totalEnergy / Double(samples.count)
+        guard let strongest = samples.max(by: { $0.energy < $1.energy }),
+              strongest.energy > max(0.12, average * 1.45) else {
+            return nil
+        }
+
+        let normalizedX =
+            (Double(strongest.column) + 0.5) / Double(columns)
+        let normalizedY =
+            Double(startY) / Double(height)
+            + (
+                (Double(strongest.row) + 0.5) / Double(rows)
+                * Double(scanHeight) / Double(height)
+            )
+
+        return CGPoint(
+            x: min(max(normalizedX, 0.08), 0.92),
+            y: min(max(normalizedY, 0.64), 0.92)
+        )
     }
 
     private static func interestingLightPoint(

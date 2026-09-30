@@ -7,7 +7,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.9.0 (9).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.9.1 (10).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -124,7 +124,7 @@ The geometric analysis is intentionally heuristic. It is guidance, not a claim t
 
 ### Creative Spark (optional)
 
-CapturePilot 0.9 adds a separate **on-demand creative-unblock scan**. Tapping ✦ analyzes one live frame, then stops. It can mark up to four evidence-backed creative anchors and show up to three exploratory ideas based on saliency, people, leading lines, vanishing geometry, light, symmetry, negative space, and scene context.
+CapturePilot 0.9.1 refines the separate **on-demand creative-unblock scan**. Tapping ✦ analyzes one live frame, then stops. It can mark up to four evidence-backed creative anchors and show up to three exploratory ideas based on saliency, people, leading lines, vanishing geometry, light, symmetry, negative space, detected frame-within-frame geometry, and real lower-frame detail that can act as foreground.
 
 Creative Spark never changes exposure, focus, lens, LUT, crop, or framing automatically. The photographer can rescan, dismiss it, or hide the ✦ control entirely through HUD customization. If no reliable point is found, CapturePilot does not fabricate a marker.
 
@@ -207,7 +207,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.9.0 (9)**.
+- Current version/build: **0.9.1 (10)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -329,7 +329,7 @@ El análisis geométrico es deliberadamente heurístico: es una ayuda fotográfi
 
 ### Chispa creativa (opcional)
 
-CapturePilot 0.9 agrega un **scan creativo bajo demanda** separado del Coach. Al tocar ✦ analiza un solo frame y se detiene. Puede mostrar hasta cuatro anchors con evidencia y hasta tres ideas de exploración basadas en saliencia, personas, líneas, punto de fuga, luz, simetría, espacio negativo y contexto de escena.
+CapturePilot 0.9.1 refina el **scan creativo bajo demanda** separado del Coach. Al tocar ✦ analiza un solo frame y se detiene. Puede mostrar hasta cuatro anchors con evidencia y hasta tres ideas basadas en saliencia, personas, líneas, punto de fuga, luz, simetría, espacio negativo, geometría real de frame-within-frame y detalle real en la zona baja que pueda funcionar como primer plano.
 
 Nunca cambia exposición, foco, lente, LUT, crop ni encuadre automáticamente. Puedes reescanear, cerrarlo u ocultar ✦ desde la personalización del HUD. Si no existe un punto fiable, no inventa un marcador.
 
@@ -412,7 +412,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.9.0 (9)**.
+- Versión/build actual: **0.9.1 (10)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.

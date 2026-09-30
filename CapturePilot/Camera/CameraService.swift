@@ -185,6 +185,7 @@ final class CameraService: NSObject, ObservableObject {
 
     func stop() {
         setFocusPeakingEnabled(false)
+        clearCreativeSpark()
 
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }

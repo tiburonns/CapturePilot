@@ -4,11 +4,13 @@
 
 ### Candidate
 
-CapturePilot 0.9.0 build 9 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.9.1 build 10 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
 The candidate also includes a persistent LUT library, private Top 5/10/25/50 Rankings with post-shot Coach review, and an optional iCloud/CloudKit friends-score layer that does not upload photos.
+
+For Creative Spark 0.9.1, specifically validate frame-within-frame false positives and lower-frame foreground alignment on real hardware.
 
 Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, CloudKit production configuration, or App Store acceptance.
 
@@ -100,7 +102,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirm **0.9.0 (9)**.
+- Confirm **0.9.1 (10)**.
 - Complete export compliance as requested.
 - Fill beta description, feedback contact, and review contact.
 - Start with Internal Testing.
@@ -114,7 +116,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Candidato
 
-CapturePilot 0.9.0 build 9 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.9.1 build 10 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
@@ -207,7 +209,7 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirma **0.9.0 (9)**.
+- Confirma **0.9.1 (10)**.
 - Completa export compliance.
 - Completa descripción beta y contactos.
 - Empieza con Internal Testing.

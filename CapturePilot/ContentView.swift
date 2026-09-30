@@ -137,6 +137,9 @@ struct ContentView: View {
         analysisObservationLayer
             .onChange(of: hud.configurations) { _, _ in
                 syncMonitoringHUD()
+                if !hud.isVisible(.creativeSpark) {
+                    camera.clearCreativeSpark()
+                }
             }
             .onChange(of: hud.isEditing) { _, editing in
                 if editing {

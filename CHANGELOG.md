@@ -1,5 +1,25 @@
 # Changelog / Registro de cambios
 
+## 0.9.1 — Creative Spark evidence refinement / Refinamiento de Chispa creativa
+
+### English
+- Detects rectangular scene structures as possible frame-within-frame anchors.
+- Adds a dedicated frame-within-frame exploratory prompt.
+- Replaces the previous generic lower-frame foreground suggestion with a lower-frame contrast/detail scan.
+- Foreground anchors now appear only when the analyzed frame contains sufficiently strong local detail.
+- Creative Spark clears when the camera session stops or its HUD control is hidden.
+- Remains strictly on-demand; no automatic exposure/focus/lens/LUT/crop/framing changes.
+- Version/build 0.9.1 (10).
+
+### Español
+- Detecta estructuras rectangulares como posibles marcos dentro del encuadre.
+- Agrega una sugerencia específica de frame-within-frame.
+- Sustituye el antiguo primer plano genérico por análisis real de contraste/detalle en la parte baja.
+- El anchor de primer plano sólo aparece cuando existe evidencia visual suficiente.
+- Chispa creativa se limpia al detener la cámara o esconder su control HUD.
+- Sigue siendo estrictamente bajo demanda y no modifica cámara/LUT/encuadre automáticamente.
+- Versión/build 0.9.1 (10).
+
 ## 0.9.0 — Creative Spark / Chispa creativa
 
 ### English
