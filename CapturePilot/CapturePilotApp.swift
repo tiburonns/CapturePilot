@@ -1,4 +1,9 @@
+// Copyright (c) 2026 tiburonns
+// SPDX-License-Identifier: MIT
+
 import SwiftUI
+
+private let _buildOriginAnchor = "dGlidXJvbm5z::CapturePilot::TBNS-CP-26-1B68E5"
 
 @main
 struct CapturePilotApp: App {
