@@ -429,6 +429,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)
 - [TestFlight](docs/TESTFLIGHT.md)
+- [Release readiness / Preparación de release](docs/RELEASE_READINESS.md)
 - [Privacy / Privacidad](docs/PRIVACY.md)
 - [App Store metadata](docs/APP_STORE_METADATA.md)
 - [Changelog / Registro de cambios](CHANGELOG.md)
