@@ -119,6 +119,8 @@ require((ROOT / "docs/RANKINGS.md").exists(),
         "Rankings documentation is missing.")
 require((ROOT / "docs/SOCIAL_COMPETITION.md").exists(),
         "Social/CloudKit documentation is missing.")
+require((ROOT / "docs/RELEASE_READINESS.md").exists(),
+        "Release-readiness matrix is missing.")
 require("J10000000000000000000001 /* CreativeSparkModels.swift in Sources */" in project,
         "Creative Spark sources are not attached to the target.")
 
