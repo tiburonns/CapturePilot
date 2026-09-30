@@ -1,6 +1,6 @@
 # Creative Spark / Chispa creativa
 
-CapturePilot 0.9 adds **Creative Spark**, an optional, on-demand ideation layer for moments when the photographer wants another way to look at the scene.
+CapturePilot 0.9.1 refines **Creative Spark**, an optional, on-demand ideation layer for moments when the photographer wants another way to look at the scene.
 
 Creative Spark is deliberately separate from the Coach.
 
@@ -39,7 +39,8 @@ A scan can use:
 - strong symmetry;
 - a locally bright preview region that is above the frame average but below clipping;
 - estimated negative space;
-- an optional lower-frame foreground anchor for scene types where layering can be useful.
+- detected rectangular structures that can support a frame-within-frame idea;
+- a lower-frame foreground anchor only when local contrast/detail provides real visual evidence.
 
 Creative Spark selects distinct anchors and caps the visible set at four.
 
@@ -55,7 +56,8 @@ Current ideas include:
 - place the subject where a line leads;
 - build around a pocket of light;
 - intentionally preserve negative space;
-- introduce a foreground layer;
+- use a detected lower-frame detail as a foreground layer;
+- use a detected rectangle/structure as a frame within the frame;
 - deliberately break strong symmetry;
 - lower the camera;
 - change camera height;
@@ -104,6 +106,8 @@ The markers are **possible creative anchors**, not a correctness map.
 - HUD editing clears the scan;
 - no automatic exposure/focus/lens/LUT/crop changes;
 - no invented marker when no signal exists;
+- rectangle candidates exclude near-full-frame detections;
+- foreground points require measurable lower-frame local contrast/detail;
 - scan does not noticeably interrupt preview/capture;
 - prompts remain useful across General, Portrait, Architecture, Automotive, Macro, Street, Landscape, and Night.
 
@@ -156,7 +160,8 @@ No inventa marcadores para rellenar la pantalla. Si no existe suficiente evidenc
 - aprovechar una línea;
 - construir alrededor de una zona de luz;
 - preservar espacio negativo;
-- añadir una capa de primer plano;
+- usar un detalle detectado como primera capa;
+- usar una estructura detectada como marco dentro del encuadre;
 - romper simetría deliberadamente;
 - bajar la cámara;
 - cambiar altura;

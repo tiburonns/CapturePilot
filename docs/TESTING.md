@@ -147,6 +147,19 @@ On every lens where RAW+JPG becomes available:
 - [ ] CloudKit unavailable/not-authenticated state is controlled and does not break local Rankings.
 - [ ] Test two real devices/accounts after production schema/index deployment.
 
+### Creative Spark 0.9.1 refinement
+
+- [ ] Windows/doorways/architectural rectangles can produce a frame-within-frame anchor when appropriate.
+- [ ] Near-full-frame rectangles do not become misleading frame-within-frame anchors.
+- [ ] Flat/empty lower frame does not create a foreground marker.
+- [ ] A strong textured/contrasty lower-frame object can create a foreground anchor.
+- [ ] Foreground point lines up with the actual lower-frame detail after aspect-fill.
+- [ ] Frame-within-frame prompt references the numbered rectangle point.
+- [ ] Hiding Creative Spark in Customize HUD clears existing points.
+- [ ] Backgrounding/stopping the camera clears existing points.
+- [ ] Scan remains one-shot and does not become continuous processing.
+- [ ] No camera setting changes occur when scanning or accepting an idea.
+
 ### Manual controls
 
 - [ ] Unsupported controls are absent.
@@ -249,7 +262,7 @@ Test all eight scene modes and record false positives, false negatives, and time
 
 - [ ] Product > Archive.
 - [ ] Validate App.
-- [ ] Version/build is 0.9.0 (9).
+- [ ] Version/build is 0.9.1 (10).
 - [ ] App Store Connect processes the binary.
 - [ ] Internal TestFlight install launches and captures.
 - [ ] Crash-free smoke test.
@@ -398,6 +411,19 @@ En cada lente donde RAW+JPG esté disponible:
 - [ ] CloudKit no disponible no rompe ranking local.
 - [ ] Prueba final con dos dispositivos/cuentas tras desplegar schema/índices.
 
+### Refinamiento Chispa creativa 0.9.1
+
+- [ ] Ventanas/puertas/rectángulos pueden producir frame-within-frame cuando corresponde.
+- [ ] Rectángulos casi del tamaño del frame no se presentan como anchors engañosos.
+- [ ] Parte baja plana/vacía no genera primer plano.
+- [ ] Objeto inferior con detalle/contraste suficiente sí puede generar anchor.
+- [ ] Punto de foreground coincide con el detalle real tras aspect-fill.
+- [ ] El prompt frame-within-frame referencia el punto numerado correcto.
+- [ ] Ocultar Chispa creativa limpia el resultado.
+- [ ] Background/detener cámara limpia el resultado.
+- [ ] El scan sigue siendo one-shot, no procesamiento continuo.
+- [ ] El scan nunca cambia parámetros de cámara.
+
 ### Controles manuales
 
 - [ ] Controles no soportados no aparecen.
@@ -519,7 +545,7 @@ Prueba los ocho modos y registra falsos positivos, falsos negativos y tiempo has
 
 - [ ] Archive.
 - [ ] Validate App.
-- [ ] 0.9.0 (9).
+- [ ] 0.9.1 (10).
 - [ ] App Store Connect procesa.
 - [ ] TestFlight interno.
 - [ ] Smoke test sin crashes.

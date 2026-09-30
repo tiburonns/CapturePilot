@@ -163,6 +163,17 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate prompt usefulness with varied real scenes.
 - [ ] Validate performance/thermal impact of repeated scans.
 
+### 0.9.1 — Creative Spark evidence refinement
+
+- [x] Rectangle/frame-within-frame candidate detection.
+- [x] Dedicated frame-within-frame prompt.
+- [x] Evidence-backed lower-frame foreground detection.
+- [x] Remove the generic fixed foreground point.
+- [x] Clear scan when session stops or Creative Spark HUD control is hidden.
+- [ ] Validate rectangle false-positive rate on real architecture/street/interior scenes.
+- [ ] Validate foreground anchors across portrait/landscape orientations and physical lenses.
+- [ ] Validate point alignment after aspect-fill crop and rotation.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -351,6 +362,17 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar alineación física por lente/orientación.
 - [ ] Validar utilidad de ideas con escenas reales.
 - [ ] Validar rendimiento/temperatura con scans repetidos.
+
+### 0.9.1 — Refinamiento de Chispa creativa
+
+- [x] Detección de candidatos frame-within-frame.
+- [x] Prompt específico para marco dentro del encuadre.
+- [x] Primer plano respaldado por detalle/contraste real.
+- [x] Eliminado el punto fijo/genérico de primer plano.
+- [x] Limpieza al detener sesión u ocultar el control HUD.
+- [ ] Validar falsos positivos de rectángulos en escenas reales.
+- [ ] Validar anchors de foreground por orientación/lente.
+- [ ] Validar alineación tras crop aspect-fill y rotación.
 
 ### Gates pendientes
 

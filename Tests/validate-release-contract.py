@@ -27,8 +27,8 @@ testflight = read("docs/TESTFLIGHT.md")
 
 versions = set(re.findall(r"MARKETING_VERSION = ([^;]+);", project))
 builds = set(re.findall(r"CURRENT_PROJECT_VERSION = ([^;]+);", project))
-require(versions == {"0.9.0"}, f"Expected one marketing version 0.9.0, found {sorted(versions)}")
-require(builds == {"9"}, f"Expected one build number 9, found {sorted(builds)}")
+require(versions == {"0.9.1"}, f"Expected one marketing version 0.9.1, found {sorted(versions)}")
+require(builds == {"10"}, f"Expected one build number 10, found {sorted(builds)}")
 
 require(info.get("ITSAppUsesNonExemptEncryption") is False,
         "ITSAppUsesNonExemptEncryption must remain false unless encryption behavior changes.")
@@ -51,9 +51,9 @@ require("NSPrivacyCollectedDataTypeUserID" in collected,
 require("NSPrivacyCollectedDataTypeOtherUserContent" in collected,
         "Privacy manifest must disclose synchronized score/user-content metadata.")
 
-for token in ("0.9.0 (9)", "English", "Español"):
+for token in ("0.9.1 (10)", "English", "Español"):
     require(token in readme, f"README missing release/localization token: {token}")
-for token in ("0.9.0 build 9", "## English", "## Español"):
+for token in ("0.9.1 build 10", "## English", "## Español"):
     require(token in testflight, f"TestFlight guide missing token: {token}")
 
 require((ROOT / "LICENSE").exists(), "LICENSE is required for the public repository.")
@@ -68,4 +68,4 @@ if failures:
         print(f" - {failure}")
     sys.exit(1)
 
-print("CapturePilot release contract OK: 0.9.0 (9)")
+print("CapturePilot release contract OK: 0.9.1 (10)")
