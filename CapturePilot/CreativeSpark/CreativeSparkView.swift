@@ -177,8 +177,12 @@ struct CreativeSparkControl: View {
                 : "Leave this area intentionally empty and make the space part of the story."
         case .addForeground:
             return es
-                ? "Busca algo cerca de la cámara para crear una primera capa."
-                : "Find something close to the camera to create a foreground layer."
+                ? "Usa este detalle cercano como primera capa para dar profundidad."
+                : "Use this nearby detail as a foreground layer to add depth."
+        case .frameWithinFrame:
+            return es
+                ? "Prueba usar esta forma como marco dentro del encuadre."
+                : "Try using this shape as a frame within the frame."
         case .breakSymmetry:
             return es
                 ? "La simetría es fuerte; prueba romperla con un solo elemento."
