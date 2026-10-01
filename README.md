@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Design/AppIcon-Source.png" width="180" alt="CapturePilot app icon">
+</p>
+
 # CapturePilot
 
 **Professional photography, guided — not automated.**  
