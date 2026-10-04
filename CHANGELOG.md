@@ -1,5 +1,27 @@
 # Changelog / Registro de cambios
 
+## 0.9.2 — Optional CloudKit startup safety / CloudKit opcional y arranque seguro
+
+### English
+- CloudKit is no longer initialized at app startup.
+- `CKContainer` is lazy and social entry points are guarded.
+- Default project target no longer attaches iCloud/CloudKit entitlements.
+- Friends Rankings is hidden when `CAPTUREPILOT_CLOUDKIT` is not compiled in.
+- Stale social/share-score preferences are reset in non-CloudKit builds.
+- Core camera, Coach, Creative Spark, LUTs, RAW+Share JPEG and private Rankings remain available.
+- Added documentation for enabling CloudKit later with a compatible Apple Developer setup.
+- Version/build 0.9.2 (11).
+
+### Español
+- CloudKit ya no se inicializa al arrancar la app.
+- `CKContainer` es lazy y las funciones sociales están protegidas.
+- El target por defecto ya no adjunta entitlements iCloud/CloudKit.
+- Amigos se oculta cuando `CAPTUREPILOT_CLOUDKIT` no está compilado.
+- Estados sociales antiguos se limpian de forma segura.
+- Cámara, Coach, Chispa creativa, LUTs, RAW+Share y Ranking privado siguen disponibles.
+- Documentación para activar CloudKit más adelante con una configuración Apple Developer compatible.
+- Versión/build 0.9.2 (11).
+
 ## 0.9.1 — Creative Spark evidence refinement / Refinamiento de Chispa creativa
 
 ### English
