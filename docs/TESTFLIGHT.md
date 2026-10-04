@@ -4,7 +4,7 @@
 
 ### Candidate
 
-CapturePilot 0.9.1 build 10 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.9.2 build 11 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
@@ -67,6 +67,22 @@ Before Archive:
 - verify no camera parameter changes after a Creative Spark scan;
 - repeat scans while monitoring preview responsiveness.
 
+### Personal Team / no-CloudKit smoke test
+
+Before any TestFlight/social work, validate the default build **without iCloud/CloudKit entitlements**:
+
+- [ ] App reaches the first camera screen instead of terminating at launch.
+- [ ] Camera permission flow works.
+- [ ] Live Coach works.
+- [ ] Creative Spark works.
+- [ ] LUT library works.
+- [ ] RAW/JPEG workflow remains available when hardware supports it.
+- [ ] Private Rankings opens and imports/analyzes photos.
+- [ ] Friends button is hidden.
+- [ ] No `CKContainer`/iCloud entitlement error appears in the console.
+
+This is the expected configuration for Personal Team/free-device testing.
+
 ### Rankings acceptance
 
 Before Archive, verify on a physical iPhone:
@@ -113,7 +129,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirm **0.9.1 (10)**.
+- Confirm **0.9.2 (11)**.
 - Complete export compliance as requested.
 - Fill beta description, What to Test, feedback email, and review contact.
 - Complete the current age-rating questionnaire.
@@ -129,7 +145,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Candidato
 
-CapturePilot 0.9.1 build 10 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.9.2 build 11 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
@@ -187,6 +203,22 @@ Antes del Archive:
 - confirmar que no cambia parámetros de cámara;
 - repetir scans y observar fluidez del preview.
 
+### Smoke test Personal Team / sin CloudKit
+
+Antes de TestFlight/social valida la build por defecto **sin entitlements iCloud/CloudKit**:
+
+- [ ] La app llega a la cámara y no se cierra al arrancar.
+- [ ] Permiso de cámara correcto.
+- [ ] Coach funciona.
+- [ ] Chispa creativa funciona.
+- [ ] Biblioteca LUT funciona.
+- [ ] RAW/JPEG sigue disponible cuando el hardware lo soporta.
+- [ ] Ranking privado abre/importa/analiza.
+- [ ] El botón Amigos está oculto.
+- [ ] No aparecen errores de entitlement/`CKContainer` en consola.
+
+Esta es la configuración esperada para pruebas con Personal Team.
+
 ### Aceptación del Ranking
 
 Antes del Archive verifica en iPhone real:
@@ -233,7 +265,7 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirma **0.9.1 (10)**.
+- Confirma **0.9.2 (11)**.
 - Completa export compliance.
 - Completa descripción beta, Qué probar, email de feedback y contacto de review.
 - Completa el cuestionario vigente de age rating.

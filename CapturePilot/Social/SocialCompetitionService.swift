@@ -44,7 +44,17 @@ final class SocialCompetitionService: ObservableObject {
         }
     }
 
-    private let container = CKContainer(identifier: "iCloud.com.tiburonns.CapturePilot")
+    static var isCloudKitCompiledIn: Bool {
+        #if CAPTUREPILOT_CLOUDKIT
+        true
+        #else
+        false
+        #endif
+    }
+
+    var isAvailable: Bool { Self.isCloudKitCompiledIn }
+
+    private lazy var container = CKContainer(identifier: "iCloud.com.tiburonns.CapturePilot")
     private var publicDatabase: CKDatabase { container.publicCloudDatabase }
     private var privateDatabase: CKDatabase { container.privateCloudDatabase }
 
@@ -55,10 +65,27 @@ final class SocialCompetitionService: ObservableObject {
     )
 
     init() {
-        shareScores = UserDefaults.standard.bool(forKey: Self.shareScoresKey)
+        if Self.isCloudKitCompiledIn {
+            shareScores = UserDefaults.standard.bool(forKey: Self.shareScoresKey)
+        } else {
+            shareScores = false
+            UserDefaults.standard.set(false, forKey: Self.shareScoresKey)
+            UserDefaults.standard.set(false, forKey: Self.socialEnabledKey)
+        }
+    }
+
+    private func requireCloudKit() -> Bool {
+        guard Self.isCloudKitCompiledIn else {
+            shareScores = false
+            errorDescription =
+                "Friends Rankings are unavailable in this build. Camera, Coach, LUTs, Creative Spark, and local Rankings still work normally."
+            return false
+        }
+        return true
     }
 
     func restoreIfPossible() async {
+        guard requireCloudKit() else { return }
         guard UserDefaults.standard.bool(forKey: Self.socialEnabledKey) else {
             return
         }
@@ -66,11 +93,16 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func enableSocial() async {
+        guard requireCloudKit() else { return }
         UserDefaults.standard.set(true, forKey: Self.socialEnabledKey)
         await connect(createIdentity: true)
     }
 
     func deleteSocialProfile() async {
+        guard requireCloudKit() else {
+            clearLocalSocialState()
+            return
+        }
         guard let me = profile else {
             clearLocalSocialState()
             return
@@ -117,6 +149,7 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func sendFriendRequest(username rawUsername: String) async {
+        guard requireCloudKit() else { return }
         guard let me = profile else { return }
 
         let username = rawUsername
@@ -180,6 +213,7 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func accept(_ request: SocialFriendRequest) async {
+        guard requireCloudKit() else { return }
         guard let me = profile else { return }
 
         isBusy = true
@@ -199,6 +233,7 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func remove(_ friend: SocialFriend) async {
+        guard requireCloudKit() else { return }
         guard let me = profile else { return }
 
         do {
@@ -227,6 +262,10 @@ final class SocialCompetitionService: ObservableObject {
         _ enabled: Bool,
         entries: [PhotoRankingEntry]
     ) async {
+        guard requireCloudKit() else {
+            shareScores = false
+            return
+        }
         shareScores = enabled
 
         if enabled {
@@ -237,6 +276,7 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func syncBestScores(entries: [PhotoRankingEntry]) async {
+        guard requireCloudKit() else { return }
         guard shareScores, let me = profile else { return }
 
         let currentEntries = entries.filter {
@@ -285,12 +325,14 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func refresh() async {
+        guard requireCloudKit() else { return }
         guard profile != nil else { return }
         await loadFriendsAndRequests()
         await loadLeaderboard()
     }
 
     private func connect(createIdentity: Bool) async {
+        guard requireCloudKit() else { return }
         isBusy = true
         defer { isBusy = false }
 

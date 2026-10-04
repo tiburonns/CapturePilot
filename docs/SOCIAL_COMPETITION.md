@@ -180,7 +180,9 @@ CapturePilot 0.8 intentionally syncs scores, not photos.
 
 ## Apple Developer / CloudKit setup
 
-The source code can compile before these services are configured, but the social feature cannot be considered physically/TestFlight validated until the Apple Developer resources are ready.
+The repository's **default build compiles the social UI/service in a disabled mode** and does not initialize CloudKit. This keeps Personal Team/free-device builds safe.
+
+The social feature is compiled in only when `CAPTUREPILOT_CLOUDKIT` is added to Swift Active Compilation Conditions and the target is signed with matching iCloud/CloudKit entitlements. It cannot be considered physically/TestFlight validated until those Apple Developer resources are ready.
 
 ### App ID capabilities
 
@@ -201,7 +203,7 @@ Container:
 iCloud.com.tiburonns.CapturePilot
 ```
 
-The Xcode target contains matching entitlements.
+The repository includes `CapturePilot/CapturePilot.entitlements` as a template, but **0.9.2 does not attach it to the target by default**. See [CLOUDKIT_OPTIONAL.md](CLOUDKIT_OPTIONAL.md).
 
 ### Development schema
 
@@ -356,6 +358,8 @@ En CloudKit Console verifica índices QUERYABLE:
 
 **RankingScore**
 - ownerID
+
+El repo incluye `CapturePilot/CapturePilot.entitlements` como plantilla, pero **0.9.2 no lo adjunta al target por defecto**. También debe añadirse la condición `CAPTUREPILOT_CLOUDKIT`. Consulta [CLOUDKIT_OPTIONAL.md](CLOUDKIT_OPTIONAL.md).
 
 Después despliega el schema probado al entorno de producción antes de considerar lista la función social para distribución.
 

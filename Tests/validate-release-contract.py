@@ -27,8 +27,8 @@ testflight = read("docs/TESTFLIGHT.md")
 
 versions = set(re.findall(r"MARKETING_VERSION = ([^;]+);", project))
 builds = set(re.findall(r"CURRENT_PROJECT_VERSION = ([^;]+);", project))
-require(versions == {"0.9.1"}, f"Expected one marketing version 0.9.1, found {sorted(versions)}")
-require(builds == {"10"}, f"Expected one build number 10, found {sorted(builds)}")
+require(versions == {"0.9.2"}, f"Expected one marketing version 0.9.2, found {sorted(versions)}")
+require(builds == {"11"}, f"Expected one build number 11, found {sorted(builds)}")
 
 require(info.get("ITSAppUsesNonExemptEncryption") is False,
         "ITSAppUsesNonExemptEncryption must remain false unless encryption behavior changes.")
@@ -69,8 +69,12 @@ require(
     "Expected iOS 17.0 minimum deployment target."
 )
 require(
-    "CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;" in project,
-    "Release target must include CapturePilot.entitlements."
+    "CODE_SIGN_ENTITLEMENTS = CapturePilot/CapturePilot.entitlements;" not in project,
+    "Default 0.9.2 target must not attach CloudKit entitlements."
+)
+require(
+    "CAPTUREPILOT_CLOUDKIT" not in project,
+    "Default 0.9.2 target must not compile the CloudKit social feature."
 )
 require(
     "ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;" in project,
@@ -100,9 +104,9 @@ require(
     "Privacy manifest must declare UserDefaults reason CA92.1."
 )
 
-for token in ("0.9.1 (10)", "English", "Español"):
+for token in ("0.9.2 (11)", "English", "Español"):
     require(token in readme, f"README missing release/localization token: {token}")
-for token in ("0.9.1 build 10", "## English", "## Español"):
+for token in ("0.9.2 build 11", "## English", "## Español"):
     require(token in testflight, f"TestFlight guide missing token: {token}")
 
 require((ROOT / "LICENSE").exists(), "LICENSE is required for the public repository.")
@@ -121,6 +125,8 @@ require((ROOT / "docs/SOCIAL_COMPETITION.md").exists(),
         "Social/CloudKit documentation is missing.")
 require((ROOT / "docs/RELEASE_READINESS.md").exists(),
         "Release-readiness matrix is missing.")
+require((ROOT / "docs/CLOUDKIT_OPTIONAL.md").exists(),
+        "Optional CloudKit build documentation is missing.")
 require("J10000000000000000000001 /* CreativeSparkModels.swift in Sources */" in project,
         "Creative Spark sources are not attached to the target.")
 
@@ -130,4 +136,4 @@ if failures:
         print(f" - {failure}")
     sys.exit(1)
 
-print("CapturePilot release contract OK: 0.9.1 (10)")
+print("CapturePilot release contract OK: 0.9.2 (11), CloudKit optional")

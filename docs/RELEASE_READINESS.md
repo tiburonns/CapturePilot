@@ -1,6 +1,6 @@
 # TestFlight Release Readiness / Preparación para TestFlight
 
-**Candidate:** CapturePilot 0.9.1 (Build 10)
+**Candidate:** CapturePilot 0.9.2 (Build 11)
 
 This document separates what the repository can prove automatically from what still requires a signed Apple distribution build, physical camera hardware, or App Store Connect configuration.
 
@@ -19,8 +19,10 @@ The following are release gates and must be green before merging to `main`:
 - iOS 26 SDK or later.
 - Valid Info.plist.
 - Valid PrivacyInfo.xcprivacy.
-- Valid CapturePilot.entitlements.
-- Version/build fixed to 0.9.1 (10).
+- Valid CapturePilot.entitlements template for the optional social build.
+- Default target does **not** attach CloudKit entitlements.
+- Default target does **not** define `CAPTUREPILOT_CLOUDKIT`.
+- Version/build fixed to 0.9.2 (11).
 - Bundle ID `com.tiburonns.CapturePilot`.
 - iPhone-only target.
 - iOS 17 minimum deployment target.
@@ -28,8 +30,8 @@ The following are release gates and must be green before merging to `main`:
 - Four declared interface orientations.
 - 1024 App Store icon source.
 - Camera and Photo Library add-only permission descriptions.
-- iCloud/CloudKit entitlement.
-- Privacy disclosure for pseudonymous social User ID and score/user-content metadata.
+- Personal-Team-safe startup without iCloud/CloudKit entitlements.
+- Privacy disclosure for the optional future social build remains documented.
 - UserDefaults required-reason API declaration CA92.1.
 - Deterministic LUT recommendation tests.
 - Release documentation for Rankings, Friends/CloudKit, and Creative Spark.
@@ -78,15 +80,21 @@ Must verify on-device:
 
 ### Apple Developer / signing gates
 
-The repository cannot prove these because they depend on the developer account:
+For the **default non-CloudKit build**, core device testing can use a Personal Team. CloudKit/Friends is not part of that build.
 
-- paid Apple Developer Team selected in Xcode;
+For a future Friends-enabled distribution build:
+
+- a compatible Apple Developer Team is required;
 - App ID exists for `com.tiburonns.CapturePilot`;
-- iCloud + CloudKit capability enabled for that App ID;
+- iCloud + CloudKit are enabled;
 - container `iCloud.com.tiburonns.CapturePilot` exists and is assigned;
-- distribution provisioning profile contains the expected CloudKit entitlements;
+- `CapturePilot.entitlements` is attached to the target;
+- `CAPTUREPILOT_CLOUDKIT` is added to Swift Active Compilation Conditions;
+- provisioning contains the expected CloudKit entitlements;
 - Product > Archive succeeds with signing enabled;
 - Organizer > Validate App succeeds.
+
+See `docs/CLOUDKIT_OPTIONAL.md`.
 
 ### CloudKit gates
 
@@ -172,7 +180,7 @@ Antes de fusionar a `main` deben quedar verdes:
 - Info.plist válido.
 - Privacy Manifest válido.
 - entitlements válidos.
-- versión/build 0.9.1 (10).
+- versión/build 0.9.2 (11).
 - bundle ID `com.tiburonns.CapturePilot`.
 - target sólo iPhone.
 - mínimo iOS 17.
@@ -230,15 +238,21 @@ Validar:
 
 ### Apple Developer / firma
 
-Requiere tu cuenta Apple:
+La build por defecto sin CloudKit puede probarse en dispositivo con Personal Team.
 
-- Team de pago seleccionado;
-- App ID de `com.tiburonns.CapturePilot`;
+Para una futura build con Amigos:
+
+- Team Apple Developer compatible;
+- App ID `com.tiburonns.CapturePilot`;
 - iCloud + CloudKit activados;
 - contenedor `iCloud.com.tiburonns.CapturePilot`;
-- provisioning de distribución con entitlements correctos;
-- Product > Archive firmado;
-- Organizer > Validate App sin errores.
+- `CapturePilot.entitlements` adjunto al target;
+- `CAPTUREPILOT_CLOUDKIT` en Swift Active Compilation Conditions;
+- provisioning con entitlements correctos;
+- Archive firmado;
+- Validate App sin errores.
+
+Consulta `docs/CLOUDKIT_OPTIONAL.md`.
 
 ### CloudKit
 

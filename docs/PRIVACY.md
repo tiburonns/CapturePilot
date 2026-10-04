@@ -80,6 +80,12 @@ Because the optional Friends feature writes pseudonymous identity/score metadata
 
 This declaration applies to the optional social layer; it does not mean camera frames or ranking thumbnails are uploaded.
 
+### Build-dependent social behavior
+
+In the default 0.9.2 build, `CAPTUREPILOT_CLOUDKIT` is absent and no iCloud entitlement is attached. CapturePilot does not construct a CloudKit container and does not transmit social metadata.
+
+The privacy manifest currently keeps the optional Friends metadata declarations so the repository also documents the intended CloudKit distribution feature. Before App Store submission, App Privacy answers and the bundled manifest must be reviewed against the exact feature set compiled into that submitted binary.
+
 ### Local preferences
 
 UserDefaults stores app-local settings such as language, guide, coach intensity/scene, orientation policy, HUD layout, LUT recommendation preference, external-folder bookmark data, and active LUT identifiers/names.
@@ -88,7 +94,7 @@ UserDefaults stores app-local settings such as language, guide, coach intensity/
 
 - Tracking: false.
 - Tracking domains: none.
-- Collected data types: none.
+- User ID and Other User Content are declared conservatively for the optional Friends/CloudKit distribution build; they are not transmitted by the default non-CloudKit build.
 - Required Reason API: UserDefaults / CA92.1.
 
 If networking, accounts, analytics, crash SDKs, cloud AI, or additional Required Reason APIs are added later, this document and the manifest must be reviewed before release.
@@ -175,6 +181,12 @@ Como Amigos opcional sincroniza identidad pseudónima y metadata de score en Clo
 - Other User Content — vinculado, sin tracking, funcionalidad.
 
 Esto corresponde a la capa social opcional; no significa que se suban frames de cámara ni miniaturas del Ranking.
+
+### Comportamiento social según la build
+
+En la build por defecto 0.9.2 no existe `CAPTUREPILOT_CLOUDKIT` ni entitlement iCloud adjunto. CapturePilot no crea un contenedor CloudKit ni transmite metadata social.
+
+El Privacy Manifest conserva por ahora las declaraciones de la función Amigos opcional para documentar también la futura build CloudKit. Antes de App Store debe revisarse el manifest y App Privacy contra las funciones exactas incluidas en el binario enviado.
 
 ### Preferencias
 
