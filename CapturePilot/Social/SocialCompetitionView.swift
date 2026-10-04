@@ -17,7 +17,9 @@ struct SocialCompetitionView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let profile = social.profile {
+                if !social.isAvailable {
+                    unavailableSocial
+                } else if let profile = social.profile {
                     signedIn(profile)
                 } else {
                     enableSocial
@@ -48,6 +50,29 @@ struct SocialCompetitionView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var unavailableSocial: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "icloud.slash")
+                .font(.system(size: 54))
+
+            Text(localized(
+                "Friends Rankings are not included in this build.",
+                "El ranking de amigos no está incluido en esta compilación."
+            ))
+            .font(.headline)
+            .multilineTextAlignment(.center)
+
+            Text(localized(
+                "CapturePilot still provides the complete camera, Coach, Creative Spark, LUT workflow, and private local Rankings. CloudKit can be enabled later in a developer build with the required Apple capabilities.",
+                "CapturePilot mantiene completa la cámara, Coach, Chispa creativa, LUTs y Ranking privado local. CloudKit puede activarse después en una compilación de desarrollador con las capabilities de Apple necesarias."
+            ))
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+        }
+        .padding(28)
     }
 
     private var enableSocial: some View {
