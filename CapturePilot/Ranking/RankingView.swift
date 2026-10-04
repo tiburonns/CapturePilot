@@ -109,12 +109,14 @@ struct RankingView: View {
                     }
                     .accessibilityLabel(localized("Import photos", "Importar fotos"))
 
-                    Button {
-                        showingSocial = true
-                    } label: {
-                        Image(systemName: "person.2.fill")
+                    if social.isAvailable {
+                        Button {
+                            showingSocial = true
+                        } label: {
+                            Image(systemName: "person.2.fill")
+                        }
+                        .accessibilityLabel(localized("Friends", "Amigos"))
                     }
-                    .accessibilityLabel(localized("Friends", "Amigos"))
                 }
             }
             .onChange(of: pickerItems) { _, items in
