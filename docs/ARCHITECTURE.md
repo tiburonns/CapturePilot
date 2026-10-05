@@ -110,22 +110,27 @@ The live scene mode is used only as a fallback category hint when post-shot anal
 
 See [RANKINGS.md](RANKINGS.md).
 
-### Social score architecture
+### Optional account + social score architecture
 
-The optional social layer is intentionally separate from photo storage.
+The account layer is intentionally separate from camera startup and photo storage.
 
-`SocialCompetitionService` uses:
-- a random social identity stored in the user's private CloudKit database;
-- an automatic PILOT-* username derived from that private identity;
-- CloudKit public-database records for the minimal discoverable profile, friend request/acceptance edges and best scores.
+`SocialCompetitionService` does not configure Firebase when the app launches. Configuration is attempted only when Account & Friends opens and a valid bundled Firebase configuration exists.
+
+Identity:
+- Firebase Authentication UID is canonical;
+- Apple and Google are supported providers;
+- the second provider can be explicitly linked to the same UID;
+- the automatic PILOT-* username is derived from that UID.
+
+Firestore stores only the minimal discoverable profile, friendship state, and best-score metadata.
 
 Only the current user's best **CapturePilot-capture** score per category is eligible for social sync. Imported images never contribute to the friends leaderboard.
 
-No image asset is stored in CloudKit in 0.8.
+No image asset is stored in Firestore.
 
-The current client-side model is suitable for friendly comparison but is not anti-cheat certified.
+The current client-side score model is suitable for friendly comparison but is not anti-cheat certified.
 
-See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+See [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) and [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Lens model
 
@@ -343,22 +348,27 @@ El modo de escena sólo actúa como fallback si el análisis post-shot no encuen
 
 Consulta [RANKINGS.md](RANKINGS.md).
 
-### Arquitectura social de scores
+### Arquitectura opcional de cuenta + scores
 
-La capa social opcional está separada del almacenamiento fotográfico.
+La capa de cuenta está separada del inicio de cámara y del almacenamiento fotográfico.
 
-`SocialCompetitionService` usa:
-- identidad social aleatoria almacenada en la base privada de CloudKit del usuario;
-- username automático PILOT-* derivado de esa identidad;
-- CloudKit público para perfil mínimo descubrible, solicitud/aceptación de amistad y mejores scores.
+`SocialCompetitionService` no configura Firebase al abrir la app. Sólo lo intenta al entrar a Cuenta y amigos y cuando existe configuración Firebase válida.
+
+Identidad:
+- Firebase UID canónico;
+- proveedores Apple y Google;
+- vinculación explícita del segundo proveedor al mismo UID;
+- username PILOT-* derivado del UID.
+
+Firestore guarda perfil mínimo, amistad y mejores scores.
 
 Sólo mejores scores de **capturas hechas en CapturePilot** pueden sincronizarse. Las importaciones nunca suben al ranking social.
 
-0.8 no guarda imágenes en CloudKit.
+Firestore no guarda imágenes.
 
-Es competencia amistosa, no un sistema anti-cheat certificado.
+Es competencia amistosa, no anti-cheat certificado.
 
-Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+Consulta [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) y [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Lentes
 
