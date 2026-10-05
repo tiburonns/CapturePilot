@@ -211,7 +211,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - No account is required for camera, Coach, LUT, or private Rankings.
 - No ads.
 - No third-party analytics SDK.
-- No CapturePilot-operated cloud service; optional Friends uses Apple's iCloud/CloudKit.
+- Optional Account & Friends uses Firebase Authentication/Firestore only after the user opens that section and signs in.
 - No live-frame upload.
 - Coach, Creative Spark, geometry analysis, Focus Peaking, Zebras, histogram, False Color, Waveform, RGB Parade, Vectorscope, LUT parsing/profiling, and LUT recommendations run on-device.
 - External LUT folders are read only after the photographer explicitly selects one through the system Files picker.
@@ -426,7 +426,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - Cámara, Coach, LUT y Ranking privado no requieren cuenta.
 - Sin publicidad.
 - Sin SDK de analítica de terceros.
-- Sin nube operada por CapturePilot; Amigos opcional usa iCloud/CloudKit de Apple.
+- Cuenta y amigos usa Firebase Authentication/Firestore sólo después de que la persona abra esa sección e inicie sesión.
 - Sin subida de frames.
 - Coach, Chispa creativa, geometría, Focus Peaking, Cebras, histograma, False Color, Waveform, RGB Parade, Vectorscope, parseo/perfilado LUT y recomendaciones LUT son locales.
 - Las carpetas LUT externas sólo se leen después de que el fotógrafo seleccione una explícitamente mediante el selector de Archivos.
@@ -450,7 +450,6 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [Photo Rankings / Ranking de fotos](docs/RANKINGS.md)
 - [Friends + social scores / Amigos + scores sociales](docs/SOCIAL_COMPETITION.md)
 - [Accounts / Cuentas](docs/ACCOUNTS_FIREBASE.md)
-- [Optional CloudKit build / Build opcional con CloudKit](docs/CLOUDKIT_OPTIONAL.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
 - [UI layout / Pantalla completa](docs/UI_LAYOUT.md)
@@ -462,7 +461,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 
 ## Technology
 
-SwiftUI · AVFoundation · Vision · Photos · Core Video · Core Image · Files / security-scoped access
+SwiftUI · AVFoundation · Vision · Photos · Core Video · Core Image · Files / security-scoped access · Firebase Auth · Firestore · Google Sign-In
 
 ## License / Licencia
 
