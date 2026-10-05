@@ -1,3 +1,5 @@
+import AuthenticationServices
+import GoogleSignInSwift
 import SwiftUI
 
 struct SocialCompetitionView: View {
@@ -8,65 +10,77 @@ struct SocialCompetitionView: View {
 
     @State private var friendUsername = ""
     @State private var leaderboardCategory = "overall"
+    @State private var showingDeleteConfirmation = false
+    @State private var showingDeleteReauth = false
 
     private var filteredLeaderboard: [SocialScore] {
         social.leaderboard.filter { $0.category == leaderboardCategory }
     }
-    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
             Group {
-                if !social.isAvailable {
-                    unavailableSocial
-                } else if let profile = social.profile {
-                    signedIn(profile)
-                } else {
-                    enableSocial
+                switch social.backendState {
+                case .unprepared:
+                    ProgressView()
+                        .task {
+                            social.prepareIfNeeded()
+                            await social.restoreIfPossible()
+                        }
+
+                case .notConfigured:
+                    backendNotConfigured
+
+                case .ready:
+                    if let profile = social.profile {
+                        signedIn(profile)
+                    } else {
+                        accountSignIn
+                    }
                 }
             }
-            .navigationTitle(localized("Friends", "Amigos"))
+            .navigationTitle(localized("Account & Friends", "Cuenta y amigos"))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(localized("Done", "Listo")) { dismiss() }
                 }
             }
-            .task {
-                await social.restoreIfPossible()
-            }
             .alert(
-                localized("Delete social profile?", "¿Eliminar perfil social?"),
+                localized("Delete CapturePilot account?", "¿Eliminar cuenta CapturePilot?"),
                 isPresented: $showingDeleteConfirmation
             ) {
                 Button(localized("Cancel", "Cancelar"), role: .cancel) { }
-                Button(localized("Delete", "Eliminar"), role: .destructive) {
-                    Task { await social.deleteSocialProfile() }
+                Button(localized("Continue", "Continuar"), role: .destructive) {
+                    showingDeleteReauth = true
                 }
             } message: {
                 Text(localized(
-                    "CapturePilot will delete your synced profile, shared scores, and friend connections it can remove. Your local photo rankings remain on this device.",
-                    "CapturePilot eliminará tu perfil sincronizado, scores compartidos y relaciones de amistad que pueda borrar. Tu ranking local de fotos permanecerá en este dispositivo."
+                    "For security, reauthenticate with a linked provider. This deletes your social profile, friendships, and shared scores. Local photos and local Rankings stay on this device.",
+                    "Por seguridad, vuelve a autenticarte con un proveedor vinculado. Esto elimina tu perfil social, amistades y scores compartidos. Tus fotos y Rankings locales permanecen en este dispositivo."
                 ))
+            }
+            .sheet(isPresented: $showingDeleteReauth) {
+                deleteAccountSheet
             }
         }
         .preferredColorScheme(.dark)
     }
 
-    private var unavailableSocial: some View {
+    private var backendNotConfigured: some View {
         VStack(spacing: 18) {
-            Image(systemName: "icloud.slash")
-                .font(.system(size: 54))
+            Image(systemName: "person.crop.circle.badge.exclamationmark")
+                .font(.system(size: 52))
 
             Text(localized(
-                "Friends Rankings are not included in this build.",
-                "El ranking de amigos no está incluido en esta compilación."
+                "Accounts are optional and are not configured in this build.",
+                "Las cuentas son opcionales y no están configuradas en esta compilación."
             ))
             .font(.headline)
             .multilineTextAlignment(.center)
 
             Text(localized(
-                "CapturePilot still provides the complete camera, Coach, Creative Spark, LUT workflow, and private local Rankings. CloudKit can be enabled later in a developer build with the required Apple capabilities.",
-                "CapturePilot mantiene completa la cámara, Coach, Chispa creativa, LUTs y Ranking privado local. CloudKit puede activarse después en una compilación de desarrollador con las capabilities de Apple necesarias."
+                "CapturePilot still opens directly to the camera. Coach, Creative Spark, LUTs, RAW/JPEG and private Rankings work without signing in. Add GoogleService-Info.plist and the provider configuration only when you want to enable Account & Friends.",
+                "CapturePilot sigue abriendo directamente en la cámara. Coach, Chispa creativa, LUTs, RAW/JPEG y Rankings privados funcionan sin iniciar sesión. Agrega GoogleService-Info.plist y la configuración de proveedores sólo cuando quieras activar Cuenta y amigos."
             ))
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -75,59 +89,142 @@ struct SocialCompetitionView: View {
         .padding(28)
     }
 
-    private var enableSocial: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "person.2.badge.gearshape")
-                .font(.system(size: 54))
+    private var accountSignIn: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 56))
 
-            Text(localized(
-                "Friends rankings use your signed-in iCloud account to create a private CapturePilot identity.",
-                "El ranking de amigos usa la cuenta de iCloud iniciada en el dispositivo para crear una identidad privada de CapturePilot."
-            ))
-            .multilineTextAlignment(.center)
+                Text(localized(
+                    "Sign in only if you want Friends Rankings.",
+                    "Inicia sesión sólo si quieres usar el Ranking con amigos."
+                ))
+                .font(.headline)
+                .multilineTextAlignment(.center)
 
-            Text(localized(
-                "CapturePilot never receives your Apple Account email or password. It stores a random private social identity in your iCloud private database and derives the Pilot username from that identity.",
-                "CapturePilot nunca recibe el correo ni la contraseña de tu cuenta Apple. Guarda una identidad social aleatoria en tu base privada de iCloud y deriva de ella el usuario Pilot."
-            ))
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+                Text(localized(
+                    "No account is required for the camera or your private Rankings. Signing in creates a CapturePilot account that can later have both Apple and Google linked to the same account.",
+                    "No necesitas cuenta para la cámara ni para tus Rankings privados. Al iniciar sesión se crea una cuenta CapturePilot que después puede vincular Apple y Google a la misma cuenta."
+                ))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
 
-            Button {
-                Task { await social.enableSocial() }
-            } label: {
-                Label(
-                    localized("Enable Friends Rankings", "Activar ranking de amigos"),
-                    systemImage: "icloud.and.arrow.up"
-                )
-                .frame(maxWidth: .infinity)
+                SignInWithAppleButton(.continue) { request in
+                    social.configureAppleRequest(request)
+                } onCompletion: { result in
+                    Task { await social.completeAppleAuthorization(result) }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 48)
+                .disabled(!social.appleSignInCapabilityAvailable)
+                .opacity(social.appleSignInCapabilityAvailable ? 1 : 0.45)
+
+                if !social.appleSignInCapabilityAvailable {
+                    Text(localized(
+                        "Apple sign-in becomes available in a signed build with the Sign in with Apple capability.",
+                        "El acceso con Apple estará disponible en una build firmada con la capability Sign in with Apple."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                GoogleSignInButton {
+                    Task { await social.signInWithGoogle() }
+                }
+                .frame(height: 48)
+
+                if social.isBusy {
+                    ProgressView()
+                }
+
+                if let error = social.errorDescription {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                        .multilineTextAlignment(.center)
+                }
+
+                Text(localized(
+                    "The account screen is never shown automatically at launch.",
+                    "La pantalla de cuenta nunca aparece automáticamente al iniciar la app."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderedProminent)
-            .padding(.horizontal, 24)
-
-            if social.isBusy {
-                ProgressView()
-            }
-
-            if let error = social.errorDescription {
-                Text(error)
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
-            }
+            .padding(24)
         }
-        .padding()
     }
 
     private func signedIn(_ profile: SocialProfile) -> some View {
         List {
-            Section(localized("Profile", "Perfil")) {
+            Section(localized("CapturePilot account", "Cuenta CapturePilot")) {
                 LabeledContent(
                     localized("Username", "Usuario"),
                     value: profile.username
                 )
 
+                providerRow(
+                    title: "Apple",
+                    linked: profile.usesApple,
+                    systemImage: "apple.logo"
+                )
+
+                providerRow(
+                    title: "Google",
+                    linked: profile.usesGoogle,
+                    systemImage: "g.circle.fill"
+                )
+
+                if !profile.usesApple {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(localized(
+                            "Link Apple to use either provider for this same account.",
+                            "Vincula Apple para poder usar cualquiera de los dos proveedores con esta misma cuenta."
+                        ))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                        SignInWithAppleButton(.continue) { request in
+                            social.configureAppleRequest(
+                                request,
+                                linking: true
+                            )
+                        } onCompletion: { result in
+                            Task {
+                                await social.completeAppleAuthorization(result)
+                            }
+                        }
+                        .signInWithAppleButtonStyle(.white)
+                        .frame(height: 44)
+                        .disabled(!social.appleSignInCapabilityAvailable)
+                    }
+                }
+
+                if !profile.usesGoogle {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(localized(
+                            "Link Google to use either provider for this same account.",
+                            "Vincula Google para poder usar cualquiera de los dos proveedores con esta misma cuenta."
+                        ))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                        GoogleSignInButton {
+                            Task {
+                                await social.signInWithGoogle(linking: true)
+                            }
+                        }
+                        .frame(height: 44)
+                    }
+                }
+
+                Button(localized("Sign out", "Cerrar sesión")) {
+                    social.signOut()
+                }
+            }
+
+            Section(localized("Score sharing", "Compartir scores")) {
                 Toggle(
                     localized(
                         "Share best scores with friends",
@@ -147,8 +244,8 @@ struct SocialCompetitionView: View {
                 )
 
                 Text(localized(
-                    "Only the Pilot username, category, score, and capture date are synced. Photos and ranking thumbnails stay on this device.",
-                    "Sólo se sincronizan usuario Pilot, categoría, score y fecha de captura. Las fotos y miniaturas del ranking permanecen en este dispositivo."
+                    "Only your automatic username, category, Coach Score, score version and capture date are synchronized. Photos and thumbnails stay local.",
+                    "Sólo se sincronizan usuario automático, categoría, Coach Score, versión del score y fecha. Las fotos y miniaturas permanecen locales."
                 ))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -161,7 +258,9 @@ struct SocialCompetitionView: View {
 
                 Button {
                     Task {
-                        await social.sendFriendRequest(username: friendUsername)
+                        await social.sendFriendRequest(
+                            username: friendUsername
+                        )
                         friendUsername = ""
                     }
                 } label: {
@@ -170,7 +269,11 @@ struct SocialCompetitionView: View {
                         systemImage: "person.badge.plus"
                     )
                 }
-                .disabled(friendUsername.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(
+                    friendUsername
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .isEmpty
+                )
             }
 
             if !social.incomingRequests.isEmpty {
@@ -218,9 +321,11 @@ struct SocialCompetitionView: View {
                 ) {
                     Text(localized("Overall", "General")).tag("overall")
                     ForEach(PhotoCategory.allCases) { category in
-                        Text(categoryDisplayName(category)).tag(category.rawValue)
+                        Text(categoryDisplayName(category))
+                            .tag(category.rawValue)
                     }
                 }
+                .pickerStyle(.menu)
 
                 if filteredLeaderboard.isEmpty {
                     Text(localized(
@@ -267,7 +372,9 @@ struct SocialCompetitionView: View {
                 Button(localized("Refresh", "Actualizar")) {
                     Task {
                         if social.shareScores {
-                            await social.syncBestScores(entries: rankingStore.entries)
+                            await social.syncBestScores(
+                                entries: rankingStore.entries
+                            )
                         }
                         await social.refresh()
                     }
@@ -279,14 +386,14 @@ struct SocialCompetitionView: View {
                     showingDeleteConfirmation = true
                 } label: {
                     Text(localized(
-                        "Delete social profile",
-                        "Eliminar perfil social"
+                        "Delete CapturePilot account",
+                        "Eliminar cuenta CapturePilot"
                     ))
                 }
 
                 Text(localized(
-                    "Deleting the social profile does not delete your local photos or local Rankings database.",
-                    "Eliminar el perfil social no borra tus fotos ni la base local de Ranking."
+                    "Deleting the account does not delete local photos or local Rankings.",
+                    "Eliminar la cuenta no borra fotos ni Rankings locales."
                 ))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -294,8 +401,8 @@ struct SocialCompetitionView: View {
 
             Section {
                 Text(localized(
-                    "Social rankings are friendly competition, not anti-cheat certified. CapturePilot does not upload friend photos in 0.8.",
-                    "El ranking social es competencia amistosa, no un sistema anti-cheat certificado. CapturePilot no sube fotos de amigos en 0.8."
+                    "Friends Rankings are friendly competition, not anti-cheat certified. CapturePilot does not upload friend photos.",
+                    "El Ranking con amigos es competencia amistosa, no un sistema anti-cheat certificado. CapturePilot no sube fotos de amigos."
                 ))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -313,16 +420,95 @@ struct SocialCompetitionView: View {
         }
     }
 
+    private var deleteAccountSheet: some View {
+        NavigationStack {
+            VStack(spacing: 18) {
+                Image(systemName: "person.crop.circle.badge.xmark")
+                    .font(.system(size: 52))
+                    .foregroundStyle(.red)
+
+                Text(localized(
+                    "Reauthenticate to delete the account",
+                    "Vuelve a autenticarte para eliminar la cuenta"
+                ))
+                .font(.headline)
+                .multilineTextAlignment(.center)
+
+                if social.profile?.usesApple == true {
+                    SignInWithAppleButton(.continue) { request in
+                        social.configureAppleRequest(
+                            request,
+                            deleting: true
+                        )
+                    } onCompletion: { result in
+                        Task {
+                            await social.completeAppleAuthorization(result)
+                            if social.profile == nil {
+                                showingDeleteReauth = false
+                            }
+                        }
+                    }
+                    .signInWithAppleButtonStyle(.white)
+                    .frame(height: 48)
+                }
+
+                if social.profile?.usesGoogle == true {
+                    GoogleSignInButton {
+                        Task {
+                            await social.signInWithGoogle(deleting: true)
+                            if social.profile == nil {
+                                showingDeleteReauth = false
+                            }
+                        }
+                    }
+                    .frame(height: 48)
+                }
+
+                if let error = social.errorDescription {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button(localized("Cancel", "Cancelar"), role: .cancel) {
+                    showingDeleteReauth = false
+                }
+            }
+            .padding(24)
+            .navigationTitle(localized("Delete account", "Eliminar cuenta"))
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func providerRow(
+        title: String,
+        linked: Bool,
+        systemImage: String
+    ) -> some View {
+        HStack {
+            Label(title, systemImage: systemImage)
+            Spacer()
+            Text(
+                linked
+                    ? localized("Linked", "Vinculado")
+                    : localized("Not linked", "No vinculado")
+            )
+            .font(.caption)
+            .foregroundStyle(linked ? .green : .secondary)
+        }
+    }
+
     private func categoryDisplayName(_ category: PhotoCategory) -> String {
         switch category {
-        case .general: return localized("General", "General")
-        case .portrait: return localized("Portrait", "Retrato")
-        case .architecture: return localized("Architecture", "Arquitectura")
-        case .automotive: return localized("Automotive", "Automotriz")
-        case .macro: return "Macro"
-        case .street: return localized("Street", "Calle")
-        case .landscape: return localized("Landscape", "Paisaje")
-        case .night: return localized("Night", "Noche")
+        case .general: localized("General", "General")
+        case .portrait: localized("Portrait", "Retrato")
+        case .architecture: localized("Architecture", "Arquitectura")
+        case .automotive: localized("Automotive", "Automotriz")
+        case .macro: "Macro"
+        case .street: localized("Street", "Calle")
+        case .landscape: localized("Landscape", "Paisaje")
+        case .night: localized("Night", "Noche")
         }
     }
 
@@ -331,16 +517,11 @@ struct SocialCompetitionView: View {
             return localized("Overall", "General")
         }
 
-        switch PhotoCategory(rawValue: raw) {
-        case .portrait: return localized("Portrait", "Retrato")
-        case .architecture: return localized("Architecture", "Arquitectura")
-        case .automotive: return localized("Automotive", "Automotriz")
-        case .macro: return "Macro"
-        case .street: return localized("Street", "Calle")
-        case .landscape: return localized("Landscape", "Paisaje")
-        case .night: return localized("Night", "Noche")
-        case .general, .none: return localized("General", "General")
+        guard let category = PhotoCategory(rawValue: raw) else {
+            return raw.capitalized
         }
+
+        return categoryDisplayName(category)
     }
 
     private func localized(_ english: String, _ spanish: String) -> String {
@@ -348,7 +529,9 @@ struct SocialCompetitionView: View {
         case .english: english
         case .spanish: spanish
         case .system:
-            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+            Locale.preferredLanguages.first?
+                .lowercased()
+                .hasPrefix("es") == true
                 ? spanish
                 : english
         }
