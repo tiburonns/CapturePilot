@@ -1,11 +1,11 @@
 import Foundation
 
-enum LUTLibrarySource: String, Equatable {
+enum LUTLibrarySource: String, Equatable, Sendable {
     case capturePilot
     case external
 }
 
-struct LUTProfile: Equatable {
+struct LUTProfile: Equatable, Sendable {
     let warmth: Double
     let contrast: Double
     let saturation: Double
@@ -14,7 +14,7 @@ struct LUTProfile: Equatable {
     let strength: Double
 }
 
-struct LUTLibraryEntry: Identifiable, Equatable {
+struct LUTLibraryEntry: Identifiable, Equatable, Sendable {
     let id: String
     let source: LUTLibrarySource
     let relativePath: String
@@ -23,14 +23,14 @@ struct LUTLibraryEntry: Identifiable, Equatable {
     let profile: LUTProfile
 }
 
-private struct LUTScanResult {
+private struct LUTScanResult: Sendable {
     let entries: [LUTLibraryEntry]
     let invalidCount: Int
     let errorDescription: String?
     let succeeded: Bool
 }
 
-private struct LUTBookmarkResolution {
+private struct LUTBookmarkResolution: Sendable {
     let url: URL?
     let isStale: Bool
     let errorDescription: String?
@@ -176,49 +176,49 @@ final class LUTLibraryStore: ObservableObject {
         monitorGeneration += 1
         let generation = monitorGeneration
 
-        folderResolutionTask = Task.detached(priority: .utility) { [weak self] in
-            let resolution = Self.resolveBookmarkData(bookmarkData)
+        folderResolutionTask = Task { @MainActor [weak self] in
+            let resolution = await Task.detached(priority: .utility) {
+                Self.resolveBookmarkData(bookmarkData)
+            }.value
 
-            await MainActor.run {
-                guard let self,
-                      generation == self.monitorGeneration,
-                      !Task.isCancelled else {
-                    return
-                }
-
-                guard let url = resolution.url else {
-                    self.scanErrorDescription =
-                        resolution.errorDescription
-                        ?? "CapturePilot could not reopen the selected external LUT folder."
-                    return
-                }
-
-                let accessed = url.startAccessingSecurityScopedResource()
-                guard accessed else {
-                    self.scanErrorDescription =
-                        "CapturePilot could not access the selected external LUT folder."
-                    return
-                }
-
-                self.didStartSecurityAccess = true
-                self.monitoredURL = url
-                self.folderDisplayName = url.lastPathComponent
-                self.defaults.set(url.lastPathComponent, forKey: self.folderNameKey)
-
-                let presenter = LUTFolderPresenter(url: url) { [weak self] in
-                    Task { @MainActor in
-                        self?.scheduleRefresh()
-                    }
-                }
-                self.presenter = presenter
-                NSFileCoordinator.addFilePresenter(presenter)
-
-                if resolution.isStale {
-                    self.refreshStoredBookmark(for: url)
-                }
-
-                self.refresh()
+            guard let self,
+                  generation == self.monitorGeneration,
+                  !Task.isCancelled else {
+                return
             }
+
+            guard let url = resolution.url else {
+                self.scanErrorDescription =
+                    resolution.errorDescription
+                    ?? "CapturePilot could not reopen the selected external LUT folder."
+                return
+            }
+
+            let accessed = url.startAccessingSecurityScopedResource()
+            guard accessed else {
+                self.scanErrorDescription =
+                    "CapturePilot could not access the selected external LUT folder."
+                return
+            }
+
+            self.didStartSecurityAccess = true
+            self.monitoredURL = url
+            self.folderDisplayName = url.lastPathComponent
+            self.defaults.set(url.lastPathComponent, forKey: self.folderNameKey)
+
+            let presenter = LUTFolderPresenter(url: url) { [weak self] in
+                Task { @MainActor in
+                    self?.scheduleRefresh()
+                }
+            }
+            self.presenter = presenter
+            NSFileCoordinator.addFilePresenter(presenter)
+
+            if resolution.isStale {
+                self.refreshStoredBookmark(for: url)
+            }
+
+            self.refresh()
         }
     }
 
@@ -254,76 +254,78 @@ final class LUTLibraryStore: ObservableObject {
         scanGeneration += 1
         let generation = scanGeneration
         let externalRoot = monitoredURL
-        let presenterSnapshot = presenter
 
-        scanTask = Task.detached(priority: .utility) { [weak self] in
-            let local = Self.scan(
-                root: Self.localFolderURL,
-                source: .capturePilot,
-                presenter: nil
-            )
-
-            let external: LUTScanResult?
-            if let externalRoot {
-                external = Self.scan(
-                    root: externalRoot,
-                    source: .external,
-                    presenter: presenterSnapshot
+        scanTask = Task { @MainActor [weak self] in
+            let snapshot = await Task.detached(priority: .utility) {
+                let local = Self.scan(
+                    root: Self.localFolderURL,
+                    source: .capturePilot,
+                    presenter: nil
                 )
-            } else {
-                external = nil
+
+                let external: LUTScanResult?
+                if let externalRoot {
+                    external = Self.scan(
+                        root: externalRoot,
+                        source: .external,
+                        presenter: nil
+                    )
+                } else {
+                    external = nil
+                }
+
+                return (local, external)
+            }.value
+
+            guard let self,
+                  generation == self.scanGeneration,
+                  !Task.isCancelled else {
+                return
             }
 
-            guard !Task.isCancelled else { return }
+            let local = snapshot.0
+            let external = snapshot.1
 
-            await MainActor.run {
-                guard let self,
-                      generation == self.scanGeneration,
-                      !Task.isCancelled else {
-                    return
-                }
+            var combined = local.entries
+            var invalidCount = local.invalidCount
+            var errors: [String] = []
 
-                var combined = local.entries
-                var invalidCount = local.invalidCount
-                var errors: [String] = []
+            if let error = local.errorDescription {
+                errors.append(error)
+            }
 
-                if let error = local.errorDescription {
+            var externalSucceeded = false
+            if let external {
+                combined.append(contentsOf: external.entries)
+                invalidCount += external.invalidCount
+                externalSucceeded = external.succeeded
+
+                if let error = external.errorDescription {
                     errors.append(error)
                 }
+            }
 
-                var externalSucceeded = false
-                if let external {
-                    combined.append(contentsOf: external.entries)
-                    invalidCount += external.invalidCount
-                    externalSucceeded = external.succeeded
-
-                    if let error = external.errorDescription {
-                        errors.append(error)
-                    }
+            self.entries = combined.sorted {
+                if $0.displayName == $1.displayName {
+                    return $0.source.rawValue < $1.source.rawValue
                 }
+                return $0.displayName.localizedStandardCompare(
+                    $1.displayName
+                ) == .orderedAscending
+            }
+            self.invalidFileCount = invalidCount
+            self.scanErrorDescription =
+                errors.isEmpty ? nil : errors.joined(separator: "\n")
 
-                self.entries = combined.sorted {
-                    if $0.displayName == $1.displayName {
-                        return $0.source.rawValue < $1.source.rawValue
-                    }
-                    return $0.displayName.localizedStandardCompare(
-                        $1.displayName
-                    ) == .orderedAscending
-                }
-                self.invalidFileCount = invalidCount
-                self.scanErrorDescription =
-                    errors.isEmpty ? nil : errors.joined(separator: "\n")
-
-                if let activeEntryID = self.activeEntryID,
-                   !self.entries.contains(where: { $0.id == activeEntryID }) {
-                    switch self.activeSource {
-                    case .capturePilot:
-                        if local.succeeded { self.clearActiveLUT() }
-                    case .external:
-                        if externalSucceeded { self.clearActiveLUT() }
-                    case .none:
-                        break
-                    }
+            if let activeEntryID = self.activeEntryID,
+               !self.entries.contains(where: { $0.id == activeEntryID }) {
+                switch self.activeSource {
+                case .capturePilot:
+                    if local.succeeded { self.clearActiveLUT() }
+                case .external:
+                    if externalSucceeded { self.clearActiveLUT() }
+                case .none:
+                    break
                 }
             }
         }
@@ -426,18 +428,18 @@ final class LUTLibraryStore: ObservableObject {
 
     private func refreshStoredBookmark(for url: URL) {
         let key = bookmarkKey
-        Task.detached(priority: .utility) { [weak self] in
-            guard let fresh = try? url.bookmarkData(
-                options: [],
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            ) else {
-                return
-            }
 
-            await MainActor.run {
-                self?.defaults.set(fresh, forKey: key)
-            }
+        Task { @MainActor [weak self] in
+            let fresh = await Task.detached(priority: .utility) {
+                try? url.bookmarkData(
+                    options: [],
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+            }.value
+
+            guard let self, let fresh else { return }
+            self.defaults.set(fresh, forKey: key)
         }
     }
 
