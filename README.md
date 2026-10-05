@@ -450,3 +450,14 @@ SwiftUI · AVFoundation · Vision · Photos · Core Video · Core Image · Files
 ## License / Licencia
 
 CapturePilot is released under the [MIT License](LICENSE). / CapturePilot se publica bajo la [Licencia MIT](LICENSE).
+
+## Contact, support, and feedback
+
+Have a **question**, **suggestion**, found a **bug**, or want to share **feedback** about CapturePilot? Use the project's GitHub Issues form:
+
+**[Open the contact and feedback form](https://github.com/tiburonns/CapturePilot/issues/new?template=feedback.yml)**
+
+Choose the category that best fits: **Question, Suggestion, Bug, Feedback, Compatibility, or Other**. Include the app version, device/OS, and reproduction steps when relevant.
+
+Do not post passwords, tokens, keys, private addresses, or other sensitive personal information. For security vulnerabilities, follow the process in `SECURITY.md` when available.
+
