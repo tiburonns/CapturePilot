@@ -1,6 +1,6 @@
 # TestFlight Release Readiness / Preparación para TestFlight
 
-**Candidate:** CapturePilot 0.9.3 (Build 12)
+**Candidate:** CapturePilot 0.10.0 (Build 13)
 
 This document separates what the repository can prove automatically from what still requires a signed Apple distribution build, physical camera hardware, or App Store Connect configuration.
 
@@ -22,7 +22,7 @@ The following are release gates and must be green before merging to `main`:
 - Valid CapturePilot.entitlements template for the optional social build.
 - Default target does **not** attach CloudKit entitlements.
 - Default target does **not** define `CAPTUREPILOT_CLOUDKIT`.
-- Version/build fixed to 0.9.3 (12).
+- Version/build fixed to 0.10.0 (13).
 - Bundle ID `com.tiburonns.CapturePilot`.
 - iPhone-only target.
 - iOS 17 minimum deployment target.
@@ -30,9 +30,10 @@ The following are release gates and must be green before merging to `main`:
 - Four declared interface orientations.
 - 1024 App Store icon source.
 - Camera and Photo Library add-only permission descriptions.
-- Personal-Team-safe startup without iCloud/CloudKit entitlements.
-- Default Privacy Manifest declares no collected data because Friends/CloudKit is not compiled in.
-- CloudKit privacy-disclosure template remains documented separately.
+- Camera-first startup with no account requirement.
+- Firebase is not configured until Account & Friends is opened.
+- Missing Firebase configuration does not block local photography.
+- Privacy Manifest discloses optional account/social data with no tracking.
 - UserDefaults required-reason API declaration CA92.1.
 - Deterministic LUT recommendation tests.
 - Release documentation for Rankings, Friends/CloudKit, and Creative Spark.
@@ -79,51 +80,47 @@ Must verify on-device:
 - Ranking persistence and post-shot analysis;
 - thermal/memory behavior during repeated high-resolution capture/analysis.
 
-### Apple Developer / signing gates
+### Account backend / signing gates
 
-For the **default non-CloudKit build**, core device testing can use a Personal Team. CloudKit/Friends is not part of that build.
+Core camera testing does not require an account or Firebase configuration.
 
-**TestFlight distribution itself requires an active Apple Developer Program membership and App Store Connect access.** A free/Personal Team can validate the app on the developer's own devices, but cannot complete the TestFlight distribution steps.
+For Account & Friends:
 
-For a future Friends-enabled distribution build:
+- create/register Firebase iOS app for `com.tiburonns.CapturePilot`;
+- bundle a valid `GoogleService-Info.plist`;
+- enable Google in Firebase Authentication;
+- deploy `Firebase/firestore.rules`;
+- set `GOOGLE_REVERSED_CLIENT_ID` to the Google reversed client ID;
+- test Firestore rules with authenticated users.
 
-- a compatible Apple Developer Team is required;
-- App ID exists for `com.tiburonns.CapturePilot`;
-- iCloud + CloudKit are enabled;
-- container `iCloud.com.tiburonns.CapturePilot` exists and is assigned;
-- `CapturePilot.entitlements` is attached to the target;
-- `CAPTUREPILOT_CLOUDKIT` is added to Swift Active Compilation Conditions;
-- provisioning contains the expected CloudKit entitlements;
-- Product > Archive succeeds with signing enabled;
-- Organizer > Validate App succeeds.
+For Apple provider support additionally:
 
-See `docs/CLOUDKIT_OPTIONAL.md`.
+- active Apple Developer Program membership;
+- Sign in with Apple enabled on the App ID;
+- Apple provider configured in Firebase;
+- Sign in with Apple capability attached to the distribution build;
+- provisioning includes `com.apple.developer.applesignin`.
 
-### CloudKit gates
+Account & Friends must be tested with:
+- Apple-only account;
+- Google-only account;
+- account with both providers linked;
+- account deletion/revocation.
 
-Friends Rankings is optional for core photography but must be configured before claiming that feature works in TestFlight.
+See `docs/ACCOUNTS_FIREBASE.md`.
 
-Development schema must contain and be exercised for:
+### Backend security gates
 
-**Private database**
-- SocialIdentity
+Before broad external testing:
 
-**Public database**
-- CapturePilotProfile
-- FriendRequest
-- FriendAcceptance
-- RankingScore
-
-Verify QUERYABLE indexes used by the client:
-
-- CapturePilotProfile.username
-- FriendRequest.requesterID
-- FriendRequest.addresseeID
-- RankingScore.ownerID
-
-Before distribution, deploy the tested development schema to the CloudKit production environment.
-
-Then validate the social feature with two real iCloud accounts/devices.
+- Firestore rules deployed and verified;
+- unauthenticated reads/writes rejected;
+- users can write only their own profile;
+- friendship documents limited to participants;
+- scores writable only by owner;
+- imported images cannot submit social scores;
+- consider Firebase App Check before a large public rollout;
+- consider server-side score verification before any prize/high-stakes competition.
 
 ### App Store Connect / TestFlight gates
 
@@ -145,7 +142,7 @@ Before external testing, complete:
 - current age-rating questionnaire;
 - App Privacy answers consistent with `PrivacyInfo.xcprivacy`.
 
-For the default 0.9.3 candidate, App Privacy should reflect the non-CloudKit binary. If the optional Friends build is submitted later, update the bundled privacy manifest and App Privacy answers to disclose pseudonymous User ID and synchronized score/user-content metadata for app functionality, with no tracking.
+For 0.10, App Privacy must reflect the optional Apple/Google account flow: provider identity data handled by Firebase Authentication and pseudonymous friendship/score metadata stored for app functionality, with no tracking.
 
 ### Go / no-go definition
 
@@ -157,10 +154,10 @@ For the default 0.9.3 candidate, App Privacy should reflect the non-CloudKit bin
 4. Validate App succeeds.
 5. Build uploads and finishes App Store Connect processing.
 
-**Ready for Friends/CloudKit TestFlight testing** additionally requires:
+**Ready for Account & Friends TestFlight testing** additionally requires:
 
-6. CloudKit production schema deployed.
-7. Two-account social acceptance test passes.
+6. Firebase providers + Firestore rules configured.
+7. Apple/Google/provider-linking social acceptance tests pass.
 
 **Ready for External TestFlight** additionally requires:
 
@@ -183,7 +180,7 @@ Antes de fusionar a `main` deben quedar verdes:
 - Info.plist válido.
 - Privacy Manifest válido.
 - entitlements válidos.
-- versión/build 0.9.3 (12).
+- versión/build 0.10.0 (13).
 - bundle ID `com.tiburonns.CapturePilot`.
 - target sólo iPhone.
 - mínimo iOS 17.
@@ -240,47 +237,42 @@ Validar:
 - Ranking;
 - memoria/temperatura.
 
-### Apple Developer / firma
+### Backend de cuentas / firma
 
-La build por defecto sin CloudKit puede probarse en dispositivo con Personal Team.
+La cámara no requiere cuenta ni configuración Firebase.
 
-**Distribuir por TestFlight requiere una membresía activa de Apple Developer Program y acceso a App Store Connect.** Una cuenta gratuita/Personal Team sirve para validar la app en los dispositivos propios, pero no puede completar la distribución por TestFlight.
+Para Cuenta y amigos:
 
-Para una futura build con Amigos:
+- registrar `com.tiburonns.CapturePilot` en Firebase;
+- incluir `GoogleService-Info.plist`;
+- activar Google Auth;
+- desplegar `Firebase/firestore.rules`;
+- configurar `GOOGLE_REVERSED_CLIENT_ID`.
 
-- Team Apple Developer compatible;
-- App ID `com.tiburonns.CapturePilot`;
-- iCloud + CloudKit activados;
-- contenedor `iCloud.com.tiburonns.CapturePilot`;
-- `CapturePilot.entitlements` adjunto al target;
-- `CAPTUREPILOT_CLOUDKIT` en Swift Active Compilation Conditions;
-- provisioning con entitlements correctos;
-- Archive firmado;
-- Validate App sin errores.
+Para Apple además:
 
-Consulta `docs/CLOUDKIT_OPTIONAL.md`.
+- membresía Apple Developer activa;
+- Sign in with Apple en el App ID;
+- proveedor Apple configurado en Firebase;
+- capability Sign in with Apple en la build firmada;
+- provisioning correcto.
 
-### CloudKit
+Probar cuenta Apple, Google, ambos proveedores vinculados y eliminación.
 
-Antes de probar Amigos en TestFlight:
+Consulta `docs/ACCOUNTS_FIREBASE.md`.
 
-**Privado**
-- SocialIdentity
+### Seguridad backend
 
-**Público**
-- CapturePilotProfile
-- FriendRequest
-- FriendAcceptance
-- RankingScore
+Antes de external testing amplio:
 
-Índices QUERYABLE:
-
-- CapturePilotProfile.username
-- FriendRequest.requesterID
-- FriendRequest.addresseeID
-- RankingScore.ownerID
-
-Despliega el schema probado a producción y después prueba con dos cuentas/dispositivos iCloud.
+- rules Firestore desplegadas;
+- acceso sin auth rechazado;
+- perfil sólo editable por su dueño;
+- amistades limitadas a participantes;
+- score sólo editable por dueño;
+- importaciones excluidas de score social;
+- considerar App Check;
+- considerar validación server-side para competencias con premios.
 
 ### App Store Connect / TestFlight
 
@@ -313,10 +305,10 @@ Antes de external testing completa:
 4. Validate App aprobado.
 5. Build subido y procesado en App Store Connect.
 
-**Listo para probar Amigos/CloudKit** además:
+**Listo para probar Cuenta y amigos** además:
 
-6. schema CloudKit en producción.
-7. prueba con dos cuentas aprobada.
+6. Firebase providers + Firestore rules configurados.
+7. pruebas Apple/Google/vinculación aprobadas.
 
 **Listo para External TestFlight** además:
 
