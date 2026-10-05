@@ -125,42 +125,36 @@ On every lens where RAW+JPG becomes available:
 - [ ] Relaunch preserves rankings and thumbnails.
 - [ ] Repeated 48 MP analysis does not cause unacceptable memory/thermal behavior.
 
-### Friends + social scores
+### Account & Friends
 
-- [ ] Core camera and local ranking work without signing in.
-- [ ] Enabling Friends with an available iCloud account creates/restores the private social identity.
-- [ ] Automatic usernames are different for two accounts.
-- [ ] Friend search uses exact Pilot-* username.
-- [ ] A can request B.
-- [ ] B sees and accepts A.
-- [ ] Accepted friendship appears on both clients after refresh.
-- [ ] Remove friendship works.
-- [ ] Score sharing defaults/behaves as opt-in.
-- [ ] Only CapturePilot-captured entries are considered for social best scores.
-- [ ] Imported image score never replaces a social best score.
-- [ ] Overall leaderboard contains one best record per user.
-- [ ] Portrait/Architecture/Automotive/Macro/Street/Landscape/Night filters show the correct category.
-- [ ] Disabling sharing removes own social score records.
-- [ ] Friend photos/thumbnails are never uploaded.
-- [ ] No email/password/full Apple ID name is displayed or stored as public profile metadata.
-- [ ] Sign out of iCloud / make the account unavailable and verify the social layer fails gracefully while local Rankings keep working.
-- [ ] CloudKit unavailable/not-authenticated state is controlled and does not break local Rankings.
-- [ ] Test two real devices/accounts after production schema/index deployment.
+No-account baseline:
+- [ ] App opens directly to camera.
+- [ ] No account sheet appears automatically.
+- [ ] Local Rankings work with no Firebase configuration.
+- [ ] Account & Friends can be opened manually and shows controlled not-configured state.
 
-### Creative Spark 0.9.1 refinement
-
-- [ ] Windows/doorways/architectural rectangles can produce a frame-within-frame anchor when appropriate.
-- [ ] Near-full-frame rectangles do not become misleading frame-within-frame anchors.
-- [ ] Flat/empty lower frame does not create a foreground marker.
-- [ ] A strong textured/contrasty lower-frame object can create a foreground anchor.
-- [ ] Foreground point lines up with the actual lower-frame detail after aspect-fill.
-- [ ] Frame-within-frame prompt references the numbered rectangle point.
-- [ ] Hiding Creative Spark in Customize HUD clears existing points.
-- [ ] Backgrounding/stopping the camera clears existing points.
-- [ ] Scan remains one-shot and does not become continuous processing.
-- [ ] No camera setting changes occur when scanning or accepting an idea.
+Configured backend:
+- [ ] GoogleService-Info.plist is bundled only in the intended configured build.
+- [ ] Google sign-in works on device.
+- [ ] Apple sign-in works when entitlement/provider are configured.
+- [ ] Google-only account receives a stable automatic PILOT-* username.
+- [ ] Apple-only account receives a stable automatic PILOT-* username.
+- [ ] Link Apple to a Google account.
+- [ ] Link Google to an Apple account.
+- [ ] Signing out and signing in through either linked provider returns to the same UID/username.
+- [ ] Provider already linked to another account produces a controlled error; no silent merge.
+- [ ] Exact username friend search works.
+- [ ] Request / accept / remove friendship works.
+- [ ] Score sharing remains opt-in.
+- [ ] Imported photos never submit scores.
+- [ ] Photos/thumbnails/RAW/JPEG never appear in Firestore.
+- [ ] Google account deletion works after reauthentication.
+- [ ] Apple-linked deletion reauthenticates and revokes Apple token before Firebase deletion.
+- [ ] Deleting account leaves local photos and local Rankings untouched.
+- [ ] Firestore rules reject unauthenticated access.
 
 ### Manual controls
+
 
 - [ ] Unsupported controls are absent.
 - [ ] EV changes exposure.
@@ -389,42 +383,36 @@ En cada lente donde RAW+JPG esté disponible:
 - [ ] Persistencia tras relanzar.
 - [ ] Análisis repetido 48 MP sin memoria/temperatura inaceptables.
 
-### Amigos + scores sociales
+### Cuenta y amigos
 
-- [ ] Cámara/ranking local funcionan sin login.
-- [ ] Activar Amigos con iCloud disponible crea/restaura la identidad social privada.
-- [ ] Dos cuentas reciben usernames distintos.
-- [ ] Búsqueda por Pilot-* exacto.
-- [ ] Solicitud A → B.
-- [ ] B acepta.
-- [ ] Amistad aparece en ambos tras refresh.
-- [ ] Eliminar amistad funciona.
-- [ ] Compartir score es opt-in.
-- [ ] Sólo capturas CapturePilot pueden subir score.
-- [ ] Importación nunca sustituye el mejor score social.
-- [ ] Overall muestra mejor score por usuario.
-- [ ] Filtros por categoría correctos.
-- [ ] Desactivar compartir elimina scores propios.
-- [ ] Nunca se suben fotos/miniaturas.
-- [ ] No se publica correo/contraseña/nombre de Apple ID.
-- [ ] Cuenta iCloud no disponible/cierre de sesión no rompe el Ranking local.
-- [ ] CloudKit no disponible no rompe ranking local.
-- [ ] Prueba final con dos dispositivos/cuentas tras desplegar schema/índices.
+Baseline sin cuenta:
+- [ ] La app entra directamente a cámara.
+- [ ] No aparece login automáticamente.
+- [ ] Ranking local funciona sin Firebase.
+- [ ] Cuenta y amigos muestra estado controlado si no hay configuración.
 
-### Refinamiento Chispa creativa 0.9.1
-
-- [ ] Ventanas/puertas/rectángulos pueden producir frame-within-frame cuando corresponde.
-- [ ] Rectángulos casi del tamaño del frame no se presentan como anchors engañosos.
-- [ ] Parte baja plana/vacía no genera primer plano.
-- [ ] Objeto inferior con detalle/contraste suficiente sí puede generar anchor.
-- [ ] Punto de foreground coincide con el detalle real tras aspect-fill.
-- [ ] El prompt frame-within-frame referencia el punto numerado correcto.
-- [ ] Ocultar Chispa creativa limpia el resultado.
-- [ ] Background/detener cámara limpia el resultado.
-- [ ] El scan sigue siendo one-shot, no procesamiento continuo.
-- [ ] El scan nunca cambia parámetros de cámara.
+Backend configurado:
+- [ ] `GoogleService-Info.plist` sólo está en la build prevista.
+- [ ] Google funciona en dispositivo.
+- [ ] Apple funciona con entitlement/provider configurado.
+- [ ] Cuenta Google obtiene username PILOT-* estable.
+- [ ] Cuenta Apple obtiene username PILOT-* estable.
+- [ ] Vincular Apple a cuenta Google.
+- [ ] Vincular Google a cuenta Apple.
+- [ ] Acceder con cualquiera vuelve al mismo UID/username.
+- [ ] Proveedor usado por otra cuenta da error controlado; no merge silencioso.
+- [ ] Búsqueda exacta por username.
+- [ ] Solicitar/aceptar/eliminar amistad.
+- [ ] Compartir score sigue opt-in.
+- [ ] Importaciones nunca suben score.
+- [ ] Fotos/miniaturas/RAW/JPEG nunca aparecen en Firestore.
+- [ ] Eliminación Google tras reautenticación.
+- [ ] Eliminación con Apple revoca token antes de borrar Firebase.
+- [ ] Eliminar cuenta no borra fotos/Ranking local.
+- [ ] Rules rechazan acceso sin auth.
 
 ### Controles manuales
+
 
 - [ ] Controles no soportados no aparecen.
 - [ ] EV funciona.
