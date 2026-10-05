@@ -1,6 +1,6 @@
 # TestFlight Release Readiness / Preparación para TestFlight
 
-**Candidate:** CapturePilot 0.9.2 (Build 11)
+**Candidate:** CapturePilot 0.9.3 (Build 12)
 
 This document separates what the repository can prove automatically from what still requires a signed Apple distribution build, physical camera hardware, or App Store Connect configuration.
 
@@ -22,7 +22,7 @@ The following are release gates and must be green before merging to `main`:
 - Valid CapturePilot.entitlements template for the optional social build.
 - Default target does **not** attach CloudKit entitlements.
 - Default target does **not** define `CAPTUREPILOT_CLOUDKIT`.
-- Version/build fixed to 0.9.2 (11).
+- Version/build fixed to 0.9.3 (12).
 - Bundle ID `com.tiburonns.CapturePilot`.
 - iPhone-only target.
 - iOS 17 minimum deployment target.
@@ -145,7 +145,7 @@ Before external testing, complete:
 - current age-rating questionnaire;
 - App Privacy answers consistent with `PrivacyInfo.xcprivacy`.
 
-For the default 0.9.2 candidate, App Privacy should reflect the non-CloudKit binary. If the optional Friends build is submitted later, update the bundled privacy manifest and App Privacy answers to disclose pseudonymous User ID and synchronized score/user-content metadata for app functionality, with no tracking.
+For the default 0.9.3 candidate, App Privacy should reflect the non-CloudKit binary. If the optional Friends build is submitted later, update the bundled privacy manifest and App Privacy answers to disclose pseudonymous User ID and synchronized score/user-content metadata for app functionality, with no tracking.
 
 ### Go / no-go definition
 
@@ -183,7 +183,7 @@ Antes de fusionar a `main` deben quedar verdes:
 - Info.plist válido.
 - Privacy Manifest válido.
 - entitlements válidos.
-- versión/build 0.9.2 (11).
+- versión/build 0.9.3 (12).
 - bundle ID `com.tiburonns.CapturePilot`.
 - target sólo iPhone.
 - mínimo iOS 17.

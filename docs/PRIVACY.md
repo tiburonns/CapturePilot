@@ -69,11 +69,11 @@ Imported-image scores are not eligible for social upload.
 
 See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-### Privacy Manifest in the default 0.9.2 build
+### Privacy Manifest in the default 0.9.3 build
 
 CapturePilot still declares **no tracking**.
 
-The default 0.9.2 target does not compile or attach CloudKit/Friends, so its bundled manifest declares **no collected data types**.
+The default 0.9.3 target does not compile or attach CloudKit/Friends, so its bundled manifest declares **no collected data types**.
 
 It still declares:
 - tracking: false;
@@ -84,7 +84,7 @@ The optional CloudKit distribution variant has a separate privacy-manifest templ
 
 ### Build-dependent social behavior
 
-In the default 0.9.2 build, `CAPTUREPILOT_CLOUDKIT` is absent and no iCloud entitlement is attached. CapturePilot does not construct a CloudKit container and does not transmit social metadata.
+In the default 0.9.3 build, `CAPTUREPILOT_CLOUDKIT` is absent and no iCloud entitlement is attached. CapturePilot does not construct a CloudKit container and does not transmit social metadata.
 
 The default privacy manifest now matches the default non-CloudKit binary. Before building the optional Friends variant, replace/update the bundled manifest using `docs/PrivacyInfo.CloudKit.xcprivacy.template` and make the App Privacy answers match that exact binary.
 
@@ -173,11 +173,11 @@ Los scores de imágenes importadas no son elegibles para subida social.
 
 Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-### Privacy Manifest en la build por defecto 0.9.2
+### Privacy Manifest en la build por defecto 0.9.3
 
 CapturePilot sigue declarando **sin tracking**.
 
-Como la build por defecto 0.9.2 no compila ni adjunta CloudKit/Amigos, su manifest declara **ningún tipo de dato recopilado**.
+Como la build por defecto 0.9.3 no compila ni adjunta CloudKit/Amigos, su manifest declara **ningún tipo de dato recopilado**.
 
 Sí declara:
 - tracking: falso;
@@ -188,7 +188,7 @@ La variante opcional con CloudKit tiene una plantilla separada que agrega User I
 
 ### Comportamiento social según la build
 
-En la build por defecto 0.9.2 no existe `CAPTUREPILOT_CLOUDKIT` ni entitlement iCloud adjunto. CapturePilot no crea un contenedor CloudKit ni transmite metadata social.
+En la build por defecto 0.9.3 no existe `CAPTUREPILOT_CLOUDKIT` ni entitlement iCloud adjunto. CapturePilot no crea un contenedor CloudKit ni transmite metadata social.
 
 El manifest por defecto ahora coincide con el binario sin CloudKit. Antes de compilar la variante Amigos, actualiza/reemplaza el manifest usando `docs/PrivacyInfo.CloudKit.xcprivacy.template` y alinea App Privacy con ese binario exacto.
 

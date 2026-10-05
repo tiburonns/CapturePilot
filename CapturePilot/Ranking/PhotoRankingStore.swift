@@ -7,17 +7,23 @@ final class PhotoRankingStore: ObservableObject {
     @Published private(set) var lastError: String?
 
     private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
+    private var loadTask: Task<Void, Never>?
 
     init() {
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
 
-        decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        loadTask = Task { [weak self] in
+            let loaded = await Task.detached(
+                priority: .utility
+            ) {
+                Self.loadEntriesFromDisk()
+            }.value
 
-        load()
+            guard let self, let loaded else { return }
+            self.entries = loaded.sorted { $0.coachScore > $1.coachScore }
+        }
     }
 
     func ingest(
@@ -122,15 +128,18 @@ final class PhotoRankingStore: ObservableObject {
         }
     }
 
-    private func load() {
-        guard let data = try? Data(contentsOf: Self.indexURL),
-              let decoded = try? decoder.decode([PhotoRankingEntry].self, from: data) else {
-            return
+    nonisolated private static func loadEntriesFromDisk()
+        -> [PhotoRankingEntry]? {
+        guard let data = try? Data(contentsOf: Self.indexURL) else {
+            return nil
         }
-        entries = decoded.sorted { $0.coachScore > $1.coachScore }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode([PhotoRankingEntry].self, from: data)
     }
 
-    private static var rootDirectory: URL {
+    nonisolated private static var rootDirectory: URL {
         let base = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -141,11 +150,11 @@ final class PhotoRankingStore: ObservableObject {
             .appendingPathComponent("Rankings", isDirectory: true)
     }
 
-    private static var thumbnailDirectory: URL {
+    nonisolated private static var thumbnailDirectory: URL {
         rootDirectory.appendingPathComponent("Thumbnails", isDirectory: true)
     }
 
-    private static var indexURL: URL {
+    nonisolated private static var indexURL: URL {
         rootDirectory.appendingPathComponent("ranking.json")
     }
 }

@@ -1,5 +1,27 @@
 # Changelog / Registro de cambios
 
+## 0.9.3 — Non-blocking launch hotfix / Hotfix de arranque no bloqueante
+
+### English
+- Move persisted external LUT bookmark resolution off the main actor.
+- Move recursive LUT directory enumeration and .cube parsing off the main actor.
+- Cache the external LUT folder display name instead of resolving its bookmark during StateObject initialization.
+- Add generation/cancellation guards so stale LUT restore/scan work cannot overwrite a newer app state.
+- Load the local Rankings index asynchronously after launch.
+- Resume the camera before restoring user LUT monitoring.
+- CloudKit remains compiled out and unattached in the default build.
+- Version/build 0.9.3 (12).
+
+### Español
+- Resolución del bookmark LUT externo fuera del MainActor.
+- Escaneo recursivo y parseo .cube fuera del MainActor.
+- El nombre de la carpeta LUT se usa desde cache en vez de resolver el bookmark durante la inicialización.
+- Guards de generación/cancelación evitan que tareas viejas sobrescriban estado nuevo.
+- El índice local de Ranking se carga después del arranque y fuera del hilo principal.
+- La cámara reanuda antes de restaurar el monitoreo de LUTs.
+- CloudKit sigue compilado fuera y sin entitlements en la build por defecto.
+- Versión/build 0.9.3 (12).
+
 ## 0.9.2 — Optional CloudKit startup safety / CloudKit opcional y arranque seguro
 
 ### English
