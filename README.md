@@ -11,7 +11,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.9.2 (11).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.9.3 (12).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -66,7 +66,7 @@ See [Photo Rankings + Coach Review](docs/RANKINGS.md).
 
 Friends Rankings is an **optional CloudKit build feature**, not a dependency of CapturePilot.
 
-The repository's default 0.9.2 target does **not** attach iCloud entitlements and does not define `CAPTUREPILOT_CLOUDKIT`. In that configuration CapturePilot never creates a `CKContainer`, the Friends control is hidden, and camera/Coach/Creative Spark/LUT/RAW+Share/private Rankings remain fully available.
+The repository's default 0.9.3 target does **not** attach iCloud entitlements and does not define `CAPTUREPILOT_CLOUDKIT`. In that configuration CapturePilot never creates a `CKContainer`, the Friends control is hidden, and camera/Coach/Creative Spark/LUT/RAW+Share/private Rankings remain fully available.
 
 When a compatible Apple Developer configuration is available, Friends can be enabled with the CloudKit entitlements + compile condition described in [Optional CloudKit build](docs/CLOUDKIT_OPTIONAL.md). The social feature syncs score metadata only — **not photos**.
 
@@ -213,7 +213,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.9.2 (11)**.
+- Current version/build: **0.9.3 (12)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -273,7 +273,7 @@ Consulta [Ranking + Coach Review](docs/RANKINGS.md).
 
 El ranking de amigos es una **función opcional de una build con CloudKit**, no una dependencia de CapturePilot.
 
-El target por defecto de 0.9.2 no adjunta entitlements de iCloud ni define `CAPTUREPILOT_CLOUDKIT`. En esa configuración nunca se crea `CKContainer`, Amigos queda oculto y cámara/Coach/Chispa creativa/LUT/RAW+Share/Ranking privado siguen disponibles.
+El target por defecto de 0.9.3 no adjunta entitlements de iCloud ni define `CAPTUREPILOT_CLOUDKIT`. En esa configuración nunca se crea `CKContainer`, Amigos queda oculto y cámara/Coach/Chispa creativa/LUT/RAW+Share/Ranking privado siguen disponibles.
 
 Cuando exista una configuración Apple Developer compatible, Amigos puede activarse con los entitlements y la condición de compilación descritos en [Build opcional con CloudKit](docs/CLOUDKIT_OPTIONAL.md). La función social sincroniza metadata de score, **no fotografías**.
 
@@ -420,7 +420,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.9.2 (11)**.
+- Versión/build actual: **0.9.3 (12)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.

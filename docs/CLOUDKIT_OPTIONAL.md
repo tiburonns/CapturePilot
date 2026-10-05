@@ -1,6 +1,6 @@
 # Optional CloudKit build / Compilación opcional con CloudKit
 
-CapturePilot 0.9.2 changes the social architecture so iCloud/CloudKit is **not required to launch or use the core app**.
+CapturePilot 0.9.3 changes the social architecture so iCloud/CloudKit is **not required to launch or use the core app**.
 
 ## Default build
 
@@ -48,7 +48,7 @@ In a build without the compile condition:
 
 ## Español
 
-CapturePilot 0.9.2 hace que iCloud/CloudKit **no sea necesario para abrir ni usar la aplicación principal**.
+CapturePilot 0.9.3 hace que iCloud/CloudKit **no sea necesario para abrir ni usar la aplicación principal**.
 
 ### Build por defecto
 
