@@ -12,7 +12,7 @@ The candidate also includes a persistent LUT library, private Top 5/10/25/50 Ran
 
 For Creative Spark 0.9.1, specifically validate frame-within-frame false positives and lower-frame foreground alignment on real hardware.
 
-Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, CloudKit production configuration, or App Store acceptance.
+Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, Firebase/provider configuration, or App Store acceptance.
 
 ### Current Apple upload requirements
 
