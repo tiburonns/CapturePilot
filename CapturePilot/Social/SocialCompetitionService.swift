@@ -1,13 +1,24 @@
-import CloudKit
+import AuthenticationServices
+import CryptoKit
+import FirebaseAuth
+import FirebaseCore
+import FirebaseFirestore
 import Foundation
+import GoogleSignIn
+import Security
+import UIKit
 
 struct SocialProfile: Identifiable, Hashable {
     let id: String
     let username: String
+    let providerIDs: [String]
+
+    var usesApple: Bool { providerIDs.contains("apple.com") }
+    var usesGoogle: Bool { providerIDs.contains("google.com") }
 }
 
 struct SocialFriendRequest: Identifiable, Hashable {
-    let id: CKRecord.ID
+    let id: String
     let requesterID: String
     let requesterUsername: String
 }
@@ -15,8 +26,7 @@ struct SocialFriendRequest: Identifiable, Hashable {
 struct SocialFriend: Identifiable, Hashable {
     let id: String
     let username: String
-    let requestRecordID: CKRecord.ID
-    let initiatedByMe: Bool
+    let relationshipID: String
 }
 
 struct SocialScore: Identifiable, Hashable {
@@ -31,80 +41,195 @@ struct SocialScore: Identifiable, Hashable {
 
 @MainActor
 final class SocialCompetitionService: ObservableObject {
+    enum BackendState: Equatable {
+        case unprepared
+        case notConfigured
+        case ready
+    }
+
+    private enum AppleIntent {
+        case signIn
+        case link
+        case deleteAccount
+    }
+
     @Published private(set) var profile: SocialProfile?
     @Published private(set) var friends: [SocialFriend] = []
     @Published private(set) var incomingRequests: [SocialFriendRequest] = []
     @Published private(set) var leaderboard: [SocialScore] = []
     @Published private(set) var isBusy = false
     @Published private(set) var errorDescription: String?
+    @Published private(set) var backendState: BackendState = .unprepared
 
-    @Published var shareScores: Bool {
+    @Published var shareScores = false {
         didSet {
-            UserDefaults.standard.set(shareScores, forKey: Self.shareScoresKey)
+            guard let uid = profile?.id else { return }
+            UserDefaults.standard.set(
+                shareScores,
+                forKey: Self.shareScoresKey(uid: uid)
+            )
         }
     }
 
-    static var isCloudKitCompiledIn: Bool {
-        #if CAPTUREPILOT_CLOUDKIT
-        true
-        #else
-        false
-        #endif
+    var isAvailable: Bool { true }
+    var isSignedIn: Bool { profile != nil }
+    var isBackendConfigured: Bool { backendState == .ready }
+    var appleSignInCapabilityAvailable: Bool {
+        Self.hasAppleSignInEntitlement
     }
 
-    var isAvailable: Bool { Self.isCloudKitCompiledIn }
+    private var database: Firestore?
+    private var currentAppleNonce: String?
+    private var appleIntent: AppleIntent = .signIn
 
-    private lazy var container = CKContainer(identifier: "iCloud.com.tiburonns.CapturePilot")
-    private var publicDatabase: CKDatabase { container.publicCloudDatabase }
-    private var privateDatabase: CKDatabase { container.privateCloudDatabase }
+    func prepareIfNeeded() {
+        guard backendState == .unprepared else { return }
 
-    private static let socialEnabledKey = "social.enabled"
-    private static let shareScoresKey = "social.shareScores"
-    private static let identityRecordID = CKRecord.ID(
-        recordName: "capturepilot_social_identity_v1"
-    )
-
-    init() {
-        if Self.isCloudKitCompiledIn {
-            shareScores = UserDefaults.standard.bool(forKey: Self.shareScoresKey)
-        } else {
-            shareScores = false
-            UserDefaults.standard.set(false, forKey: Self.shareScoresKey)
-            UserDefaults.standard.set(false, forKey: Self.socialEnabledKey)
+        guard let path = Bundle.main.path(
+            forResource: "GoogleService-Info",
+            ofType: "plist"
+        ),
+        let options = FirebaseOptions(contentsOfFile: path) else {
+            backendState = .notConfigured
+            return
         }
-    }
 
-    private func requireCloudKit() -> Bool {
-        guard Self.isCloudKitCompiledIn else {
-            shareScores = false
-            errorDescription =
-                "Friends Rankings are unavailable in this build. Camera, Coach, LUTs, Creative Spark, and local Rankings still work normally."
-            return false
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure(options: options)
         }
-        return true
+
+        guard FirebaseApp.app() != nil else {
+            backendState = .notConfigured
+            return
+        }
+
+        database = Firestore.firestore()
+
+        if let clientID = FirebaseApp.app()?.options.clientID,
+           !clientID.isEmpty {
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+                clientID: clientID
+            )
+        }
+
+        backendState = .ready
     }
 
     func restoreIfPossible() async {
-        guard requireCloudKit() else { return }
-        guard UserDefaults.standard.bool(forKey: Self.socialEnabledKey) else {
+        prepareIfNeeded()
+        guard backendState == .ready else { return }
+
+        guard let user = Auth.auth().currentUser else {
+            clearSession()
             return
         }
-        await connect(createIdentity: true)
+
+        await loadAccount(user)
     }
 
-    func enableSocial() async {
-        guard requireCloudKit() else { return }
-        UserDefaults.standard.set(true, forKey: Self.socialEnabledKey)
-        await connect(createIdentity: true)
-    }
+    func configureAppleRequest(
+        _ request: ASAuthorizationAppleIDRequest,
+        linking: Bool = false,
+        deleting: Bool = false
+    ) {
+        do {
+            let nonce = try Self.randomNonceString()
+            currentAppleNonce = nonce
 
-    func deleteSocialProfile() async {
-        guard requireCloudKit() else {
-            clearLocalSocialState()
-            return
+            if deleting {
+                appleIntent = .deleteAccount
+            } else if linking {
+                appleIntent = .link
+            } else {
+                appleIntent = .signIn
+            }
+
+            request.requestedScopes = [.email]
+            request.nonce = Self.sha256(nonce)
+        } catch {
+            errorDescription = error.localizedDescription
         }
-        guard let me = profile else {
-            clearLocalSocialState()
+    }
+
+    func completeAppleAuthorization(
+        _ result: Result<ASAuthorization, Error>
+    ) async {
+        prepareIfNeeded()
+        guard backendState == .ready else { return }
+
+        isBusy = true
+        defer {
+            isBusy = false
+            currentAppleNonce = nil
+            appleIntent = .signIn
+        }
+
+        do {
+            let authorization = try result.get()
+            guard let appleCredential =
+                    authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let nonce = currentAppleNonce,
+                  let tokenData = appleCredential.identityToken,
+                  let idToken = String(data: tokenData, encoding: .utf8) else {
+                throw SocialAccountError.invalidAppleCredential
+            }
+
+            let credential = OAuthProvider.appleCredential(
+                withIDToken: idToken,
+                rawNonce: nonce,
+                fullName: nil
+            )
+
+            switch appleIntent {
+            case .signIn:
+                let authResult = try await Auth.auth().signIn(
+                    with: credential
+                )
+                await loadAccount(authResult.user)
+
+            case .link:
+                guard let user = Auth.auth().currentUser else {
+                    throw SocialAccountError.notSignedIn
+                }
+                let authResult = try await user.link(with: credential)
+                await loadAccount(authResult.user)
+
+            case .deleteAccount:
+                guard let user = Auth.auth().currentUser else {
+                    throw SocialAccountError.notSignedIn
+                }
+
+                _ = try await user.reauthenticate(with: credential)
+
+                guard let codeData = appleCredential.authorizationCode,
+                      let authorizationCode = String(
+                        data: codeData,
+                        encoding: .utf8
+                      ) else {
+                    throw SocialAccountError.missingAppleAuthorizationCode
+                }
+
+                try await Auth.auth().revokeToken(
+                    withAuthorizationCode: authorizationCode
+                )
+                try await deleteCurrentAccountDataAndAuth(user: user)
+            }
+
+            errorDescription = nil
+        } catch {
+            errorDescription = accountError(error)
+        }
+    }
+
+    func signInWithGoogle(
+        linking: Bool = false,
+        deleting: Bool = false
+    ) async {
+        prepareIfNeeded()
+        guard backendState == .ready else { return }
+
+        guard let presenter = Self.topViewController() else {
+            errorDescription = SocialAccountError.noPresentationContext.localizedDescription
             return
         }
 
@@ -112,45 +237,64 @@ final class SocialCompetitionService: ObservableObject {
         defer { isBusy = false }
 
         do {
-            await removeOwnScores()
-
-            let outgoing = try await friendRequests(
-                field: "requesterID",
-                value: me.id
-            )
-            let incoming = try await friendRequests(
-                field: "addresseeID",
-                value: me.id
-            )
-
-            for request in outgoing {
-                _ = try? await publicDatabase.deleteRecord(
-                    withID: request.recordID
-                )
+            guard GIDSignIn.sharedInstance.configuration != nil else {
+                throw SocialAccountError.googleNotConfigured
             }
 
-            for request in incoming {
-                let acceptanceID = acceptanceRecordID(for: request.recordID)
-                _ = try? await publicDatabase.deleteRecord(
-                    withID: acceptanceID
-                )
-            }
-
-            let profileID = CKRecord.ID(recordName: "profile_\(me.id)")
-            _ = try? await publicDatabase.deleteRecord(withID: profileID)
-            _ = try? await privateDatabase.deleteRecord(
-                withID: Self.identityRecordID
+            let result = try await GIDSignIn.sharedInstance.signIn(
+                withPresenting: presenter
             )
 
-            clearLocalSocialState()
+            let googleUser = try await result.user.refreshTokensIfNeeded()
+
+            guard let idToken = googleUser.idToken?.tokenString else {
+                throw SocialAccountError.invalidGoogleCredential
+            }
+
+            let credential = GoogleAuthProvider.credential(
+                withIDToken: idToken,
+                accessToken: googleUser.accessToken.tokenString
+            )
+
+            if deleting {
+                guard let user = Auth.auth().currentUser else {
+                    throw SocialAccountError.notSignedIn
+                }
+
+                _ = try await user.reauthenticate(with: credential)
+                try await deleteCurrentAccountDataAndAuth(user: user)
+            } else if linking {
+                guard let user = Auth.auth().currentUser else {
+                    throw SocialAccountError.notSignedIn
+                }
+
+                let authResult = try await user.link(with: credential)
+                await loadAccount(authResult.user)
+            } else {
+                let authResult = try await Auth.auth().signIn(
+                    with: credential
+                )
+                await loadAccount(authResult.user)
+            }
+
+            errorDescription = nil
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
+        }
+    }
+
+    func signOut() {
+        do {
+            try Auth.auth().signOut()
+            GIDSignIn.sharedInstance.signOut()
+            clearSession()
+        } catch {
+            errorDescription = accountError(error)
         }
     }
 
     func sendFriendRequest(username rawUsername: String) async {
-        guard requireCloudKit() else { return }
-        guard let me = profile else { return }
+        guard let me = profile, let db = database else { return }
 
         let username = rawUsername
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -165,96 +309,93 @@ final class SocialCompetitionService: ObservableObject {
         defer { isBusy = false }
 
         do {
-            guard let target = try await findProfile(username: username) else {
-                errorDescription = "Username not found."
-                return
+            let snapshot = try await db.collection("users")
+                .whereField("usernameNormalized", isEqualTo: username)
+                .limit(to: 2)
+                .getDocuments()
+
+            guard let targetDocument = snapshot.documents.first,
+                  let targetUsername = targetDocument.data()["username"] as? String else {
+                throw SocialAccountError.usernameNotFound
             }
 
-            let outgoing = try await friendRequests(
-                field: "requesterID",
-                value: me.id
-            )
-            if outgoing.contains(
-                where: { ($0["addresseeID"] as? String) == target.id }
-            ) {
+            let targetID = targetDocument.documentID
+            let relationshipID = Self.relationshipID(me.id, targetID)
+            let reference = db.collection("friendships").document(relationshipID)
+            let existing = try await reference.getDocument()
+
+            if existing.exists {
+                let data = existing.data() ?? [:]
+                let status = data["status"] as? String ?? "pending"
+                let requesterID = data["requesterID"] as? String ?? ""
+
+                if status == "accepted" {
+                    errorDescription = nil
+                    return
+                }
+
+                if requesterID == targetID {
+                    try await reference.updateData([
+                        "status": "accepted",
+                        "updatedAt": Date()
+                    ])
+                    await refresh()
+                    errorDescription = nil
+                    return
+                }
+
                 errorDescription = nil
                 return
             }
 
-            let incoming = try await friendRequests(
-                field: "addresseeID",
-                value: me.id
-            )
-            if let existing = incoming.first(
-                where: { ($0["requesterID"] as? String) == target.id }
-            ) {
-                try await setAcceptance(
-                    for: existing,
-                    addresseeID: me.id,
-                    active: true
-                )
-                errorDescription = nil
-                await refresh()
-                return
-            }
+            try await reference.setData([
+                "requesterID": me.id,
+                "requesterUsername": me.username,
+                "addresseeID": targetID,
+                "addresseeUsername": targetUsername,
+                "status": "pending",
+                "createdAt": Date(),
+                "updatedAt": Date()
+            ])
 
-            let request = CKRecord(recordType: "FriendRequest")
-            request["requesterID"] = me.id as CKRecordValue
-            request["requesterUsername"] = me.username as CKRecordValue
-            request["addresseeID"] = target.id as CKRecordValue
-            request["createdAt"] = Date() as CKRecordValue
-            _ = try await publicDatabase.save(request)
-
-            errorDescription = nil
             await refresh()
+            errorDescription = nil
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
         }
     }
 
     func accept(_ request: SocialFriendRequest) async {
-        guard requireCloudKit() else { return }
-        guard let me = profile else { return }
+        guard let db = database else { return }
 
         isBusy = true
         defer { isBusy = false }
 
         do {
-            let record = try await publicDatabase.record(for: request.id)
-            try await setAcceptance(
-                for: record,
-                addresseeID: me.id,
-                active: true
-            )
+            try await db.collection("friendships")
+                .document(request.id)
+                .updateData([
+                    "status": "accepted",
+                    "updatedAt": Date()
+                ])
+
             await refresh()
+            errorDescription = nil
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
         }
     }
 
     func remove(_ friend: SocialFriend) async {
-        guard requireCloudKit() else { return }
-        guard let me = profile else { return }
+        guard let db = database else { return }
 
         do {
-            if friend.initiatedByMe {
-                _ = try await publicDatabase.deleteRecord(
-                    withID: friend.requestRecordID
-                )
-            } else {
-                let request = try await publicDatabase.record(
-                    for: friend.requestRecordID
-                )
-                try await setAcceptance(
-                    for: request,
-                    addresseeID: me.id,
-                    active: false
-                )
-            }
-
+            try await db.collection("friendships")
+                .document(friend.relationshipID)
+                .delete()
             await refresh()
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
         }
     }
 
@@ -262,10 +403,6 @@ final class SocialCompetitionService: ObservableObject {
         _ enabled: Bool,
         entries: [PhotoRankingEntry]
     ) async {
-        guard requireCloudKit() else {
-            shareScores = false
-            return
-        }
         shareScores = enabled
 
         if enabled {
@@ -276,8 +413,11 @@ final class SocialCompetitionService: ObservableObject {
     }
 
     func syncBestScores(entries: [PhotoRankingEntry]) async {
-        guard requireCloudKit() else { return }
-        guard shareScores, let me = profile else { return }
+        guard shareScores,
+              let me = profile,
+              let db = database else {
+            return
+        }
 
         let currentEntries = entries.filter {
             $0.scoreVersion == PhotoRankingEntry.currentScoreVersion
@@ -286,10 +426,10 @@ final class SocialCompetitionService: ObservableObject {
 
         var submissions: [(String, PhotoRankingEntry)] = []
 
-        if let bestOverall = currentEntries.max(
+        if let best = currentEntries.max(
             by: { $0.coachScore < $1.coachScore }
         ) {
-            submissions.append(("overall", bestOverall))
+            submissions.append(("overall", best))
         }
 
         for category in PhotoCategory.allCases {
@@ -302,402 +442,413 @@ final class SocialCompetitionService: ObservableObject {
 
         do {
             for (category, entry) in submissions {
-                let id = CKRecord.ID(
-                    recordName: "score_\(me.id)_\(category)"
-                )
-                let record = (try? await publicDatabase.record(for: id))
-                    ?? CKRecord(recordType: "RankingScore", recordID: id)
-
-                record["ownerID"] = me.id as CKRecordValue
-                record["username"] = me.username as CKRecordValue
-                record["category"] = category as CKRecordValue
-                record["score"] = NSNumber(value: entry.coachScore)
-                record["capturedAt"] = entry.createdAt as CKRecordValue
-                record["scoreVersion"] = NSNumber(value: entry.scoreVersion)
-                _ = try await publicDatabase.save(record)
+                let recordID = Self.scoreID(me.id, category)
+                try await db.collection("scores")
+                    .document(recordID)
+                    .setData([
+                        "ownerID": me.id,
+                        "username": me.username,
+                        "category": category,
+                        "score": entry.coachScore,
+                        "capturedAt": entry.createdAt,
+                        "scoreVersion": entry.scoreVersion,
+                        "updatedAt": Date()
+                    ], merge: true)
             }
 
             await loadLeaderboard()
             errorDescription = nil
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
         }
     }
 
     func refresh() async {
-        guard requireCloudKit() else { return }
         guard profile != nil else { return }
         await loadFriendsAndRequests()
         await loadLeaderboard()
     }
 
-    private func connect(createIdentity: Bool) async {
-        guard requireCloudKit() else { return }
-        isBusy = true
-        defer { isBusy = false }
+    private func loadAccount(_ user: User) async {
+        guard let db = database else { return }
+
+        let username = Self.username(for: user.uid)
+        let providers = Array(Set(user.providerData.map(\.providerID))).sorted()
 
         do {
-            let status = try await container.accountStatus()
-            guard status == .available else {
-                throw CKError(.notAuthenticated)
-            }
-
-            let identity: CKRecord
-
-            if let existing = try? await privateDatabase.record(
-                for: Self.identityRecordID
-            ) {
-                identity = existing
-            } else {
-                guard createIdentity else { return }
-
-                let socialID = UUID()
-                    .uuidString
-                    .replacingOccurrences(of: "-", with: "")
-                    .lowercased()
-                let username = "PILOT-\(String(socialID.prefix(12)).uppercased())"
-
-                identity = CKRecord(
-                    recordType: "SocialIdentity",
-                    recordID: Self.identityRecordID
-                )
-                identity["socialID"] = socialID as CKRecordValue
-                identity["username"] = username as CKRecordValue
-                identity["createdAt"] = Date() as CKRecordValue
-                _ = try await privateDatabase.save(identity)
-            }
-
-            guard let socialID = identity["socialID"] as? String else {
-                throw NSError(
-                    domain: "CapturePilot.Social",
-                    code: 1,
-                    userInfo: [
-                        NSLocalizedDescriptionKey:
-                            "The private social identity is incomplete."
-                    ]
-                )
-            }
-
-            let fallbackUsername =
-                "PILOT-\(String(socialID.prefix(12)).uppercased())"
-            let username = identity["username"] as? String ?? fallbackUsername
-
-            let publicProfileID = CKRecord.ID(
-                recordName: "profile_\(socialID)"
-            )
-            let publicProfile: CKRecord
-
-            if let existing = try? await publicDatabase.record(
-                for: publicProfileID
-            ) {
-                publicProfile = existing
-            } else {
-                publicProfile = CKRecord(
-                    recordType: "CapturePilotProfile",
-                    recordID: publicProfileID
-                )
-                publicProfile["socialID"] = socialID as CKRecordValue
-                publicProfile["username"] = username as CKRecordValue
-                publicProfile["createdAt"] = Date() as CKRecordValue
-                _ = try await publicDatabase.save(publicProfile)
-            }
-
-            let finalName =
-                publicProfile["username"] as? String
-                ?? username
+            try await db.collection("users")
+                .document(user.uid)
+                .setData([
+                    "username": username,
+                    "usernameNormalized": username.uppercased(),
+                    "createdAt": user.metadata.creationDate ?? Date(),
+                    "updatedAt": Date()
+                ], merge: true)
 
             profile = SocialProfile(
-                id: socialID,
-                username: finalName
+                id: user.uid,
+                username: username,
+                providerIDs: providers
             )
-            errorDescription = nil
+
+            shareScores = UserDefaults.standard.bool(
+                forKey: Self.shareScoresKey(uid: user.uid)
+            )
+
             await refresh()
-        } catch {
-            errorDescription = socialError(error)
-        }
-    }
 
-    private func findProfile(username: String) async throws -> SocialProfile? {
-        let query = CKQuery(
-            recordType: "CapturePilotProfile",
-            predicate: NSPredicate(format: "username == %@", username)
-        )
-
-        let result = try await publicDatabase.records(
-            matching: query,
-            resultsLimit: 5
-        )
-
-        for (_, recordResult) in result.matchResults {
-            if let record = try? recordResult.get(),
-               let id = record["socialID"] as? String,
-               let name = record["username"] as? String {
-                return SocialProfile(id: id, username: name)
+            if shareScores {
+                // Rankings sync is triggered by the view/store when entries are available.
             }
-        }
 
-        return nil
+            errorDescription = nil
+        } catch {
+            errorDescription = accountError(error)
+        }
     }
 
     private func loadFriendsAndRequests() async {
-        guard let me = profile else { return }
+        guard let me = profile, let db = database else { return }
 
         do {
-            let outgoing = try await friendRequests(
-                field: "requesterID",
-                value: me.id
-            )
-            let incoming = try await friendRequests(
-                field: "addresseeID",
-                value: me.id
-            )
+            let outgoing = try await db.collection("friendships")
+                .whereField("requesterID", isEqualTo: me.id)
+                .getDocuments()
 
-            var nextRequests: [SocialFriendRequest] = []
+            let incoming = try await db.collection("friendships")
+                .whereField("addresseeID", isEqualTo: me.id)
+                .getDocuments()
+
             var nextFriends: [String: SocialFriend] = [:]
+            var nextRequests: [SocialFriendRequest] = []
 
-            for request in incoming {
-                guard let requesterID = request["requesterID"] as? String else {
+            for document in outgoing.documents {
+                let data = document.data()
+                guard let otherID = data["addresseeID"] as? String,
+                      let otherName = data["addresseeUsername"] as? String else {
                     continue
                 }
 
-                let acceptance = try await acceptance(
-                    for: request.recordID
-                )
-
-                if acceptance.active {
-                    let name = try await profileName(forID: requesterID)
-                        ?? (request["requesterUsername"] as? String)
-                        ?? "PILOT"
-
-                    nextFriends[requesterID] = SocialFriend(
-                        id: requesterID,
-                        username: name,
-                        requestRecordID: request.recordID,
-                        initiatedByMe: false
+                if (data["status"] as? String) == "accepted" {
+                    nextFriends[otherID] = SocialFriend(
+                        id: otherID,
+                        username: otherName,
+                        relationshipID: document.documentID
                     )
-                } else if !acceptance.exists {
-                    let name =
-                        request["requesterUsername"] as? String
-                        ?? "PILOT"
+                }
+            }
 
+            for document in incoming.documents {
+                let data = document.data()
+                guard let otherID = data["requesterID"] as? String,
+                      let otherName = data["requesterUsername"] as? String else {
+                    continue
+                }
+
+                if (data["status"] as? String) == "accepted" {
+                    nextFriends[otherID] = SocialFriend(
+                        id: otherID,
+                        username: otherName,
+                        relationshipID: document.documentID
+                    )
+                } else {
                     nextRequests.append(
                         SocialFriendRequest(
-                            id: request.recordID,
-                            requesterID: requesterID,
-                            requesterUsername: name
+                            id: document.documentID,
+                            requesterID: otherID,
+                            requesterUsername: otherName
                         )
                     )
                 }
             }
 
-            for request in outgoing {
-                guard let addresseeID = request["addresseeID"] as? String else {
-                    continue
-                }
+            friends = nextFriends.values.sorted {
+                $0.username < $1.username
+            }
+            incomingRequests = nextRequests.sorted {
+                $0.requesterUsername < $1.requesterUsername
+            }
+        } catch {
+            errorDescription = accountError(error)
+        }
+    }
 
-                let acceptance = try await acceptance(
-                    for: request.recordID
-                )
+    private func loadLeaderboard() async {
+        guard let me = profile, let db = database else { return }
 
-                if acceptance.active {
-                    let name =
-                        try await profileName(forID: addresseeID)
-                        ?? "PILOT"
+        let ownerIDs = [me.id] + friends.map(\.id)
+        var nextScores: [SocialScore] = []
 
-                    nextFriends[addresseeID] = SocialFriend(
-                        id: addresseeID,
-                        username: name,
-                        requestRecordID: request.recordID,
-                        initiatedByMe: true
+        do {
+            for ownerID in ownerIDs {
+                let snapshot = try await db.collection("scores")
+                    .whereField("ownerID", isEqualTo: ownerID)
+                    .getDocuments()
+
+                for document in snapshot.documents {
+                    let data = document.data()
+                    guard let username = data["username"] as? String,
+                          let category = data["category"] as? String,
+                          let score = data["score"] as? NSNumber else {
+                        continue
+                    }
+
+                    let capturedAt: Date
+                    if let timestamp = data["capturedAt"] as? Timestamp {
+                        capturedAt = timestamp.dateValue()
+                    } else if let date = data["capturedAt"] as? Date {
+                        capturedAt = date
+                    } else {
+                        capturedAt = .distantPast
+                    }
+
+                    nextScores.append(
+                        SocialScore(
+                            id: document.documentID,
+                            ownerID: ownerID,
+                            username: username,
+                            category: category,
+                            score: score.doubleValue,
+                            capturedAt: capturedAt,
+                            scoreVersion:
+                                (data["scoreVersion"] as? NSNumber)?.intValue
+                                ?? PhotoRankingEntry.currentScoreVersion
+                        )
                     )
                 }
             }
 
-            incomingRequests = nextRequests.sorted {
-                $0.requesterUsername < $1.requesterUsername
-            }
-            friends = nextFriends.values.sorted {
-                $0.username < $1.username
-            }
-        } catch {
-            errorDescription = socialError(error)
-        }
-    }
-
-    private func friendRequests(
-        field: String,
-        value: String
-    ) async throws -> [CKRecord] {
-        let query = CKQuery(
-            recordType: "FriendRequest",
-            predicate: NSPredicate(format: "%K == %@", field, value)
-        )
-
-        let result = try await publicDatabase.records(
-            matching: query,
-            resultsLimit: 100
-        )
-
-        return result.matchResults.compactMap { _, item in
-            try? item.get()
-        }
-    }
-
-    private func acceptanceRecordID(
-        for requestID: CKRecord.ID
-    ) -> CKRecord.ID {
-        CKRecord.ID(
-            recordName: "accept_\(requestID.recordName)"
-        )
-    }
-
-    private func acceptance(
-        for requestID: CKRecord.ID
-    ) async throws -> (exists: Bool, active: Bool) {
-        let id = acceptanceRecordID(for: requestID)
-
-        guard let record = try? await publicDatabase.record(for: id) else {
-            return (false, false)
-        }
-
-        let active =
-            (record["active"] as? NSNumber)?.boolValue
-            ?? false
-
-        return (true, active)
-    }
-
-    private func setAcceptance(
-        for request: CKRecord,
-        addresseeID: String,
-        active: Bool
-    ) async throws {
-        let id = acceptanceRecordID(for: request.recordID)
-        let record = (try? await publicDatabase.record(for: id))
-            ?? CKRecord(recordType: "FriendAcceptance", recordID: id)
-
-        record["requestRecordName"] =
-            request.recordID.recordName as CKRecordValue
-        record["requesterID"] =
-            (request["requesterID"] as? String ?? "") as CKRecordValue
-        record["addresseeID"] = addresseeID as CKRecordValue
-        record["active"] = NSNumber(value: active)
-        record["updatedAt"] = Date() as CKRecordValue
-
-        _ = try await publicDatabase.save(record)
-    }
-
-    private func profileName(forID id: String) async throws -> String? {
-        let recordID = CKRecord.ID(recordName: "profile_\(id)")
-
-        guard let record = try? await publicDatabase.record(
-            for: recordID
-        ) else {
-            return nil
-        }
-
-        return record["username"] as? String
-    }
-
-    private func loadLeaderboard() async {
-        guard let me = profile else { return }
-
-        let ids = [me.id] + friends.map(\.id)
-
-        do {
-            let query = CKQuery(
-                recordType: "RankingScore",
-                predicate: NSPredicate(format: "ownerID IN %@", ids)
-            )
-
-            let result = try await publicDatabase.records(
-                matching: query,
-                resultsLimit: 400
-            )
-
-            leaderboard = result.matchResults.compactMap { id, item in
-                guard let record = try? item.get(),
-                      let ownerID = record["ownerID"] as? String,
-                      let username = record["username"] as? String,
-                      let category = record["category"] as? String,
-                      let number = record["score"] as? NSNumber,
-                      let version = record["scoreVersion"] as? NSNumber,
-                      version.intValue
-                        == PhotoRankingEntry.currentScoreVersion else {
-                    return nil
-                }
-
-                return SocialScore(
-                    id: id.recordName,
-                    ownerID: ownerID,
-                    username: username,
-                    category: category,
-                    score: number.doubleValue,
-                    capturedAt:
-                        record["capturedAt"] as? Date
-                        ?? .distantPast,
-                    scoreVersion: version.intValue
-                )
-            }
-            .sorted { lhs, rhs in
+            leaderboard = nextScores.sorted { lhs, rhs in
                 if lhs.score == rhs.score {
                     return lhs.capturedAt > rhs.capturedAt
                 }
                 return lhs.score > rhs.score
             }
         } catch {
-            errorDescription = socialError(error)
+            errorDescription = accountError(error)
         }
     }
 
     private func removeOwnScores() async {
-        guard let me = profile else { return }
+        guard let me = profile, let db = database else { return }
 
-        let categories =
-            ["overall"]
-            + PhotoCategory.allCases.map(\.rawValue)
+        do {
+            let snapshot = try await db.collection("scores")
+                .whereField("ownerID", isEqualTo: me.id)
+                .getDocuments()
 
-        for category in categories {
-            let id = CKRecord.ID(
-                recordName: "score_\(me.id)_\(category)"
-            )
-            _ = try? await publicDatabase.deleteRecord(
-                withID: id
-            )
+            let batch = db.batch()
+            for document in snapshot.documents {
+                batch.deleteDocument(document.reference)
+            }
+            try await batch.commit()
+
+            leaderboard.removeAll { $0.ownerID == me.id }
+        } catch {
+            errorDescription = accountError(error)
         }
-
-        leaderboard.removeAll { $0.ownerID == me.id }
     }
 
-    private func clearLocalSocialState() {
-        UserDefaults.standard.set(
-            false,
-            forKey: Self.socialEnabledKey
+    private func deleteCurrentAccountDataAndAuth(user: User) async throws {
+        guard let db = database else {
+            throw SocialAccountError.backendUnavailable
+        }
+
+        let outgoing = try await db.collection("friendships")
+            .whereField("requesterID", isEqualTo: user.uid)
+            .getDocuments()
+        let incoming = try await db.collection("friendships")
+            .whereField("addresseeID", isEqualTo: user.uid)
+            .getDocuments()
+        let scores = try await db.collection("scores")
+            .whereField("ownerID", isEqualTo: user.uid)
+            .getDocuments()
+
+        let batch = db.batch()
+        var deletedRelationshipIDs = Set<String>()
+
+        for document in outgoing.documents + incoming.documents {
+            if deletedRelationshipIDs.insert(document.documentID).inserted {
+                batch.deleteDocument(document.reference)
+            }
+        }
+
+        for document in scores.documents {
+            batch.deleteDocument(document.reference)
+        }
+
+        batch.deleteDocument(
+            db.collection("users").document(user.uid)
         )
-        UserDefaults.standard.set(
-            false,
-            forKey: Self.shareScoresKey
-        )
-        shareScores = false
+
+        try await batch.commit()
+        try await user.delete()
+
+        GIDSignIn.sharedInstance.signOut()
+        clearSession()
+    }
+
+    private func clearSession() {
         profile = nil
         friends = []
         incomingRequests = []
         leaderboard = []
-        errorDescription = nil
+        shareScores = false
     }
 
-    private func socialError(_ error: Error) -> String {
-        if let cloudError = error as? CKError {
-            switch cloudError.code {
-            case .notAuthenticated:
-                return "Sign in to iCloud on this device to use friends rankings."
-            case .permissionFailure:
-                return "CloudKit permissions/schema are not configured for this build."
+    private func accountError(_ error: Error) -> String {
+        if let accountError = error as? SocialAccountError {
+            return accountError.localizedDescription
+        }
+
+        if let authError = error as NSError?,
+           authError.domain == AuthErrorDomain {
+            switch AuthErrorCode(rawValue: authError.code) {
+            case .credentialAlreadyInUse, .emailAlreadyInUse:
+                return "This provider is already linked to another CapturePilot account. Sign in with that provider first, then link the other provider from the same account."
+            case .requiresRecentLogin:
+                return "For security, sign in again with a linked provider before deleting the account."
             default:
-                return cloudError.localizedDescription
+                break
             }
         }
 
         return error.localizedDescription
+    }
+
+    private static func shareScoresKey(uid: String) -> String {
+        "social.shareScores.\(uid)"
+    }
+
+    private static func username(for uid: String) -> String {
+        let digest = SHA256.hash(data: Data(uid.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return "PILOT-\(String(digest.prefix(12)).uppercased())"
+    }
+
+    private static func relationshipID(_ first: String, _ second: String) -> String {
+        let pair = [first, second].sorted().joined(separator: "|")
+        return SHA256.hash(data: Data(pair.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static func scoreID(_ uid: String, _ category: String) -> String {
+        let input = "\(uid)|\(category)"
+        return SHA256.hash(data: Data(input.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static func randomNonceString(length: Int = 32) throws -> String {
+        precondition(length > 0)
+
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(
+            kSecRandomDefault,
+            randomBytes.count,
+            &randomBytes
+        )
+
+        guard status == errSecSuccess else {
+            throw SocialAccountError.nonceGenerationFailed
+        }
+
+        let charset = Array(
+            "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._"
+        )
+
+        return String(
+            randomBytes.map { charset[Int($0) % charset.count] }
+        )
+    }
+
+    private static func sha256(_ input: String) -> String {
+        SHA256.hash(data: Data(input.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static var hasAppleSignInEntitlement: Bool {
+        guard let task = SecTaskCreateFromSelf(nil),
+              let value = SecTaskCopyValueForEntitlement(
+                task,
+                "com.apple.developer.applesignin" as CFString,
+                nil
+              ) else {
+            return false
+        }
+
+        if let values = value as? [String] {
+            return !values.isEmpty
+        }
+
+        return false
+    }
+
+    private static func topViewController(
+        from root: UIViewController? = nil
+    ) -> UIViewController? {
+        let base: UIViewController?
+
+        if let root {
+            base = root
+        } else {
+            base = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap(\.windows)
+                .first(where: \.isKeyWindow)?
+                .rootViewController
+        }
+
+        if let navigation = base as? UINavigationController {
+            return topViewController(from: navigation.visibleViewController)
+        }
+
+        if let tab = base as? UITabBarController {
+            return topViewController(from: tab.selectedViewController)
+        }
+
+        if let presented = base?.presentedViewController {
+            return topViewController(from: presented)
+        }
+
+        return base
+    }
+}
+
+private enum SocialAccountError: LocalizedError {
+    case backendUnavailable
+    case googleNotConfigured
+    case invalidGoogleCredential
+    case invalidAppleCredential
+    case missingAppleAuthorizationCode
+    case nonceGenerationFailed
+    case noPresentationContext
+    case notSignedIn
+    case usernameNotFound
+
+    var errorDescription: String? {
+        switch self {
+        case .backendUnavailable:
+            "The CapturePilot account backend is unavailable."
+        case .googleNotConfigured:
+            "Google sign-in is not configured for this build."
+        case .invalidGoogleCredential:
+            "Google did not return a usable identity token."
+        case .invalidAppleCredential:
+            "Apple did not return a usable identity credential."
+        case .missingAppleAuthorizationCode:
+            "Apple did not return the authorization code required for account deletion."
+        case .nonceGenerationFailed:
+            "CapturePilot could not create a secure Apple sign-in nonce."
+        case .noPresentationContext:
+            "CapturePilot could not present the account sign-in screen."
+        case .notSignedIn:
+            "Sign in to a CapturePilot account first."
+        case .usernameNotFound:
+            "That CapturePilot username was not found."
+        }
     }
 }
