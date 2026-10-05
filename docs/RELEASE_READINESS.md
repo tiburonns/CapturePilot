@@ -20,8 +20,8 @@ The following are release gates and must be green before merging to `main`:
 - Valid Info.plist.
 - Valid PrivacyInfo.xcprivacy.
 - Valid CapturePilot.entitlements template for the optional social build.
-- Default target does **not** attach CloudKit entitlements.
-- Default target does **not** define `CAPTUREPILOT_CLOUDKIT`.
+- Default target does **not** force the Sign in with Apple entitlement, preserving no-account/Personal-Team camera testing.
+- Account code must remain non-blocking and Firebase must not initialize from app startup.
 - Version/build fixed to 0.10.0 (13).
 - Bundle ID `com.tiburonns.CapturePilot`.
 - iPhone-only target.
@@ -193,7 +193,7 @@ Antes de fusionar a `main` deben quedar verdes:
 - el Privacy Manifest declara la recolección opcional de datos de cuenta/social sin tracking.
 - UserDefaults CA92.1.
 - tests deterministas LUT.
-- documentación de Ranking, Amigos/CloudKit y Chispa creativa.
+- documentación de Ranking, Cuenta/Amigos y Chispa creativa.
 
 ### Qué ya prueba CI
 
