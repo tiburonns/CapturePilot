@@ -31,7 +31,8 @@ The following are release gates and must be green before merging to `main`:
 - 1024 App Store icon source.
 - Camera and Photo Library add-only permission descriptions.
 - Personal-Team-safe startup without iCloud/CloudKit entitlements.
-- Privacy disclosure for the optional future social build remains documented.
+- Default Privacy Manifest declares no collected data because Friends/CloudKit is not compiled in.
+- CloudKit privacy-disclosure template remains documented separately.
 - UserDefaults required-reason API declaration CA92.1.
 - Deterministic LUT recommendation tests.
 - Release documentation for Rankings, Friends/CloudKit, and Creative Spark.
@@ -81,6 +82,8 @@ Must verify on-device:
 ### Apple Developer / signing gates
 
 For the **default non-CloudKit build**, core device testing can use a Personal Team. CloudKit/Friends is not part of that build.
+
+**TestFlight distribution itself requires an active Apple Developer Program membership and App Store Connect access.** A free/Personal Team can validate the app on the developer's own devices, but cannot complete the TestFlight distribution steps.
 
 For a future Friends-enabled distribution build:
 
@@ -142,7 +145,7 @@ Before external testing, complete:
 - current age-rating questionnaire;
 - App Privacy answers consistent with `PrivacyInfo.xcprivacy`.
 
-The privacy questionnaire should reflect the optional Friends feature: pseudonymous User ID and synchronized score/user-content metadata are collected for app functionality, with no tracking.
+For the default 0.9.2 candidate, App Privacy should reflect the non-CloudKit binary. If the optional Friends build is submitted later, update the bundled privacy manifest and App Privacy answers to disclose pseudonymous User ID and synchronized score/user-content metadata for app functionality, with no tracking.
 
 ### Go / no-go definition
 
@@ -188,8 +191,9 @@ Antes de fusionar a `main` deben quedar verdes:
 - cuatro orientaciones declaradas.
 - icono App Store 1024.
 - permisos de Cámara y guardar en Fotos.
-- entitlement iCloud/CloudKit.
-- disclosure de User ID pseudónimo y metadata social.
+- el target por defecto **no** adjunta entitlement iCloud/CloudKit.
+- el Privacy Manifest por defecto no declara datos recopilados.
+- la plantilla de privacidad social queda separada para la variante CloudKit.
 - UserDefaults CA92.1.
 - tests deterministas LUT.
 - documentación de Ranking, Amigos/CloudKit y Chispa creativa.
@@ -239,6 +243,8 @@ Validar:
 ### Apple Developer / firma
 
 La build por defecto sin CloudKit puede probarse en dispositivo con Personal Team.
+
+**Distribuir por TestFlight requiere una membresía activa de Apple Developer Program y acceso a App Store Connect.** Una cuenta gratuita/Personal Team sirve para validar la app en los dispositivos propios, pero no puede completar la distribución por TestFlight.
 
 Para una futura build con Amigos:
 

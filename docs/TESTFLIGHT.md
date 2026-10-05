@@ -16,7 +16,9 @@ Compilation does not prove physical camera behavior, external File Provider pers
 
 ### Current Apple upload requirements
 
-As of September 2026:
+As of October 2026:
+
+- TestFlight/App Store Connect distribution requires Apple Developer Program membership; a Personal Team is only for direct development-device testing.
 
 - App Store Connect uploads require Xcode 26 or later and the iOS 26 SDK or later.
 - CapturePilot's CI currently uses Xcode 26.6 and the iOS 26.5 SDK, which satisfies that floor.

@@ -90,10 +90,12 @@ collected = {
     item.get("NSPrivacyCollectedDataType")
     for item in privacy.get("NSPrivacyCollectedDataTypes", [])
 }
-require("NSPrivacyCollectedDataTypeUserID" in collected,
-        "Privacy manifest must disclose the pseudonymous social user ID.")
-require("NSPrivacyCollectedDataTypeOtherUserContent" in collected,
-        "Privacy manifest must disclose synchronized score/user-content metadata.")
+require(not collected,
+        f"Default non-CloudKit privacy manifest must not declare collected data types, found {sorted(collected)}")
+require(
+    (ROOT / "docs/PrivacyInfo.CloudKit.xcprivacy.template").exists(),
+    "CloudKit privacy-manifest template is missing."
+)
 
 accessed = {
     item.get("NSPrivacyAccessedAPIType"): set(item.get("NSPrivacyAccessedAPITypeReasons", []))
