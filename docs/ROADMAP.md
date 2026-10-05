@@ -128,7 +128,7 @@ A checked source item means implementation exists and the project compiles. It d
 - [x] iOS 17 scoring fallback.
 - [x] Per-photo improvement/interest recommendations.
 - [x] Private local thumbnail/index persistence.
-- [x] Private iCloud-backed social identity.
+- [x] Legacy iCloud-backed social prototype completed in 0.8.
 - [x] Automatic Pilot-* username.
 - [x] Friend requests/accept/remove.
 - [x] Friends leaderboard by category.
@@ -137,11 +137,7 @@ A checked source item means implementation exists and the project compiles. It d
 - [x] No social photo upload in 0.8.
 - [ ] Validate ranking with a diverse real-world photo set.
 - [ ] Validate RAW/ProRAW post-shot decoding/ranking.
-- [ ] Configure iCloud/CloudKit resources in Apple Developer.
-- [ ] Create/verify CloudKit development schema and queryable indexes.
-- [ ] Deploy CloudKit schema for distribution.
-- [ ] Validate social flow with two real Apple accounts/devices.
-- [ ] Validate iCloud unavailable/sign-out behavior.
+- [x] **CloudKit social backend superseded by the provider-neutral Apple/Google account architecture in 0.10.**
 - [ ] Evaluate trusted server-side score validation before any prize/high-stakes competition.
 - [ ] Add moderation/report/block infrastructure before any future social photo sharing.
 
@@ -352,7 +348,7 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [x] Fallback iOS 17.
 - [x] Recomendaciones por foto.
 - [x] Índice/miniaturas privadas locales.
-- [x] Identidad social privada respaldada por iCloud.
+- [x] Prototipo social legacy respaldado por iCloud completado en 0.8.
 - [x] Username Pilot-* automático.
 - [x] Solicitudes/aceptación/eliminación de amigos.
 - [x] Ranking de amigos por categoría.
@@ -361,11 +357,7 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [x] Sin subida social de fotos en 0.8.
 - [ ] Validar ranking con fotos reales diversas.
 - [ ] Validar RAW/ProRAW.
-- [ ] Configurar iCloud/CloudKit en Apple Developer.
-- [ ] Crear/verificar schema e índices CloudKit.
-- [ ] Desplegar schema para distribución.
-- [ ] Probar con dos cuentas/dispositivos.
-- [ ] Probar cuenta iCloud no disponible/cierre de sesión.
+- [x] **Backend social CloudKit sustituido por cuentas Apple/Google neutrales en 0.10.**
 - [ ] Evaluar validación confiable antes de competencias con premios.
 - [ ] Añadir moderación/report/block antes de compartir fotos socialmente.
 
