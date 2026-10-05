@@ -358,6 +358,23 @@ struct SettingsView: View {
                     Text(settings.text(.lutLibrary))
                 }
 
+                Section(t("Support", "Soporte")) {
+                    NavigationLink {
+                        CapturePilotFeedbackView()
+                            .environmentObject(settings)
+                    } label: {
+                        Label(
+                            t("Questions, suggestions and feedback", "Dudas, sugerencias y feedback"),
+                            systemImage: "bubble.left.and.bubble.right"
+                        )
+                    }
+
+                    Link(
+                        t("Open GitHub Issues", "Abrir Issues de GitHub"),
+                        destination: URL(string: "https://github.com/tiburonns/CapturePilot/issues")!
+                    )
+                }
+
                 Section(settings.text(.privacy)) {
                     Text(settings.text(.privacyDetail))
                         .font(.footnote)
@@ -416,9 +433,138 @@ struct SettingsView: View {
         }
     }
 
+    private func t(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english:
+            return english
+        case .spanish:
+            return spanish
+        case .system:
+            return Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
+        }
+    }
+
     private var versionAndBuild: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.9.3"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "12"
         return "\(version) (\(build))"
+    }
+}
+
+
+private struct CapturePilotFeedbackView: View {
+    private enum Category: String, CaseIterable, Identifiable {
+        case question, suggestion, bug, feedback
+        var id: String { rawValue }
+
+        func title(using t: (String, String) -> String) -> String {
+            switch self {
+            case .question: t("Question", "Duda")
+            case .suggestion: t("Suggestion", "Sugerencia")
+            case .bug: t("Bug / Error", "Error")
+            case .feedback: t("General feedback", "Feedback general")
+            }
+        }
+
+        var issuePrefix: String {
+            switch self {
+            case .question: "Question"
+            case .suggestion: "Suggestion"
+            case .bug: "Bug"
+            case .feedback: "Feedback"
+            }
+        }
+    }
+
+    @EnvironmentObject private var settings: AppSettings
+    @Environment(\.openURL) private var openURL
+    @State private var category = Category.question
+    @State private var message = ""
+
+    private func t(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english:
+            return english
+        case .spanish:
+            return spanish
+        case .system:
+            return Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
+        }
+    }
+
+    var body: some View {
+        Form {
+            Section(t("Type", "Tipo")) {
+                Picker(t("Category", "Categoría"), selection: $category) {
+                    ForEach(Category.allCases) { option in
+                        Text(option.title(using: t)).tag(option)
+                    }
+                }
+            }
+
+            Section(t("Message", "Mensaje")) {
+                TextEditor(text: $message)
+                    .frame(minHeight: 160)
+
+                Text(t(
+                    "Do not include passwords, Apple IDs, precise location, or other sensitive information.",
+                    "No incluyas contraseñas, Apple ID, ubicación precisa ni otra información sensible."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Button {
+                    submit()
+                } label: {
+                    Label(
+                        t("Open in GitHub", "Abrir en GitHub"),
+                        systemImage: "paperplane.fill"
+                    )
+                }
+                .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            } footer: {
+                Text(t(
+                    "GitHub will open so you can review and publish the report yourself.",
+                    "GitHub se abrirá para que revises y publiques el reporte tú mismo."
+                ))
+            }
+        }
+        .navigationTitle(t("Feedback", "Feedback"))
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "\(version) (\(build))"
+    }
+
+    private func submit() {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "github.com"
+        components.path = "/tiburonns/CapturePilot/issues/new"
+        components.queryItems = [
+            URLQueryItem(name: "title", value: "[\(category.issuePrefix)] "),
+            URLQueryItem(
+                name: "body",
+                value: """
+                \(message)
+
+                ---
+                App: CapturePilot
+                Version: \(appVersion)
+                """
+            )
+        ]
+
+        if let url = components.url {
+            openURL(url)
+        }
     }
 }
