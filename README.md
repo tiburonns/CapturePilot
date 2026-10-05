@@ -210,6 +210,12 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 - Privacy Manifest declares no tracking. Optional Friends declares linked User ID and other user-content metadata for app functionality.
 - UserDefaults Required Reason API: CA92.1.
 
+### Contact and feedback
+
+Questions, suggestions, bug reports, and general feedback can be sent from **Settings → Support** in CapturePilot or directly through [GitHub Issues](https://github.com/tiburonns/CapturePilot/issues). CapturePilot prepares the report and opens GitHub so it can be reviewed before publishing.
+
+Do not include passwords, Apple IDs, precise location, or other sensitive information. Security vulnerabilities should use GitHub's private **Security → Report a vulnerability** flow.
+
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
@@ -416,6 +422,12 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - Las carpetas LUT externas sólo se leen después de que el fotógrafo seleccione una explícitamente mediante el selector de Archivos.
 - Privacy Manifest sin tracking; Amigos opcional declara User ID y otra metadata de contenido vinculada para funcionalidad.
 - Required Reason API de UserDefaults: CA92.1.
+
+### Contacto y feedback
+
+Las dudas, sugerencias, reportes de errores y feedback general pueden enviarse desde **Ajustes → Soporte** dentro de CapturePilot o directamente mediante [GitHub Issues](https://github.com/tiburonns/CapturePilot/issues). CapturePilot prepara el reporte y abre GitHub para revisarlo antes de publicarlo.
+
+No incluyas contraseñas, Apple ID, ubicación precisa ni otra información sensible. Las vulnerabilidades de seguridad deben enviarse mediante el flujo privado **Security → Report a vulnerability** de GitHub.
 
 ### Build / estado de publicación
 
