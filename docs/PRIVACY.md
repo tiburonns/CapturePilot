@@ -200,7 +200,7 @@ UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, 
 
 - Tracking: falso.
 - Dominios: ninguno.
-- Tipos de datos recopilados: ninguno en la build por defecto sin CloudKit.
+- Datos opcionales de cuenta/social: User ID, Email Address, Name y Other User Content para funcionalidad, sin tracking.
 - Required Reason API: UserDefaults / CA92.1.
 
 Si en el futuro se agregan red, cuentas, analytics, SDK de crashes, IA cloud u otras Required Reason APIs, se debe revisar este documento y el manifest.
