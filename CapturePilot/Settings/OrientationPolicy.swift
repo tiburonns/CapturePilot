@@ -1,3 +1,4 @@
+import GoogleSignIn
 import UIKit
 
 enum OrientationPolicy {
@@ -48,5 +49,13 @@ final class CapturePilotAppDelegate: NSObject, UIApplicationDelegate {
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
         OrientationPolicy.supportedMask
+    }
+
+    func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        GIDSignIn.sharedInstance.handle(url)
     }
 }
