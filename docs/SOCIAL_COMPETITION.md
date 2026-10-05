@@ -1,113 +1,33 @@
-# Friends + Social Scores / Amigos + scores sociales
+# Friends Rankings / Ranking con amigos
 
-CapturePilot 0.8 introduces an opt-in social score layer for friendly comparison without uploading friend photos.
+CapturePilot Friends is an **optional account feature** inside the Rankings section.
+
+It is not part of camera startup and it is not required for any local photography workflow.
+
+See [Optional Accounts: Apple + Google](ACCOUNTS_FIREBASE.md) for provider/backend setup.
 
 ---
 
 ## English
 
-### Identity: private iCloud-backed CapturePilot identity
+### Identity
 
-CapturePilot does **not** read a person's Apple Account email, password, or account name.
+The canonical social identity is a Firebase Authentication UID.
 
-When the photographer explicitly enables Friends Rankings, CapturePilot checks that an iCloud account is available and creates a random social identifier inside that user's **private CloudKit database**.
+A photographer can create/access the account with:
+- Apple;
+- Google.
 
-A fixed private record ID lets the same iCloud account restore the same CapturePilot social identity on another device using the same container.
+The second provider can be explicitly linked to the same account.
 
-The automatic username is derived from that random private social identifier, for example:
+CapturePilot publishes an automatic pseudonymous username derived from the UID:
 
-```text
-PILOT-A1B2C3D4E5F6
-```
+`PILOT-XXXXXXXXXXXX`
 
-This is the feasible privacy-preserving interpretation of “linked to the Apple ID”: the identity follows the signed-in iCloud/Apple account through its private CloudKit database, while CapturePilot never receives the visible Apple Account identifier.
+### Social scope
 
-### CloudKit
-
-Social data uses:
-
-```text
-iCloud.com.tiburonns.CapturePilot
-```
-
-The private database stores the per-account CapturePilot identity. The public database stores the minimal discoverable profile, friendship edges, and opt-in best-score metadata.
-
-Current record types:
-
-### Private database
-
-#### SocialIdentity
-
-| Field | Type | Purpose |
-| --- | --- | --- |
-| socialID | String | Random CapturePilot social identifier |
-| username | String | Automatic PILOT-* username |
-| createdAt | Date | Identity creation |
-
-Only that iCloud account can access the private record by default.
-
-### Public database
-
-#### CapturePilotProfile
-
-| Field | Type | Purpose |
-| --- | --- | --- |
-| socialID | String | Random pseudonymous CapturePilot social identity |
-| username | String | Automatic PILOT-* username |
-| createdAt | Date | Profile creation |
-
-#### FriendRequest
-
-| Field | Type |
-| --- | --- |
-| requesterID | String |
-| requesterUsername | String |
-| addresseeID | String |
-| createdAt | Date |
-
-The requester owns this public record.
-
-#### FriendAcceptance
-
-| Field | Type |
-| --- | --- |
-| requestRecordName | String |
-| requesterID | String |
-| addresseeID | String |
-| active | Bool/Int |
-| updatedAt | Date |
-
-The addressee creates/owns the acceptance record. This avoids requiring one user to modify another user's CloudKit record.
-
-#### RankingScore
-
-| Field | Type |
-| --- | --- |
-| ownerID | String |
-| username | String |
-| category | String |
-| score | Double |
-| capturedAt | Date |
-| scoreVersion | Int | Ranking formula version |
-
-CapturePilot stores at most one current best-score record per user/category record ID.
-
-### Friend flow
-
-1. Enable Friends Rankings while signed into iCloud.
-2. CapturePilot creates/restores the private SocialIdentity.
-3. A minimal public profile exposes only the automatic username/social ID.
-4. Search/add by exact CapturePilot username.
-5. Requester creates a FriendRequest.
-6. Addressee accepts by creating their own FriendAcceptance record.
-7. Accepted users appear in the friends list.
-8. The leaderboard contains the current user's and accepted friends' shared best scores.
-
-### Leaderboard filters
-
-Friends leaderboard supports:
-
-- Overall;
+Friends can compare:
+- Overall best Coach Score;
 - General;
 - Portrait;
 - Architecture;
@@ -117,264 +37,129 @@ Friends leaderboard supports:
 - Landscape;
 - Night.
 
-Only scores from **CapturePilot-captured photos** are eligible for upload.
+Score sharing is opt-in.
 
-### Opt-in score sharing
+Only scores from photos captured inside CapturePilot are eligible. Imported images participate in the private ranking but are never submitted to Friends Rankings.
 
-Score sharing is off until the photographer enables it.
+### What is synchronized
 
-When enabled, CapturePilot can sync:
-
-- automatic username;
+When enabled:
+- automatic CapturePilot username;
+- account UID needed by the relationship/security model;
 - category;
 - Coach Score;
-- capture date.
+- score version;
+- capture date;
+- friendship state.
 
-CapturePilot 0.8 does **not** upload:
+### What is not synchronized
 
-- the photo;
-- ranking thumbnail;
+CapturePilot does not upload to Friends Rankings:
 - RAW;
 - JPEG;
-- LUT;
-- photo tags;
-- recommendation text;
-- Apple ID email/password/name.
+- ranking thumbnails;
+- LUT files;
+- complete photo tags;
+- recommendation text.
 
-### Public CloudKit privacy boundary
+Photos remain local in this version.
 
-CapturePilot currently uses the **public** CloudKit database so profiles can be discovered by username and friends can compare scores.
+### Account data vs public profile
 
-Apple documents that public-database contents are readable by users of the app according to the CloudKit security model.
+Apple/Google authentication can provide account information such as email and display name to Firebase Authentication.
 
-Therefore, the synchronized fields above must be treated as **public/pseudonymous social metadata**, not secret data.
+CapturePilot does **not** copy that provider email/name into its public Firestore profile.
 
-Photos remain local.
+The public profile contains only the automatic CapturePilot username required for discovery.
 
-### Friendly competition, not anti-cheat
+### Friendly competition
 
-The app limits synced scores to photos captured by CapturePilot, but 0.8 still performs scoring on the client.
+Scores are calculated on-device.
 
-A modified client could potentially falsify a score before CloudKit submission.
+Restricting submissions to CapturePilot captures reduces obvious abuse, but a modified client could still falsify a score.
 
-For a high-stakes or prize competition, CapturePilot would need a trusted validation service that verifies identity tokens and score submissions independently.
+Do not present Friends Rankings as anti-cheat or suitable for prizes without trusted server-side validation.
 
-Do not advertise 0.8 as anti-cheat or competition-grade verification.
+### Future photo sharing
 
-### Why friend photos are not uploaded yet
+Showing friends' actual photographs would add user-generated-content obligations.
 
-Uploading/displaying user photos would turn CapturePilot into a user-generated-content/social-photo service.
-
-Before enabling that feature, CapturePilot should implement at minimum:
-
-- objectionable-content filtering;
-- report flow;
+Before enabling that, CapturePilot should have:
+- reporting;
 - blocking;
-- moderation/timely response process;
-- published support/contact information;
-- appropriate CloudKit or server access controls.
+- moderation;
+- objectionable-content handling;
+- support/contact process.
 
-CapturePilot 0.8 intentionally syncs scores, not photos.
-
----
-
-## Apple Developer / CloudKit setup
-
-The repository's **default build compiles the social UI/service in a disabled mode** and does not initialize CloudKit. This keeps Personal Team/free-device builds safe.
-
-The social feature is compiled in only when `CAPTUREPILOT_CLOUDKIT` is added to Swift Active Compilation Conditions and the target is signed with matching iCloud/CloudKit entitlements. It cannot be considered physically/TestFlight validated until those Apple Developer resources are ready.
-
-### App ID capabilities
-
-For bundle ID:
-
-```text
-com.tiburonns.CapturePilot
-```
-
-enable:
-
-- iCloud;
-- CloudKit.
-
-Container:
-
-```text
-iCloud.com.tiburonns.CapturePilot
-```
-
-The repository includes `CapturePilot/CapturePilot.entitlements` as a template, but **0.9.2 does not attach it to the target by default**. See [CLOUDKIT_OPTIONAL.md](CLOUDKIT_OPTIONAL.md).
-
-### Development schema
-
-During development, launch the signed app with the CloudKit development environment and exercise:
-
-1. enable Friends Rankings with an available iCloud account;
-2. private SocialIdentity + public profile creation;
-3. send friend request;
-4. accept friend request;
-5. enable score sharing.
-
-This creates/uses the record types.
-
-### Required queryable fields
-
-Before distribution, verify queryable indexes in CloudKit Console for fields used by queries:
-
-**CapturePilotProfile**
-- username
-
-**FriendRequest**
-- requesterID
-- addresseeID
-
-**RankingScore**
-- ownerID
-
-Additional indexes may be added for operational/debugging needs, but do not index unused fields without a reason.
-
-### Production deployment
-
-After the development schema is correct:
-
-1. review record types/fields/indexes in CloudKit Console;
-2. deploy schema changes to production;
-3. verify the distribution provisioning profile includes the iCloud/CloudKit entitlements;
-4. test the distributed build with two real accounts/devices.
-
-### Acceptance test
-
-Use two different Apple accounts/devices:
-
-- A enables Friends and receives a PILOT-* username;
-- B enables Friends and receives a different username;
-- A sends B a request;
-- B accepts;
-- both enable score sharing;
-- each captures photos inside CapturePilot;
-- verify overall/category leaderboard;
-- disable sharing and verify own cloud score records disappear;
-- remove friendship and verify the friend disappears from the local leaderboard query scope;
-- sign out of iCloud / test unavailable account state and verify the social layer fails gracefully while local Rankings keep working.
+0.10 keeps the social layer score-only.
 
 ---
 
 ## Español
 
+Amigos es una función de cuenta **opcional** dentro de Ranking.
+
+No participa en el inicio de la cámara y no es requisito para las funciones locales.
+
+Consulta [Cuentas opcionales: Apple + Google](ACCOUNTS_FIREBASE.md).
+
 ### Identidad
 
-CapturePilot **no puede ni intenta leer directamente el Apple ID visible, correo o contraseña**.
+La identidad canónica es el Firebase UID.
 
-Al activar Amigos, CapturePilot verifica una cuenta iCloud disponible y crea un identificador social aleatorio dentro de la **base privada de CloudKit** de esa cuenta.
+Se puede acceder con:
+- Apple;
+- Google.
 
-El username automático se deriva de esa identidad privada:
+El segundo proveedor puede vincularse explícitamente a la misma cuenta.
 
-```text
-PILOT-A1B2C3D4E5F6
-```
+Username automático:
+`PILOT-XXXXXXXXXXXX`
 
-Así la identidad puede seguir a la misma cuenta iCloud entre dispositivos sin que CapturePilot reciba correo, contraseña o nombre visible de la cuenta Apple.
+### Ranking social
 
-### CloudKit
+Se compara:
+- Overall;
+- General;
+- Retrato;
+- Arquitectura;
+- Automotriz;
+- Macro;
+- Calle;
+- Paisaje;
+- Noche.
 
-La metadata social usa el contenedor:
+Compartir scores es opt-in.
 
-```text
-iCloud.com.tiburonns.CapturePilot
-```
+Sólo capturas hechas dentro de CapturePilot pueden aportar score. Las fotos importadas permanecen en ranking privado.
 
-en la base pública de CloudKit.
-
-Tipos de registro:
-
-**Privado**
-- `SocialIdentity`
-
-**Público**
-- `CapturePilotProfile`
-- `FriendRequest`
-- `FriendAcceptance`
-- `RankingScore`
-
-### Qué se sincroniza
-
-Cuando la persona activa compartir scores:
+### Se sincroniza
 
 - username automático;
+- UID necesario para seguridad/amistad;
 - categoría;
 - Coach Score;
-- fecha.
+- versión del score;
+- fecha;
+- estado de amistad.
 
-No se sincronizan en 0.8:
+### No se sincroniza
 
-- fotografías;
+- RAW;
+- JPEG;
 - miniaturas;
-- RAW/JPEG;
 - LUT;
-- tags;
-- recomendaciones;
-- correo/nombre/contraseña de la cuenta Apple.
+- tags completos;
+- texto de recomendaciones.
 
-Sólo las fotos tomadas dentro de CapturePilot son elegibles para score social.
+### Datos del proveedor
 
-### Privacidad de la base pública
+Firebase Authentication puede recibir correo/nombre del proveedor Apple/Google. CapturePilot no copia esos datos al perfil público de Firestore.
 
-La base pública permite descubrimiento de perfiles y comparación.
+### Competencia amistosa
 
-La metadata sincronizada debe tratarse como **información social pública/pseudónima dentro del servicio**, no como un secreto.
+El score se calcula en cliente. No es anti-cheat certificado.
 
-Las fotografías siguen locales.
+### Compartir fotos después
 
-### No es anti-cheat
-
-El cliente calcula el score.
-
-Aunque restringimos el leaderboard a capturas hechas dentro de CapturePilot, un cliente modificado podría falsear datos.
-
-Para premios o competencias formales haría falta validación confiable del lado servidor.
-
-### Fotos de amigos
-
-0.8 no sube fotos de amigos.
-
-Antes de activar fotos sociales deben existir filtrado, reportes, bloqueo, moderación y contacto de soporte apropiados.
-
-### Configuración Apple requerida
-
-Para `com.tiburonns.CapturePilot`:
-
-- iCloud;
-- CloudKit;
-- contenedor `iCloud.com.tiburonns.CapturePilot`.
-
-En CloudKit Console verifica índices QUERYABLE:
-
-**CapturePilotProfile**
-- username
-
-**FriendRequest**
-- requesterID
-- addresseeID
-
-**RankingScore**
-- ownerID
-
-El repo incluye `CapturePilot/CapturePilot.entitlements` como plantilla, pero **0.9.2 no lo adjunta al target por defecto**. También debe añadirse la condición `CAPTUREPILOT_CLOUDKIT`. Consulta [CLOUDKIT_OPTIONAL.md](CLOUDKIT_OPTIONAL.md).
-
-Después despliega el schema probado al entorno de producción antes de considerar lista la función social para distribución.
-
-### Prueba real
-
-Con dos cuentas/dispositivos:
-
-1. A activa Amigos con iCloud disponible;
-2. B activa Amigos con otra cuenta iCloud;
-3. usernames distintos;
-4. solicitud A → B;
-5. aceptación;
-6. ambos comparten scores;
-7. ambos toman fotos en CapturePilot;
-8. comparar Overall y categorías;
-9. desactivar compartir;
-10. eliminar amistad;
-11. probar cierre/no disponibilidad de iCloud sin romper el ranking local.
+Antes de mostrar fotos de otros usuarios deben existir reportes, bloqueo, moderación y manejo de contenido. 0.10 continúa siendo social por scores, no por fotografías.
