@@ -30,6 +30,12 @@ private struct LUTScanResult {
     let succeeded: Bool
 }
 
+private struct LUTBookmarkResolution {
+    let url: URL?
+    let isStale: Bool
+    let errorDescription: String?
+}
+
 private final class LUTFolderPresenter: NSObject, NSFilePresenter {
     var presentedItemURL: URL?
     let presentedItemOperationQueue: OperationQueue
@@ -69,6 +75,7 @@ final class LUTLibraryStore: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private let bookmarkKey = "lutLibrary.folderBookmark.v1"
+    private let folderNameKey = "lutLibrary.folderDisplayName.v1"
     private let activeIDKey = "lutLibrary.activeEntryID.v1"
     private let activeNameKey = "lutLibrary.activeDisplayName.v1"
     private let activeSourceKey = "lutLibrary.activeSource.v1"
@@ -77,20 +84,25 @@ final class LUTLibraryStore: ObservableObject {
     private var didStartSecurityAccess = false
     private var presenter: LUTFolderPresenter?
     private var refreshTask: Task<Void, Never>?
+    private var folderResolutionTask: Task<Void, Never>?
+    private var scanTask: Task<Void, Never>?
+    private var monitorGeneration = 0
+    private var scanGeneration = 0
 
     init() {
         Self.ensureLocalFolder()
-        folderDisplayName = nil
+        folderDisplayName = defaults.string(forKey: folderNameKey)
         activeEntryID = defaults.string(forKey: activeIDKey)
         activeDisplayName = defaults.string(forKey: activeNameKey)
         activeSource = LUTLibrarySource(
             rawValue: defaults.string(forKey: activeSourceKey) ?? ""
         )
-        folderDisplayName = resolvedFolderURL()?.lastPathComponent
     }
 
     deinit {
         refreshTask?.cancel()
+        folderResolutionTask?.cancel()
+        scanTask?.cancel()
         if let presenter {
             NSFileCoordinator.removeFilePresenter(presenter)
         }
@@ -126,6 +138,7 @@ final class LUTLibraryStore: ObservableObject {
             relativeTo: nil
         )
         defaults.set(data, forKey: bookmarkKey)
+        defaults.set(url.lastPathComponent, forKey: folderNameKey)
         folderDisplayName = url.lastPathComponent
 
         startMonitoring()
@@ -136,6 +149,7 @@ final class LUTLibraryStore: ObservableObject {
 
         stopMonitoring()
         defaults.removeObject(forKey: bookmarkKey)
+        defaults.removeObject(forKey: folderNameKey)
         folderDisplayName = nil
         scanErrorDescription = nil
 
@@ -149,41 +163,76 @@ final class LUTLibraryStore: ObservableObject {
     func startMonitoring() {
         Self.ensureLocalFolder()
 
-        if monitoredURL != nil {
-            refresh()
+        // Local LUTs can refresh immediately, but the actual disk work happens
+        // off the main actor so launch never waits on file enumeration/parsing.
+        refresh()
+
+        guard monitoredURL == nil,
+              let bookmarkData = defaults.data(forKey: bookmarkKey) else {
             return
         }
 
-        guard let url = resolvedFolderURL() else {
-            refresh()
-            return
-        }
+        folderResolutionTask?.cancel()
+        monitorGeneration += 1
+        let generation = monitorGeneration
 
-        let accessed = url.startAccessingSecurityScopedResource()
-        guard accessed else {
-            scanErrorDescription = "CapturePilot could not reopen the selected external LUT folder."
-            refresh()
-            return
-        }
+        folderResolutionTask = Task.detached(priority: .utility) { [weak self] in
+            let resolution = Self.resolveBookmarkData(bookmarkData)
 
-        didStartSecurityAccess = true
-        monitoredURL = url
-        folderDisplayName = url.lastPathComponent
+            await MainActor.run {
+                guard let self,
+                      generation == self.monitorGeneration,
+                      !Task.isCancelled else {
+                    return
+                }
 
-        let presenter = LUTFolderPresenter(url: url) { [weak self] in
-            Task { @MainActor in
-                self?.scheduleRefresh()
+                guard let url = resolution.url else {
+                    self.scanErrorDescription =
+                        resolution.errorDescription
+                        ?? "CapturePilot could not reopen the selected external LUT folder."
+                    return
+                }
+
+                let accessed = url.startAccessingSecurityScopedResource()
+                guard accessed else {
+                    self.scanErrorDescription =
+                        "CapturePilot could not access the selected external LUT folder."
+                    return
+                }
+
+                self.didStartSecurityAccess = true
+                self.monitoredURL = url
+                self.folderDisplayName = url.lastPathComponent
+                self.defaults.set(url.lastPathComponent, forKey: self.folderNameKey)
+
+                let presenter = LUTFolderPresenter(url: url) { [weak self] in
+                    Task { @MainActor in
+                        self?.scheduleRefresh()
+                    }
+                }
+                self.presenter = presenter
+                NSFileCoordinator.addFilePresenter(presenter)
+
+                if resolution.isStale {
+                    self.refreshStoredBookmark(for: url)
+                }
+
+                self.refresh()
             }
         }
-        self.presenter = presenter
-        NSFileCoordinator.addFilePresenter(presenter)
-
-        refresh()
     }
 
     func stopMonitoring() {
         refreshTask?.cancel()
         refreshTask = nil
+
+        folderResolutionTask?.cancel()
+        folderResolutionTask = nil
+        scanTask?.cancel()
+        scanTask = nil
+
+        monitorGeneration += 1
+        scanGeneration += 1
 
         if let presenter {
             NSFileCoordinator.removeFilePresenter(presenter)
@@ -201,72 +250,81 @@ final class LUTLibraryStore: ObservableObject {
     func refresh() {
         Self.ensureLocalFolder()
 
-        let local = Self.scan(
-            root: Self.localFolderURL,
-            source: .capturePilot,
-            presenter: nil
-        )
+        scanTask?.cancel()
+        scanGeneration += 1
+        let generation = scanGeneration
+        let externalRoot = monitoredURL
+        let presenterSnapshot = presenter
 
-        var combined = local.entries
-        var invalidCount = local.invalidCount
-        var errors: [String] = []
-        if let error = local.errorDescription {
-            errors.append(error)
-        }
-
-        var externalSucceeded = false
-
-        if let root = monitoredURL {
-            let external = Self.scan(
-                root: root,
-                source: .external,
-                presenter: presenter
+        scanTask = Task.detached(priority: .utility) { [weak self] in
+            let local = Self.scan(
+                root: Self.localFolderURL,
+                source: .capturePilot,
+                presenter: nil
             )
-            combined.append(contentsOf: external.entries)
-            invalidCount += external.invalidCount
-            externalSucceeded = external.succeeded
-            if let error = external.errorDescription {
-                errors.append(error)
-            }
-        } else if let root = resolvedFolderURL() {
-            let accessed = root.startAccessingSecurityScopedResource()
-            if accessed {
-                let external = Self.scan(
-                    root: root,
-                    source: .external,
-                    presenter: nil
-                )
-                root.stopAccessingSecurityScopedResource()
 
-                combined.append(contentsOf: external.entries)
-                invalidCount += external.invalidCount
-                externalSucceeded = external.succeeded
-                if let error = external.errorDescription {
+            let external: LUTScanResult?
+            if let externalRoot {
+                external = Self.scan(
+                    root: externalRoot,
+                    source: .external,
+                    presenter: presenterSnapshot
+                )
+            } else {
+                external = nil
+            }
+
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard let self,
+                      generation == self.scanGeneration,
+                      !Task.isCancelled else {
+                    return
+                }
+
+                var combined = local.entries
+                var invalidCount = local.invalidCount
+                var errors: [String] = []
+
+                if let error = local.errorDescription {
                     errors.append(error)
                 }
-            } else {
-                errors.append("CapturePilot could not access the selected external LUT folder.")
-            }
-        }
 
-        entries = combined.sorted {
-            if $0.displayName == $1.displayName {
-                return $0.source.rawValue < $1.source.rawValue
-            }
-            return $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending
-        }
-        invalidFileCount = invalidCount
-        scanErrorDescription = errors.isEmpty ? nil : errors.joined(separator: "\n")
+                var externalSucceeded = false
+                if let external {
+                    combined.append(contentsOf: external.entries)
+                    invalidCount += external.invalidCount
+                    externalSucceeded = external.succeeded
 
-        if let activeEntryID,
-           !entries.contains(where: { $0.id == activeEntryID }) {
-            switch activeSource {
-            case .capturePilot:
-                if local.succeeded { clearActiveLUT() }
-            case .external:
-                if externalSucceeded { clearActiveLUT() }
-            case .none:
-                break
+                    if let error = external.errorDescription {
+                        errors.append(error)
+                    }
+                }
+
+                self.entries = combined.sorted {
+                    if $0.displayName == $1.displayName {
+                        return $0.source.rawValue < $1.source.rawValue
+                    }
+                    return $0.displayName.localizedStandardCompare(
+                        $1.displayName
+                    ) == .orderedAscending
+                }
+                self.invalidFileCount = invalidCount
+                self.scanErrorDescription =
+                    errors.isEmpty ? nil : errors.joined(separator: "\n")
+
+                if let activeEntryID = self.activeEntryID,
+                   !self.entries.contains(where: { $0.id == activeEntryID }) {
+                    switch self.activeSource {
+                    case .capturePilot:
+                        if local.succeeded { self.clearActiveLUT() }
+                    case .external:
+                        if externalSucceeded { self.clearActiveLUT() }
+                    case .none:
+                        break
+                    }
+                }
             }
         }
     }
@@ -363,39 +421,54 @@ final class LUTLibraryStore: ObservableObject {
 
     private func resolvedFolderURL() -> URL? {
         guard let data = defaults.data(forKey: bookmarkKey) else { return nil }
+        return Self.resolveBookmarkData(data).url
+    }
 
+    private func refreshStoredBookmark(for url: URL) {
+        let key = bookmarkKey
+        Task.detached(priority: .utility) { [weak self] in
+            guard let fresh = try? url.bookmarkData(
+                options: [],
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            ) else {
+                return
+            }
+
+            await MainActor.run {
+                self?.defaults.set(fresh, forKey: key)
+            }
+        }
+    }
+
+    nonisolated private static func resolveBookmarkData(
+        _ data: Data
+    ) -> LUTBookmarkResolution {
         var stale = false
+
         do {
             let url = try URL(
                 resolvingBookmarkData: data,
-                options: [],
+                options: [.withoutUI],
                 relativeTo: nil,
                 bookmarkDataIsStale: &stale
             )
 
-            if stale {
-                let accessed = url.startAccessingSecurityScopedResource()
-                defer {
-                    if accessed { url.stopAccessingSecurityScopedResource() }
-                }
-
-                if accessed,
-                   let fresh = try? url.bookmarkData(
-                    options: [],
-                    includingResourceValuesForKeys: nil,
-                    relativeTo: nil
-                   ) {
-                    defaults.set(fresh, forKey: bookmarkKey)
-                }
-            }
-
-            return url
+            return LUTBookmarkResolution(
+                url: url,
+                isStale: stale,
+                errorDescription: nil
+            )
         } catch {
-            return nil
+            return LUTBookmarkResolution(
+                url: nil,
+                isStale: false,
+                errorDescription: error.localizedDescription
+            )
         }
     }
 
-    private static func scan(
+    nonisolated private static func scan(
         root: URL,
         source: LUTLibrarySource,
         presenter: NSFilePresenter?
@@ -465,7 +538,7 @@ final class LUTLibraryStore: ObservableObject {
         )
     }
 
-    private static func relativePath(of fileURL: URL, from rootURL: URL) -> String {
+    nonisolated private static func relativePath(of fileURL: URL, from rootURL: URL) -> String {
         let rootPath = rootURL.standardizedFileURL.path
         let filePath = fileURL.standardizedFileURL.path
 
@@ -479,14 +552,14 @@ final class LUTLibraryStore: ObservableObject {
         )
     }
 
-    private static func ensureLocalFolder() {
+    nonisolated private static func ensureLocalFolder() {
         try? FileManager.default.createDirectory(
             at: localFolderURL,
             withIntermediateDirectories: true
         )
     }
 
-    private static var localFolderURL: URL {
+    nonisolated private static var localFolderURL: URL {
         let documents = FileManager.default.urls(
             for: .documentDirectory,
             in: .userDomainMask
@@ -495,7 +568,7 @@ final class LUTLibraryStore: ObservableObject {
         return documents.appendingPathComponent("LUTs", isDirectory: true)
     }
 
-    private static var activeCacheURL: URL {
+    nonisolated private static var activeCacheURL: URL {
         let base = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
