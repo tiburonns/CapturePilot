@@ -69,22 +69,24 @@ Imported-image scores are not eligible for social upload.
 
 See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-### Privacy Manifest in 0.8
+### Privacy Manifest in the default 0.9.2 build
 
 CapturePilot still declares **no tracking**.
 
-Because the optional Friends feature writes pseudonymous identity/score metadata to CloudKit, the manifest declares:
+The default 0.9.2 target does not compile or attach CloudKit/Friends, so its bundled manifest declares **no collected data types**.
 
-- User ID — linked, not used for tracking, app functionality;
-- Other User Content — linked, not used for tracking, app functionality.
+It still declares:
+- tracking: false;
+- tracking domains: none;
+- UserDefaults Required Reason API: CA92.1.
 
-This declaration applies to the optional social layer; it does not mean camera frames or ranking thumbnails are uploaded.
+The optional CloudKit distribution variant has a separate privacy-manifest template that adds pseudonymous User ID and synchronized score/user-content metadata for app functionality.
 
 ### Build-dependent social behavior
 
 In the default 0.9.2 build, `CAPTUREPILOT_CLOUDKIT` is absent and no iCloud entitlement is attached. CapturePilot does not construct a CloudKit container and does not transmit social metadata.
 
-The privacy manifest currently keeps the optional Friends metadata declarations so the repository also documents the intended CloudKit distribution feature. Before App Store submission, App Privacy answers and the bundled manifest must be reviewed against the exact feature set compiled into that submitted binary.
+The default privacy manifest now matches the default non-CloudKit binary. Before building the optional Friends variant, replace/update the bundled manifest using `docs/PrivacyInfo.CloudKit.xcprivacy.template` and make the App Privacy answers match that exact binary.
 
 ### Local preferences
 
@@ -94,7 +96,7 @@ UserDefaults stores app-local settings such as language, guide, coach intensity/
 
 - Tracking: false.
 - Tracking domains: none.
-- User ID and Other User Content are declared conservatively for the optional Friends/CloudKit distribution build; they are not transmitted by the default non-CloudKit build.
+- Collected data types: none in the default non-CloudKit build.
 - Required Reason API: UserDefaults / CA92.1.
 
 If networking, accounts, analytics, crash SDKs, cloud AI, or additional Required Reason APIs are added later, this document and the manifest must be reviewed before release.
@@ -171,22 +173,24 @@ Los scores de imágenes importadas no son elegibles para subida social.
 
 Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-### Privacy Manifest en 0.8
+### Privacy Manifest en la build por defecto 0.9.2
 
 CapturePilot sigue declarando **sin tracking**.
 
-Como Amigos opcional sincroniza identidad pseudónima y metadata de score en CloudKit, el manifest declara:
+Como la build por defecto 0.9.2 no compila ni adjunta CloudKit/Amigos, su manifest declara **ningún tipo de dato recopilado**.
 
-- User ID — vinculado, sin tracking, funcionalidad;
-- Other User Content — vinculado, sin tracking, funcionalidad.
+Sí declara:
+- tracking: falso;
+- dominios: ninguno;
+- Required Reason API de UserDefaults: CA92.1.
 
-Esto corresponde a la capa social opcional; no significa que se suban frames de cámara ni miniaturas del Ranking.
+La variante opcional con CloudKit tiene una plantilla separada que agrega User ID pseudónimo y metadata de score/contenido sincronizada para funcionalidad.
 
 ### Comportamiento social según la build
 
 En la build por defecto 0.9.2 no existe `CAPTUREPILOT_CLOUDKIT` ni entitlement iCloud adjunto. CapturePilot no crea un contenedor CloudKit ni transmite metadata social.
 
-El Privacy Manifest conserva por ahora las declaraciones de la función Amigos opcional para documentar también la futura build CloudKit. Antes de App Store debe revisarse el manifest y App Privacy contra las funciones exactas incluidas en el binario enviado.
+El manifest por defecto ahora coincide con el binario sin CloudKit. Antes de compilar la variante Amigos, actualiza/reemplaza el manifest usando `docs/PrivacyInfo.CloudKit.xcprivacy.template` y alinea App Privacy con ese binario exacto.
 
 ### Preferencias
 
@@ -196,8 +200,7 @@ UserDefaults conserva idioma, guía, intensidad/escena del Coach, orientación, 
 
 - Tracking: falso.
 - Dominios: ninguno.
-- User ID — vinculado, sin tracking, funcionalidad.
-- Other User Content — vinculado, sin tracking, funcionalidad.
+- Tipos de datos recopilados: ninguno en la build por defecto sin CloudKit.
 - Required Reason API: UserDefaults / CA92.1.
 
 Si en el futuro se agregan red, cuentas, analytics, SDK de crashes, IA cloud u otras Required Reason APIs, se debe revisar este documento y el manifest.

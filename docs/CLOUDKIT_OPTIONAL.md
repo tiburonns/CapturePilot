@@ -26,9 +26,11 @@ When an Apple Developer setup with iCloud/CloudKit is available:
    as the target's Code Signing Entitlements file.
 4. Add the Swift Active Compilation Condition:
    `CAPTUREPILOT_CLOUDKIT`
-5. Regenerate/download a provisioning profile that contains the iCloud/CloudKit entitlements.
-6. Build and test the social flow on a real device.
-7. Configure/deploy the required CloudKit schema/indexes before TestFlight distribution.
+5. Replace/update the bundled `CapturePilot/PrivacyInfo.xcprivacy` using `docs/PrivacyInfo.CloudKit.xcprivacy.template`.
+6. Regenerate/download a provisioning profile that contains the iCloud/CloudKit entitlements.
+7. Build and test the social flow on a real device.
+8. Configure/deploy the required CloudKit schema/indexes before TestFlight distribution.
+9. Make App Store Connect App Privacy answers match the CloudKit-enabled binary.
 
 If any of these pieces are missing, keep the flag off.
 
@@ -68,8 +70,10 @@ Cuando exista una configuración Apple Developer compatible:
 2. Usa el contenedor `iCloud.com.tiburonns.CapturePilot`.
 3. Configura `CapturePilot/CapturePilot.entitlements` como Code Signing Entitlements.
 4. Agrega `CAPTUREPILOT_CLOUDKIT` a Swift Active Compilation Conditions.
-5. Usa un provisioning profile con esos entitlements.
-6. Prueba en un dispositivo real.
-7. Configura y despliega schema/índices antes de TestFlight.
+5. Actualiza/reemplaza `CapturePilot/PrivacyInfo.xcprivacy` usando `docs/PrivacyInfo.CloudKit.xcprivacy.template`.
+6. Usa un provisioning profile con esos entitlements.
+7. Prueba en un dispositivo real.
+8. Configura y despliega schema/índices antes de TestFlight.
+9. Alinea App Privacy de App Store Connect con el binario CloudKit.
 
 Si falta cualquiera de estos pasos, deja la flag desactivada.
