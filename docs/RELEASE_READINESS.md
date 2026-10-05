@@ -83,6 +83,8 @@ Must verify on-device:
 
 For the **default non-CloudKit build**, core device testing can use a Personal Team. CloudKit/Friends is not part of that build.
 
+**TestFlight distribution itself requires an active Apple Developer Program membership and App Store Connect access.** A free/Personal Team can validate the app on the developer's own devices, but cannot complete the TestFlight distribution steps.
+
 For a future Friends-enabled distribution build:
 
 - a compatible Apple Developer Team is required;
@@ -241,6 +243,8 @@ Validar:
 ### Apple Developer / firma
 
 La build por defecto sin CloudKit puede probarse en dispositivo con Personal Team.
+
+**Distribuir por TestFlight requiere una membresía activa de Apple Developer Program y acceso a App Store Connect.** Una cuenta gratuita/Personal Team sirve para validar la app en los dispositivos propios, pero no puede completar la distribución por TestFlight.
 
 Para una futura build con Amigos:
 
