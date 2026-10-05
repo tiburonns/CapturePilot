@@ -11,7 +11,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.9.3 (12).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.10.0 (13).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -62,15 +62,23 @@ Coach Score is a **relative review aid**, not an objective artistic grade. The p
 
 See [Photo Rankings + Coach Review](docs/RANKINGS.md).
 
-### Friends + social scores
+### Optional account + Friends scores
 
-Friends Rankings is an **optional CloudKit build feature**, not a dependency of CapturePilot.
+CapturePilot 0.10 moves Friends Rankings to an **optional CapturePilot account**. The app still launches directly into the camera and no sign-in is required for Camera, Coach, Creative Spark, LUTs, RAW+Share, or private Rankings.
 
-The repository's default 0.9.3 target does **not** attach iCloud entitlements and does not define `CAPTUREPILOT_CLOUDKIT`. In that configuration CapturePilot never creates a `CKContainer`, the Friends control is hidden, and camera/Coach/Creative Spark/LUT/RAW+Share/private Rankings remain fully available.
+Account access lives only inside **Rankings → Account & Friends**.
 
-When a compatible Apple Developer configuration is available, Friends can be enabled with the CloudKit entitlements + compile condition described in [Optional CloudKit build](docs/CLOUDKIT_OPTIONAL.md). The social feature syncs score metadata only — **not photos**.
+Supported providers:
+- Apple;
+- Google.
 
-See [Friends + social scores](docs/SOCIAL_COMPETITION.md).
+Firebase Authentication supplies the canonical account UID. After signing in, the second provider can be explicitly linked so either provider can access the same CapturePilot account. CapturePilot does not silently merge accounts by email.
+
+Firebase is configured only when Account & Friends is opened and a valid `GoogleService-Info.plist` is present. If account infrastructure is absent, local photography remains fully functional.
+
+Friends syncs score metadata only — **not photos**.
+
+See [Optional Apple + Google accounts](docs/ACCOUNTS_FIREBASE.md) and [Friends Rankings](docs/SOCIAL_COMPETITION.md).
 
 ### Professional controls
 
@@ -213,7 +221,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.9.3 (12)**.
+- Current version/build: **0.10.0 (13)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -269,15 +277,23 @@ Coach Score es una **ayuda de comparación relativa**, no una calificación obje
 
 Consulta [Ranking + Coach Review](docs/RANKINGS.md).
 
-### Amigos + scores sociales
+### Cuenta opcional + scores con amigos
 
-El ranking de amigos es una **función opcional de una build con CloudKit**, no una dependencia de CapturePilot.
+CapturePilot 0.10 mueve Amigos a una **cuenta CapturePilot opcional**. La app sigue entrando directamente a la cámara y no exige login para Cámara, Coach, Chispa creativa, LUTs, RAW+Share ni Ranking privado.
 
-El target por defecto de 0.9.3 no adjunta entitlements de iCloud ni define `CAPTUREPILOT_CLOUDKIT`. En esa configuración nunca se crea `CKContainer`, Amigos queda oculto y cámara/Coach/Chispa creativa/LUT/RAW+Share/Ranking privado siguen disponibles.
+La cuenta sólo aparece dentro de **Ranking → Cuenta y amigos**.
 
-Cuando exista una configuración Apple Developer compatible, Amigos puede activarse con los entitlements y la condición de compilación descritos en [Build opcional con CloudKit](docs/CLOUDKIT_OPTIONAL.md). La función social sincroniza metadata de score, **no fotografías**.
+Proveedores:
+- Apple;
+- Google.
 
-Consulta [Amigos + scores sociales](docs/SOCIAL_COMPETITION.md).
+Firebase Authentication proporciona el UID canónico. Después de iniciar sesión puede vincularse el segundo proveedor para acceder a la misma cuenta mediante cualquiera de los dos. CapturePilot no fusiona cuentas silenciosamente por correo.
+
+Firebase sólo se configura al abrir Cuenta y amigos y cuando existe un `GoogleService-Info.plist` válido. Si la infraestructura social no está configurada, la fotografía local continúa funcionando normalmente.
+
+Amigos sincroniza metadata de score, **no fotografías**.
+
+Consulta [Cuentas Apple + Google](docs/ACCOUNTS_FIREBASE.md) y [Ranking con amigos](docs/SOCIAL_COMPETITION.md).
 
 ### Controles profesionales
 
@@ -420,7 +436,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.9.3 (12)**.
+- Versión/build actual: **0.10.0 (13)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.
@@ -433,6 +449,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 - [LUT library + Coach / Biblioteca LUT + Coach](docs/LUT_LIBRARY.md)
 - [Photo Rankings / Ranking de fotos](docs/RANKINGS.md)
 - [Friends + social scores / Amigos + scores sociales](docs/SOCIAL_COMPETITION.md)
+- [Accounts / Cuentas](docs/ACCOUNTS_FIREBASE.md)
 - [Optional CloudKit build / Build opcional con CloudKit](docs/CLOUDKIT_OPTIONAL.md)
 - [Roadmap / Hoja de ruta](docs/ROADMAP.md)
 - [Device testing / Pruebas físicas](docs/TESTING.md)
