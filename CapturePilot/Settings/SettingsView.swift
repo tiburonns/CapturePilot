@@ -373,6 +373,13 @@ struct SettingsView: View {
                             systemImage: "questionmark.bubble"
                         )
                     }
+
+                    Link(destination: URL(string: "https://www.patreon.com/tiburonns")!) {
+                        Label(
+                            supportText("Support development on Patreon", "Apoyar el desarrollo en Patreon"),
+                            systemImage: "heart.fill"
+                        )
+                    }
                 }
 
                 Section {
