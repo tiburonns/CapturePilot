@@ -174,6 +174,30 @@ A checked source item means implementation exists and the project compiles. It d
 - [ ] Validate foreground anchors across portrait/landscape orientations and physical lenses.
 - [ ] Validate point alignment after aspect-fill crop and rotation.
 
+### 0.10 — Optional Apple/Google accounts
+
+- [x] Account screen remains inside Rankings; no login at startup.
+- [x] Camera/local Rankings work without account configuration.
+- [x] Firebase Authentication as provider-neutral account UID.
+- [x] Apple provider flow with nonce.
+- [x] Google provider flow.
+- [x] Explicit provider linking to the same account.
+- [x] Automatic PILOT-* username derived from UID.
+- [x] Firestore profiles/friendships/scores.
+- [x] Firestore security rules in repo.
+- [x] Imported photos excluded from social scores.
+- [x] In-app account deletion flow.
+- [x] Apple token revocation path for account deletion.
+- [ ] Add real Firebase `GoogleService-Info.plist` to distribution build.
+- [ ] Configure Google OAuth URL scheme.
+- [ ] Enable Sign in with Apple capability/provider.
+- [ ] Deploy/test Firestore rules.
+- [ ] Validate Apple and Google on physical device.
+- [ ] Validate linking both providers.
+- [ ] Validate account deletion for each provider combination.
+- [ ] Add Firebase App Check before broad public rollout.
+- [ ] Add trusted server-side score verification before prize/high-stakes competition.
+
 ### Physical/release gates still open
 
 - [ ] Validate 12/24/48 MP options and output dimensions on representative devices.
@@ -373,6 +397,30 @@ Un elemento marcado significa que existe implementación y que el proyecto compi
 - [ ] Validar falsos positivos de rectángulos en escenas reales.
 - [ ] Validar anchors de foreground por orientación/lente.
 - [ ] Validar alineación tras crop aspect-fill y rotación.
+
+### 0.10 — Cuentas opcionales Apple/Google
+
+- [x] Cuenta sólo dentro de Ranking; sin login al inicio.
+- [x] Cámara/Ranking local funcionan sin backend.
+- [x] Firebase Authentication como UID canónico.
+- [x] Apple con nonce.
+- [x] Google.
+- [x] Vinculación explícita de proveedores.
+- [x] Username PILOT-* automático.
+- [x] Firestore para perfil/amistad/scores.
+- [x] Rules Firestore en repo.
+- [x] Importaciones excluidas de score social.
+- [x] Eliminación de cuenta dentro de la app.
+- [x] Revocación Apple durante eliminación.
+- [ ] Añadir `GoogleService-Info.plist` real.
+- [ ] Configurar URL scheme Google.
+- [ ] Activar Sign in with Apple.
+- [ ] Desplegar/probar rules Firestore.
+- [ ] Probar Apple/Google en dispositivo.
+- [ ] Probar vinculación.
+- [ ] Probar eliminación.
+- [ ] Añadir App Check antes de rollout amplio.
+- [ ] Validación server-side antes de competencias con premios.
 
 ### Gates pendientes
 
