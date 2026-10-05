@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot 0.9.0 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
+CapturePilot 0.9.3 separates capture, geometric analysis, Focus Peaking, HUD state, settings, and presentation.
 
 ### Capture pipeline
 
@@ -244,7 +244,7 @@ No frame leaves the process in the current source. Coach analysis, Hough-style g
 
 ## Español
 
-CapturePilot 0.9.0 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
+CapturePilot 0.9.3 separa captura, análisis geométrico, Focus Peaking, estado del HUD, ajustes y presentación.
 
 ### Pipeline de captura
 
@@ -376,7 +376,8 @@ Un único `AVCaptureVideoDataOutput` alimenta:
 
 - `CoachEngine`;
 - `FocusPeakingEngine`;
-- `ProfessionalMonitoringEngine`.
+- `ProfessionalMonitoringEngine`;
+- `CreativeSparkEngine` sólo cuando el usuario lo solicita explícitamente.
 
 `CoachEngine` limita el análisis a aproximadamente un frame cada 0.28 s y evita análisis simultáneos. Combina Vision con análisis local de luminancia/geometría.
 
@@ -387,6 +388,38 @@ El Coach no convierte todo en un score estético. Primero prioriza problemas de 
 Consulta [COACH.md](COACH.md) para los umbrales y ramas de decisión actuales.
 
 Son heurísticas fotográficas, no mediciones infalibles.
+
+### Pipeline de Creative Spark
+
+Creative Spark está separado del árbol continuo de decisiones del Coach.
+
+```text
+el usuario toca ✦
+   ↓
+siguiente frame de AVCaptureVideoDataOutput
+   ↓
+CreativeSparkEngine
+   ├─ saliencia de Vision
+   ├─ ancla de rostro/persona
+   ├─ punto de fuga / línea guía / simetría / espacio negativo del Coach
+   └─ búsqueda ligera de luminancia para una región de luz interesante
+   ↓
+anclas distintas respaldadas por evidencia (0...4)
+   ↓
+prompts exploratorios según la escena (hasta 3)
+   ↓
+resultado estático hasta cerrar o volver a escanear
+```
+
+El motor no se ejecuta continuamente. `CameraService` guarda una solicitud de una sola ejecución para la escena seleccionada, la consume con el siguiente frame de video y publica el resultado en el hilo principal.
+
+El resultado conserva la relación de aspecto del frame fuente. `CreativeSparkOverlay` transforma los puntos normalizados usando la geometría aspect-fill para compensar el recorte del preview a pantalla completa.
+
+No se inventa ningún punto detectado cuando no existe evidencia suficiente. Un prompt puede existir sin una ancla numerada.
+
+Cambiar la lente física, el modo de escena o entrar al modo de edición del HUD elimina el resultado actual.
+
+Consulta [CREATIVE_SPARK.md](CREATIVE_SPARK.md).
 
 ### Coaches de escena
 
