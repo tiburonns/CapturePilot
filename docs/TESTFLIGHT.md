@@ -4,11 +4,11 @@
 
 ### Candidate
 
-CapturePilot 0.9.3 build 12 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.10.0 build 13 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
-The candidate also includes a persistent LUT library, private Top 5/10/25/50 Rankings with post-shot Coach review, and an optional iCloud/CloudKit friends-score layer that does not upload photos.
+The candidate also includes a persistent LUT library, private Top 5/10/25/50 Rankings with post-shot Coach review, and an optional Apple/Google account layer for Friends scores that does not upload photos.
 
 For Creative Spark 0.9.1, specifically validate frame-within-frame false positives and lower-frame foreground alignment on real hardware.
 
@@ -69,21 +69,22 @@ Before Archive:
 - verify no camera parameter changes after a Creative Spark scan;
 - repeat scans while monitoring preview responsiveness.
 
-### Personal Team / no-CloudKit smoke test
+### No-account startup smoke test
 
-Before any TestFlight/social work, validate the default build **without iCloud/CloudKit entitlements**:
+Validate the app with no Firebase configuration and no signed-in account:
 
-- [ ] App reaches the first camera screen instead of terminating at launch.
+- [ ] App launches directly into the camera.
+- [ ] No account/login sheet appears automatically.
 - [ ] Camera permission flow works.
 - [ ] Live Coach works.
 - [ ] Creative Spark works.
 - [ ] LUT library works.
 - [ ] RAW/JPEG workflow remains available when hardware supports it.
 - [ ] Private Rankings opens and imports/analyzes photos.
-- [ ] Friends button is hidden.
-- [ ] No `CKContainer`/iCloud entitlement error appears in the console.
+- [ ] Account & Friends can be opened manually and explains that accounts are not configured.
+- [ ] No Firebase/Auth error prevents local use.
 
-This is the expected configuration for Personal Team/free-device testing.
+This is the required fallback behavior for every CapturePilot build.
 
 ### Rankings acceptance
 
@@ -98,24 +99,31 @@ Before Archive, verify on a physical iPhone:
 - iOS 18+ shows Vision aesthetics as supplemental information without changing the cross-version Coach Score formula;
 - recommendations are sensible on a varied real photo set.
 
-### Friends/social acceptance
+### Accounts / Friends acceptance
 
-The social layer requires Apple Developer + CloudKit configuration beyond source code.
+Before considering the optional account layer TestFlight-ready:
 
-Before considering it TestFlight-ready:
-
-- enable iCloud + CloudKit for `com.tiburonns.CapturePilot`;
-- create/use `iCloud.com.tiburonns.CapturePilot`;
-- exercise the development schema;
-- add required QUERYABLE indexes;
-- deploy the tested schema for distribution;
-- verify the provisioning profile carries the iCloud/CloudKit entitlements;
-- test with two real iCloud accounts/devices;
-- confirm photos/thumbnails never appear in public CloudKit records;
+- add a valid `GoogleService-Info.plist` to the target;
+- enable Firebase Authentication for Google;
+- enable Firebase Authentication for Apple when shipping Apple sign-in;
+- deploy `Firebase/firestore.rules`;
+- set `GOOGLE_REVERSED_CLIENT_ID` from `GoogleService-Info.plist`;
+- add Sign in with Apple capability to the signed distribution build;
+- verify app launch still goes directly to the camera;
+- test Google sign-in on a real device;
+- test Apple sign-in on a real device;
+- link Apple → existing Google account;
+- link Google → existing Apple account;
+- test provider-already-in-use handling;
+- sign out and restore a session;
+- test friend request/accept/remove;
+- test score opt-in/opt-out;
 - confirm imported photos never affect shared scores;
-- test unavailable/signed-out iCloud state.
+- confirm photos/thumbnails never appear in Firestore;
+- delete a Google account in-app;
+- delete an Apple-linked account including Apple token revocation.
 
-See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+See [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) and [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Archive
 
@@ -131,7 +139,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirm **0.9.3 (12)**.
+- Confirm **0.10.0 (13)**.
 - Complete export compliance as requested.
 - Fill beta description, What to Test, feedback email, and review contact.
 - Complete the current age-rating questionnaire.
@@ -147,7 +155,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Candidato
 
-CapturePilot 0.9.3 build 12 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.10.0 build 13 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
@@ -205,21 +213,22 @@ Antes del Archive:
 - confirmar que no cambia parámetros de cámara;
 - repetir scans y observar fluidez del preview.
 
-### Smoke test Personal Team / sin CloudKit
+### Smoke test sin cuenta
 
-Antes de TestFlight/social valida la build por defecto **sin entitlements iCloud/CloudKit**:
+Valida la app sin Firebase configurado y sin sesión:
 
-- [ ] La app llega a la cámara y no se cierra al arrancar.
+- [ ] Entra directamente a la cámara.
+- [ ] No aparece login automáticamente.
 - [ ] Permiso de cámara correcto.
 - [ ] Coach funciona.
 - [ ] Chispa creativa funciona.
 - [ ] Biblioteca LUT funciona.
 - [ ] RAW/JPEG sigue disponible cuando el hardware lo soporta.
 - [ ] Ranking privado abre/importa/analiza.
-- [ ] El botón Amigos está oculto.
-- [ ] No aparecen errores de entitlement/`CKContainer` en consola.
+- [ ] Cuenta y amigos puede abrirse manualmente y explica que no está configurado.
+- [ ] Ningún error de Firebase/Auth bloquea el uso local.
 
-Esta es la configuración esperada para pruebas con Personal Team.
+Este fallback es obligatorio en todas las builds.
 
 ### Aceptación del Ranking
 
@@ -234,24 +243,30 @@ Antes del Archive verifica en iPhone real:
 - iOS 18+ muestra estética Vision como información suplementaria sin cambiar la fórmula comparable del Coach Score;
 - recomendaciones razonables con fotos reales diversas.
 
-### Aceptación social
-
-La capa social requiere configuración Apple Developer/CloudKit adicional al código.
+### Aceptación de cuentas / Amigos
 
 Antes de considerarla lista para TestFlight:
 
-- activar iCloud + CloudKit para `com.tiburonns.CapturePilot`;
-- usar `iCloud.com.tiburonns.CapturePilot`;
-- crear/probar schema de desarrollo;
-- añadir índices QUERYABLE;
-- desplegar schema para distribución;
-- verificar entitlements en provisioning;
-- probar con dos cuentas/dispositivos iCloud;
-- confirmar que nunca se suben fotos/miniaturas;
-- confirmar que importaciones no cambian scores compartidos;
-- probar iCloud no disponible/cierre de sesión.
+- añadir `GoogleService-Info.plist` válido;
+- activar Google en Firebase Authentication;
+- activar Apple cuando esa build lo incluya;
+- desplegar `Firebase/firestore.rules`;
+- configurar `GOOGLE_REVERSED_CLIENT_ID`;
+- añadir Sign in with Apple a la build firmada;
+- confirmar que el inicio sigue entrando directamente a cámara;
+- probar Google real;
+- probar Apple real;
+- vincular ambos proveedores a la misma cuenta;
+- probar credencial ya usada por otra cuenta;
+- cerrar/restaurar sesión;
+- solicitud/aceptación/eliminación de amistad;
+- opt-in/opt-out de scores;
+- confirmar que importaciones no suben score;
+- confirmar que fotos/miniaturas no suben a Firestore;
+- eliminar cuenta Google;
+- eliminar cuenta con Apple incluyendo revocación.
 
-Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+Consulta [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) y [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Archive
 
@@ -267,7 +282,7 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirma **0.9.3 (12)**.
+- Confirma **0.10.0 (13)**.
 - Completa export compliance.
 - Completa descripción beta, Qué probar, email de feedback y contacto de review.
 - Completa el cuestionario vigente de age rating.
