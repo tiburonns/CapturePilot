@@ -59,10 +59,12 @@ struct ContentView: View {
                 camera.setCoachScene(settings.sceneCoach)
                 applyMonitoringSettings()
                 syncMonitoringHUD()
-                lutLibrary.startMonitoring()
-                updateLUTRecommendation()
                 camera.resumeIfPossible()
                 OrientationPolicy.applyCurrentPolicy()
+
+                // User libraries must never delay the first camera frame.
+                lutLibrary.startMonitoring()
+                updateLUTRecommendation()
             }
             .onDisappear {
                 camera.stop()
@@ -73,8 +75,8 @@ struct ContentView: View {
                 case .active:
                     applyMonitoringSettings()
                     syncMonitoringHUD()
-                    lutLibrary.startMonitoring()
                     camera.resumeIfPossible()
+                    lutLibrary.startMonitoring()
                 case .inactive, .background:
                     camera.stop()
                     lutLibrary.stopMonitoring()
