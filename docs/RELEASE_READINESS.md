@@ -36,7 +36,7 @@ The following are release gates and must be green before merging to `main`:
 - Privacy Manifest discloses optional account/social data with no tracking.
 - UserDefaults required-reason API declaration CA92.1.
 - Deterministic LUT recommendation tests.
-- Release documentation for Rankings, Friends/CloudKit, and Creative Spark.
+- Release documentation for Rankings, Account & Friends, and Creative Spark.
 
 ### Current CI result
 
@@ -188,9 +188,9 @@ Antes de fusionar a `main` deben quedar verdes:
 - cuatro orientaciones declaradas.
 - icono App Store 1024.
 - permisos de Cámara y guardar en Fotos.
-- el target por defecto **no** adjunta entitlement iCloud/CloudKit.
-- el Privacy Manifest por defecto no declara datos recopilados.
-- la plantilla de privacidad social queda separada para la variante CloudKit.
+- la cuenta no se exige al inicio;
+- Firebase sólo se inicializa al abrir Cuenta y amigos;
+- el Privacy Manifest declara la recolección opcional de datos de cuenta/social sin tracking.
 - UserDefaults CA92.1.
 - tests deterministas LUT.
 - documentación de Ranking, Amigos/CloudKit y Chispa creativa.
