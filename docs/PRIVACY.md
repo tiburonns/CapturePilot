@@ -2,7 +2,7 @@
 
 ## English
 
-CapturePilot does not create an account, serve ads, include third-party analytics, or upload camera frames to a CapturePilot server.
+CapturePilot does not require an account for photography, serves no ads, includes no third-party analytics, and does not upload camera frames to the account backend. An optional Apple/Google account is available only inside Rankings → Account & Friends.
 
 ### Protected resources
 
@@ -48,45 +48,45 @@ CapturePilot may locally store:
 
 Imported full-resolution originals are not copied into the ranking store.
 
-### Optional social identity and scores
+### Optional account and Friends scores
 
 Core photography and private Rankings do not require an account.
 
-If the photographer opts into Friends, CapturePilot requires an available iCloud account and creates a random CapturePilot social identity in that account's private CloudKit database. CapturePilot does not receive the person's Apple Account email or password.
+If the photographer opens Account & Friends and signs in, Firebase Authentication provides a provider-neutral CapturePilot UID. Apple and Google can be linked explicitly to the same account.
 
-A minimal discoverable profile plus friend/score records use the public CloudKit database. Because that database is public, synchronized social metadata must not be treated as secret.
+Firebase Authentication can receive provider identity data such as user ID, email, and display name. CapturePilot does not copy provider email/name into its discoverable Firestore profile.
 
-0.8 uploads **no photo pixels or thumbnails** to the social database.
-
-Optional shared fields are:
-- automatic Pilot-* username;
+Firestore stores only the social data needed for the feature:
+- automatic PILOT-* username;
+- Firebase UID used by security/relationship records;
+- friendship state;
 - category;
-- Coach Score;
-- capture date;
-- pseudonymous identifiers needed for friendship records.
+- Coach Score and score version;
+- capture date.
+
+No RAW, JPEG, ranking thumbnail, or camera frame is uploaded by Friends Rankings.
 
 Imported-image scores are not eligible for social upload.
 
-See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+Firebase is configured only when Account & Friends is opened and a valid bundled Firebase configuration exists. Missing account configuration never blocks camera startup or local Rankings.
 
-### Privacy Manifest in the default 0.9.3 build
+See [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) and [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-CapturePilot still declares **no tracking**.
+### Privacy Manifest in 0.10
 
-The default 0.9.3 target does not compile or attach CloudKit/Friends, so its bundled manifest declares **no collected data types**.
+CapturePilot declares **no tracking**.
 
-It still declares:
-- tracking: false;
-- tracking domains: none;
-- UserDefaults Required Reason API: CA92.1.
+Because the optional account feature is present in the binary, the app-level manifest declares data that can be collected when the user explicitly signs in:
+- User ID;
+- Email Address;
+- Name;
+- Other User Content (social score metadata).
 
-The optional CloudKit distribution variant has a separate privacy-manifest template that adds pseudonymous User ID and synchronized score/user-content metadata for app functionality.
+All are declared as linked to the user, used for app functionality, and not used for tracking.
 
-### Build-dependent social behavior
+UserDefaults remains declared under Required Reason API CA92.1.
 
-In the default 0.9.3 build, `CAPTUREPILOT_CLOUDKIT` is absent and no iCloud entitlement is attached. CapturePilot does not construct a CloudKit container and does not transmit social metadata.
-
-The default privacy manifest now matches the default non-CloudKit binary. Before building the optional Friends variant, replace/update the bundled manifest using `docs/PrivacyInfo.CloudKit.xcprivacy.template` and make the App Privacy answers match that exact binary.
+Firebase/Google SDKs also ship their own privacy manifests; App Store Connect privacy answers must describe the complete behavior of the signed binary.
 
 ### Local preferences
 
@@ -96,7 +96,7 @@ UserDefaults stores app-local settings such as language, guide, coach intensity/
 
 - Tracking: false.
 - Tracking domains: none.
-- Collected data types: none in the default non-CloudKit build.
+- Datos opcionales de cuenta/social declarados cuando corresponden al binario 0.10.
 - Required Reason API: UserDefaults / CA92.1.
 
 If networking, accounts, analytics, crash SDKs, cloud AI, or additional Required Reason APIs are added later, this document and the manifest must be reviewed before release.
@@ -105,7 +105,7 @@ If networking, accounts, analytics, crash SDKs, cloud AI, or additional Required
 
 ## Español
 
-CapturePilot no crea cuenta, no sirve publicidad, no incluye analítica de terceros y no sube frames de cámara a un servidor de CapturePilot.
+CapturePilot no exige cuenta para fotografía, no sirve publicidad, no incluye analítica de terceros y no sube frames de cámara al backend de cuentas. Apple/Google es opcional y sólo aparece dentro de Ranking → Cuenta y amigos.
 
 ### Recursos protegidos
 
@@ -152,45 +152,45 @@ CapturePilot puede guardar localmente:
 
 El original full-resolution importado no se copia al almacén del ranking.
 
-### Identidad y scores sociales opcionales
+### Cuenta opcional y scores con amigos
 
-La cámara y el ranking privado no requieren cuenta.
+La cámara y el Ranking privado no requieren cuenta.
 
-Si el fotógrafo activa Amigos, CapturePilot requiere una cuenta iCloud disponible y crea una identidad social aleatoria en la base privada de CloudKit de esa cuenta. CapturePilot no recibe correo ni contraseña visibles de la cuenta Apple.
+Al entrar a Cuenta y amigos, Firebase Authentication puede crear una identidad CapturePilot independiente del proveedor. Apple y Google pueden vincularse explícitamente a la misma cuenta.
 
-Un perfil mínimo descubrible y los registros de amistad/score usan la base pública de CloudKit. Esa metadata debe tratarse como social/pública dentro del servicio, no como información secreta.
+Firebase Authentication puede recibir identificador, correo y nombre que entregue el proveedor. CapturePilot no copia correo/nombre al perfil público de Firestore.
 
-0.8 **no sube píxeles ni miniaturas**.
-
-Campos opcionales compartidos:
-- username Pilot-*;
+Firestore guarda únicamente:
+- username PILOT-*;
+- Firebase UID necesario para seguridad/amistad;
+- relaciones de amistad;
 - categoría;
-- Coach Score;
-- fecha;
-- identificadores pseudónimos necesarios para amistad.
+- Coach Score y versión;
+- fecha.
 
-Los scores de imágenes importadas no son elegibles para subida social.
+Amigos no sube RAW, JPEG, miniaturas ni frames.
 
-Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
+Las importaciones no son elegibles para score social.
 
-### Privacy Manifest en la build por defecto 0.9.3
+Firebase sólo se configura al abrir Cuenta y amigos y cuando existe configuración válida. Una configuración ausente nunca bloquea la cámara ni el Ranking local.
 
-CapturePilot sigue declarando **sin tracking**.
+Consulta [ACCOUNTS_FIREBASE.md](ACCOUNTS_FIREBASE.md) y [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
-Como la build por defecto 0.9.3 no compila ni adjunta CloudKit/Amigos, su manifest declara **ningún tipo de dato recopilado**.
+### Privacy Manifest en 0.10
 
-Sí declara:
-- tracking: falso;
-- dominios: ninguno;
-- Required Reason API de UserDefaults: CA92.1.
+CapturePilot declara **sin tracking**.
 
-La variante opcional con CloudKit tiene una plantilla separada que agrega User ID pseudónimo y metadata de score/contenido sincronizada para funcionalidad.
+Como la función opcional de cuenta está presente en el binario, el manifest declara datos que pueden recopilarse cuando el usuario inicia sesión:
+- User ID;
+- Email Address;
+- Name;
+- Other User Content (metadata social de scores).
 
-### Comportamiento social según la build
+Se declaran vinculados al usuario, para funcionalidad y sin tracking.
 
-En la build por defecto 0.9.3 no existe `CAPTUREPILOT_CLOUDKIT` ni entitlement iCloud adjunto. CapturePilot no crea un contenedor CloudKit ni transmite metadata social.
+UserDefaults continúa con Required Reason API CA92.1.
 
-El manifest por defecto ahora coincide con el binario sin CloudKit. Antes de compilar la variante Amigos, actualiza/reemplaza el manifest usando `docs/PrivacyInfo.CloudKit.xcprivacy.template` y alinea App Privacy con ese binario exacto.
+Los SDK de Firebase/Google también incluyen sus propios manifests; App Store Connect debe reflejar el comportamiento completo del binario firmado.
 
 ### Preferencias
 
