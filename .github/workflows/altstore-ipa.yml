@@ -1,0 +1,32 @@
+name: AltStore IPA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project CapturePilot.xcodeproj -target CapturePilot -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO BUILD_DIR="$RUNNER_TEMP/build" build
+          APP="$RUNNER_TEMP/build/Release-iphoneos/CapturePilot.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry CapturePilot.ipa Payload
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${${ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(xcodebuild -project CapturePilot.xcodeproj -target CapturePilot -configuration Release -sdk iphoneos -showBuildSettings | awk -F' = ' '/MARKETING_VERSION/{print $2; exit}')
+          BUILD=$(xcodebuild -project CapturePilot.xcodeproj -target CapturePilot -configuration Release -sdk iphoneos -showBuildSettings | awk -F' = ' '/CURRENT_PROJECT_VERSION/{print $2; exit}')
+          TAG="altstore-$VERSION-$BUILD-${${ github.run_number }}"
+          gh release create "$TAG" "$RUNNER_TEMP/CapturePilot.ipa" --target "${${ github.sha }}" --title "CapturePilot $VERSION ($BUILD)" --generate-notes
