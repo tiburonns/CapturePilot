@@ -19,10 +19,10 @@ struct FrameGuideOverlay: View {
                     mask.addRect(CGRect(origin: .zero, size: size))
                     mask.addRect(rect)
 
-                    if showOutsideFrame {
+                    if !showOutsideFrame {
                         context.fill(
                             mask,
-                            with: .color(.black.opacity(0.34)),
+                            with: .color(.black),
                             style: FillStyle(eoFill: true)
                         )
                     }
