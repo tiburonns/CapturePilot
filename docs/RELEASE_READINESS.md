@@ -22,7 +22,7 @@ The following are release gates and must be green before merging to `main`:
 - Valid CapturePilot.entitlements template for the optional social build.
 - Default target does **not** attach CloudKit entitlements.
 - Default target does **not** define `CAPTUREPILOT_CLOUDKIT`.
-- Version/build fixed to 0.9.3 (12).
+- Version/build fixed to 0.9.3 (13).
 - Bundle ID `com.tiburonns.CapturePilot`.
 - iPhone-only target.
 - iOS 17 minimum deployment target.
@@ -72,7 +72,7 @@ Must verify on-device:
 - tap focus and AF/AE Lock;
 - HEIF/JPEG/RAW/ProRAW output matches the selected label;
 - actual output dimensions for every 12/24/48 MP option shown;
-- RAW + Share JPEG produces the intended pair;
+- RAW + Share JPEG produces the intended RAW-primary/JPEG-alternate Photos asset, with a safe two-asset fallback;
 - LUT import/folder persistence and LUT output;
 - Focus Peaking, Zebra, Histogram, False Color and scopes alignment;
 - Creative Spark point alignment and false positives;
@@ -183,7 +183,7 @@ Antes de fusionar a `main` deben quedar verdes:
 - Info.plist válido.
 - Privacy Manifest válido.
 - entitlements válidos.
-- versión/build 0.9.3 (12).
+- versión/build 0.9.3 (13).
 - bundle ID `com.tiburonns.CapturePilot`.
 - target sólo iPhone.
 - mínimo iOS 17.

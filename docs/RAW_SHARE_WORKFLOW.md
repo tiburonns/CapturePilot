@@ -36,7 +36,7 @@ AVCapturePhotoOutput
             └──────────────┬──────────────────┘
                            ↓
                      Photos asset
-               JPEG primary + RAW alternate
+               RAW primary + JPEG alternate
                  (fallback: two assets)
 ```
 
@@ -105,11 +105,11 @@ JPEG and JPG refer to the same image format; CapturePilot uses a `.jpg` filename
 
 ### Photos pairing
 
-CapturePilot first attempts to create one Photos asset using:
-- JPEG as `.photo`;
-- RAW as `.alternatePhoto`.
+CapturePilot follows Apple's documented RAW Photos pairing:
+- RAW/ProRAW as `.photo`;
+- processed JPEG as `.alternatePhoto`.
 
-If Photos rejects the resource combination, CapturePilot falls back to two separate assets so the capture is not discarded.
+If Photos rejects the resource combination, CapturePilot falls back to two separate assets. If the optional LUT/downsample/share transformation fails before saving, CapturePilot also preserves the original processed JPEG and RAW instead of discarding the capture.
 
 ### What remains to validate physically
 

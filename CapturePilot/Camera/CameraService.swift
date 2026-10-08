@@ -1066,10 +1066,26 @@ final class CameraService: NSObject, ObservableObject {
                 jpegData: result.data
             )
         } catch {
+            // Never discard a successful RAW+processed capture because the optional
+            // share transformation failed. Keep the original processed JPEG as a
+            // safe fallback, preserve the RAW, and continue local Ranking analysis.
+            rankingHandler?(processedData, sceneHint)
+
+            let fallbackShareURL = try? writeTemporaryShareJPEG(processedData)
+
             DispatchQueue.main.async {
-                self.runtimeErrorDescription = error.localizedDescription
+                self.lastShareJPEGURL = fallbackShareURL
+                self.lastShareJPEGDimensions = nil
+                self.lastShareLUTName = nil
+                self.runtimeErrorDescription =
+                    "The share transformation could not be applied. The original processed JPEG and RAW were saved without the optional share transformation."
                 self.lastSaveSucceeded = false
             }
+
+            saveRawShareAsset(
+                rawData: rawData,
+                jpegData: processedData
+            )
         }
     }
 
@@ -1104,20 +1120,22 @@ final class CameraService: NSObject, ObservableObject {
             PHPhotoLibrary.shared().performChanges {
                 let request = PHAssetCreationRequest.forAsset()
 
-                let jpegOptions = PHAssetResourceCreationOptions()
-                jpegOptions.originalFilename = "CapturePilot-Share.jpg"
-                request.addResource(
-                    with: .photo,
-                    data: jpegData,
-                    options: jpegOptions
-                )
-
+                // Apple documents RAW/ProRAW as the primary resource and the
+                // processed JPEG/HEIF as the alternate resource for one Photos asset.
                 let rawOptions = PHAssetResourceCreationOptions()
                 rawOptions.originalFilename = "CapturePilot-RAW.dng"
                 request.addResource(
-                    with: .alternatePhoto,
+                    with: .photo,
                     data: rawData,
                     options: rawOptions
+                )
+
+                let jpegOptions = PHAssetResourceCreationOptions()
+                jpegOptions.originalFilename = "CapturePilot-Share.jpg"
+                request.addResource(
+                    with: .alternatePhoto,
+                    data: jpegData,
+                    options: jpegOptions
                 )
             } completionHandler: { success, _ in
                 if success {

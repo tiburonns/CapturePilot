@@ -4,7 +4,7 @@
 
 ### Candidate
 
-CapturePilot 0.9.3 build 12 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
+CapturePilot 0.9.3 build 13 compiles in Release for iOS Simulator and iPhoneOS in GitHub Actions.
 
 The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensions, RAW + Share JPEG, 12/24/48 MP share targets without upscaling, resolution selection, adaptive physical lens switching, manual controls, local geometric coaching, eight scene coach modes, professional monitoring/scopes, adaptive orientation, customizable HUD, and Focus Peaking.
 
@@ -131,7 +131,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirm **0.9.3 (12)**.
+- Confirm **0.9.3 (13)**.
 - Complete export compliance as requested.
 - Fill beta description, What to Test, feedback email, and review contact.
 - Complete the current age-rating questionnaire.
@@ -147,7 +147,7 @@ See [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### Candidato
 
-CapturePilot 0.9.3 build 12 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
+CapturePilot 0.9.3 build 13 compila en Release para Simulator e iPhoneOS mediante GitHub Actions.
 
 Incluye HEIF/RAW/ProRAW condicionados por capability, dimensiones máximas, RAW + JPEG para compartir, objetivos 12/24/48 MP sin upscale, selector de resolución, lentes físicas, controles manuales, análisis geométrico local, ocho coaches de escena, monitoreo profesional/scopes, orientación adaptativa, HUD y Focus Peaking.
 
@@ -267,7 +267,7 @@ Consulta [SOCIAL_COMPETITION.md](SOCIAL_COMPETITION.md).
 
 ### TestFlight
 
-- Confirma **0.9.3 (12)**.
+- Confirma **0.9.3 (13)**.
 - Completa export compliance.
 - Completa descripción beta, Qué probar, email de feedback y contacto de review.
 - Completa el cuestionario vigente de age rating.

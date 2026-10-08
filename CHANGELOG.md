@@ -1,6 +1,6 @@
 # Changelog / Registro de cambios
 
-## 0.9.3 — Non-blocking launch hotfix / Hotfix de arranque no bloqueante
+## 0.9.3 — TestFlight hardening / Hardening para TestFlight
 
 ### English
 - Move persisted external LUT bookmark resolution off the main actor.
@@ -10,7 +10,9 @@
 - Load the local Rankings index asynchronously after launch.
 - Resume the camera before restoring user LUT monitoring.
 - CloudKit remains compiled out and unattached in the default build.
-- Version/build 0.9.3 (12).
+- Align RAW+JPEG Photos pairing with Apple's RAW workflow: RAW/ProRAW primary + processed JPEG alternate.
+- Preserve the original processed JPEG and RAW if optional LUT/downsample/share processing fails.
+- Version/build 0.9.3 (13).
 
 ### Español
 - Resolución del bookmark LUT externo fuera del MainActor.
@@ -20,7 +22,9 @@
 - El índice local de Ranking se carga después del arranque y fuera del hilo principal.
 - La cámara reanuda antes de restaurar el monitoreo de LUTs.
 - CloudKit sigue compilado fuera y sin entitlements en la build por defecto.
-- Versión/build 0.9.3 (12).
+- Alineación del pairing RAW+JPEG en Fotos con el flujo documentado por Apple: RAW/ProRAW principal + JPEG procesado alternativo.
+- Conservación del JPEG procesado original y RAW si falla el procesamiento opcional de LUT/downsample/share.
+- Versión/build 0.9.3 (13).
 
 ## 0.9.2 — Optional CloudKit startup safety / CloudKit opcional y arranque seguro
 
