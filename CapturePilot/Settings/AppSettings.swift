@@ -64,6 +64,7 @@ final class AppSettings: ObservableObject {
         static let peakingThreshold = "settings.monitoring.peakingThreshold"
         static let peakingColor = "settings.monitoring.peakingColor"
         static let frameGuide = "settings.frameGuide"
+        static let showOutsideFrame = "settings.showOutsideFrame"
         static let rawShareEnabled = "settings.rawShare.enabled"
         static let shareJPEGResolution = "settings.rawShare.jpegResolution"
         static let lutEnabled = "settings.rawShare.lutEnabled"
@@ -110,6 +111,10 @@ final class AppSettings: ObservableObject {
 
     @Published var frameGuide: FrameGuide {
         didSet { UserDefaults.standard.set(frameGuide.rawValue, forKey: Key.frameGuide) }
+    }
+
+    @Published var showOutsideFrame: Bool {
+        didSet { UserDefaults.standard.set(showOutsideFrame, forKey: Key.showOutsideFrame) }
     }
 
     @Published var rawShareEnabled: Bool {
@@ -188,6 +193,11 @@ final class AppSettings: ObservableObject {
         frameGuide = FrameGuide(
             rawValue: defaults.string(forKey: Key.frameGuide) ?? ""
         ) ?? .none
+        showOutsideFrame = Self.boolValue(
+            defaults,
+            key: Key.showOutsideFrame,
+            defaultValue: true
+        )
 
         rawShareEnabled = Self.boolValue(
             defaults,
@@ -388,8 +398,8 @@ enum LocalizedKey: Hashable {
     case peakingThreshold, peakingColor, peakingDetail
     case afaeLock, afaeLocked, afaeUnlocked
     case clippingWarnings, shadowsClipped, highlightsClipped
-    case frameGuide, frameGuideDetail, frameSquare, frameFourThree, frameThreeTwo
-    case frameSixteenNine, frameCinema239
+    case frameGuide, frameGuideDetail, showOutsideFrame, showOutsideFrameDetail
+    case frameSquare, frameFourThree, frameThreeTwo, frameSixteenNine, frameCinema239
     case colorRed, colorGreen, colorBlue, colorYellow, colorCyan, colorWhite
     case rawShare, rawShareDetail, rawShareUnavailable, shareJPEGResolution
     case lut, importLUT, removeLUT, lutIntensity, noLUT, shareJPEG, shareReady
@@ -475,6 +485,8 @@ enum LocalizedKey: Hashable {
             .shadowsClipped: "Sombras recortadas", .highlightsClipped: "Luces recortadas",
             .frameGuide: "Guía de formato",
             .frameGuideDetail: "Previsualiza proporciones de recorte para fotografía sin cambiar la resolución del archivo capturado.",
+            .showOutsideFrame: "Mostrar vista fuera de marco",
+            .showOutsideFrameDetail: "Muestra u oculta la zona atenuada fuera del formato seleccionado; el borde del formato permanece visible.",
             .frameSquare: "1:1 Cuadrado", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
@@ -588,6 +600,8 @@ enum LocalizedKey: Hashable {
             .shadowsClipped: "Shadows clipped", .highlightsClipped: "Highlights clipped",
             .frameGuide: "Frame guide",
             .frameGuideDetail: "Preview photographic crop ratios without changing the captured file resolution.",
+            .showOutsideFrame: "Show outside-frame view",
+            .showOutsideFrameDetail: "Show or hide the dimmed area outside the selected frame; the frame border remains visible.",
             .frameSquare: "1:1 Square", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
