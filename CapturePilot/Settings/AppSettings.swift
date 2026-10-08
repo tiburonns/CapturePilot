@@ -409,7 +409,7 @@ enum LocalizedKey: Hashable {
     case lutReasonPortrait, lutReasonHighlights, lutReasonShadows, lutReasonNight
     case lutReasonLandscape, lutReasonArchitecture, lutReasonAutomotive
     case lutReasonStreet, lutReasonMacro, lutReasonGeneral
-    case rankings
+    case rankings, swipeNavigationGuide
     case creativeSpark, creativeSparkDetail, creativeSparkOnDemand
 
     func value(in language: AppSettings.Language) -> String {
@@ -486,7 +486,7 @@ enum LocalizedKey: Hashable {
             .frameGuide: "Guía de formato",
             .frameGuideDetail: "Previsualiza proporciones de recorte para fotografía sin cambiar la resolución del archivo capturado.",
             .showOutsideFrame: "Mostrar vista fuera de marco",
-            .showOutsideFrameDetail: "Muestra u oculta la zona atenuada fuera del formato seleccionado; el borde del formato permanece visible.",
+            .showOutsideFrameDetail: "Activado: mantiene visible la imagen fuera del formato seleccionado. Desactivado: bloquea esa zona en negro; el borde del formato permanece visible.",
             .frameSquare: "1:1 Cuadrado", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
@@ -522,7 +522,7 @@ enum LocalizedKey: Hashable {
             .lutReasonStreet: "Favorece estructura y contraste para calle.",
             .lutReasonMacro: "Favorece separación de color y microcontraste.",
             .lutReasonGeneral: "Look equilibrado para la escena actual.",
-            .rankings: "Ranking",
+            .rankings: "Ranking", .swipeNavigationGuide: "Desliza ← para Ranking · Ajustes →",
             .creativeSpark: "Chispa creativa",
             .creativeSparkDetail: "Escaneo opcional para desbloqueo creativo. Marca puntos potencialmente interesantes y propone caminos alternativos sin cambiar exposición, lente, foco ni encuadre por ti.",
             .creativeSparkOnDemand: "Sólo se ejecuta cuando tocas el botón ✦. Puedes ocultarlo desde Personalizar HUD."
@@ -601,7 +601,7 @@ enum LocalizedKey: Hashable {
             .frameGuide: "Frame guide",
             .frameGuideDetail: "Preview photographic crop ratios without changing the captured file resolution.",
             .showOutsideFrame: "Show outside-frame view",
-            .showOutsideFrameDetail: "Show or hide the dimmed area outside the selected frame; the frame border remains visible.",
+            .showOutsideFrameDetail: "On: keeps the image outside the selected frame visible. Off: blocks that area in black; the frame border remains visible.",
             .frameSquare: "1:1 Square", .frameFourThree: "4:3",
             .frameThreeTwo: "3:2", .frameSixteenNine: "16:9",
             .frameCinema239: "2.39:1",
@@ -637,7 +637,7 @@ enum LocalizedKey: Hashable {
             .lutReasonStreet: "Favors structure and contrast for street.",
             .lutReasonMacro: "Favors color separation and microcontrast.",
             .lutReasonGeneral: "Balanced look for the current scene.",
-            .rankings: "Rankings",
+            .rankings: "Rankings", .swipeNavigationGuide: "Swipe ← for Rankings · Settings →",
             .creativeSpark: "Creative Spark",
             .creativeSparkDetail: "Optional creative-unblock scan. It marks potentially interesting points and proposes alternative directions without changing exposure, lens, focus, or framing for you.",
             .creativeSparkOnDemand: "It runs only when you tap the ✦ button. You can hide it from Customize HUD."

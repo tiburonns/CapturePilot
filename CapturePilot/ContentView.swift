@@ -21,6 +21,10 @@ struct ContentView: View {
     @State private var stableLUTRecommendation: LUTRecommendation?
     @State private var pendingLUTRecommendation: LUTRecommendation?
     @State private var pendingLUTRecommendationCount = 0
+    @GestureState private var horizontalSwipeTranslation: CGFloat = 0
+    @State private var navigationExitOffset: CGFloat = 0
+    @AppStorage("capturePilot.swipeNavigationGuideDismissed") private var swipeNavigationGuideDismissed = false
+    @State private var showSwipeNavigationGuide = false
 
     var body: some View {
         presentationLayer
@@ -65,6 +69,7 @@ struct ContentView: View {
                 // User libraries must never delay the first camera frame.
                 lutLibrary.startMonitoring()
                 updateLUTRecommendation()
+                startSwipeNavigationGuideIfNeeded()
             }
             .onDisappear {
                 camera.stop()
@@ -166,13 +171,13 @@ struct ContentView: View {
 
     private var presentationLayer: some View {
         hudObservationLayer
-            .fullScreenCover(isPresented: $showingRankings) {
+            .fullScreenCover(isPresented: $showingRankings, onDismiss: resetNavigationAnimation) {
                 RankingView()
                     .environmentObject(settings)
                     .environmentObject(rankingStore)
                     .environmentObject(social)
             }
-            .sheet(isPresented: $showingSettings) {
+            .sheet(isPresented: $showingSettings, onDismiss: resetNavigationAnimation) {
                 SettingsView()
                     .environmentObject(settings)
                     .environmentObject(hud)
@@ -278,7 +283,23 @@ struct ContentView: View {
                     }
                     .zIndex(500)
                 }
+
+                if abs(horizontalSwipeTranslation) > 12 {
+                    SwipeNavigationHint(
+                        direction: horizontalSwipeTranslation < 0 ? .left : .right,
+                        progress: min(abs(horizontalSwipeTranslation) / 120, 1)
+                    )
+                    .zIndex(600)
+                }
+
+                if showSwipeNavigationGuide && !hud.isEditing && horizontalSwipeTranslation == 0 {
+                    SwipeNavigationGuide(text: settings.text(.swipeNavigationGuide))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(550)
+                }
             }
+            .offset(x: navigationExitOffset + navigationPreviewOffset)
+            .scaleEffect(navigationPreviewScale)
             .simultaneousGesture(
                 horizontalNavigationGesture,
                 isEnabled: !hud.isEditing
@@ -287,24 +308,95 @@ struct ContentView: View {
     }
 
     private var horizontalNavigationGesture: some Gesture {
-        DragGesture(minimumDistance: 28, coordinateSpace: .local)
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .updating($horizontalSwipeTranslation) { value, state, _ in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+
+                guard abs(horizontal) > abs(vertical) * 1.15 else {
+                    state = 0
+                    return
+                }
+
+                state = horizontal
+            }
             .onEnded { value in
                 let horizontal = value.translation.width
                 let vertical = value.translation.height
                 let horizontalDistance = abs(horizontal)
 
-                guard horizontalDistance >= 64 else { return }
-                guard horizontalDistance > abs(vertical) * 1.25 else { return }
-                guard !showingRankings, !showingSettings else { return }
+                guard horizontalDistance >= 64 else {
+                    cancelNavigationAnimation()
+                    return
+                }
 
+                dismissSwipeNavigationGuide()
+                guard horizontalDistance > abs(vertical) * 1.25 else {
+                    cancelNavigationAnimation()
+                    return
+                }
+                guard !showingRankings, !showingSettings else {
+                    cancelNavigationAnimation()
+                    return
+                }
+
+                let openingRankings = horizontal < 0
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-                if horizontal < 0 {
-                    showingRankings = true
-                } else {
-                    showingSettings = true
+                withAnimation(.easeOut(duration: 0.18)) {
+                    navigationExitOffset = openingRankings ? -96 : 96
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    if openingRankings {
+                        showingRankings = true
+                    } else {
+                        showingSettings = true
+                    }
                 }
             }
+    }
+
+    private var navigationPreviewOffset: CGFloat {
+        let damped = horizontalSwipeTranslation * 0.22
+        return min(max(damped, -72), 72)
+    }
+
+    private var navigationPreviewScale: CGFloat {
+        1 - min(abs(horizontalSwipeTranslation) / 9000, 0.018)
+    }
+
+    private func cancelNavigationAnimation() {
+        withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.86)) {
+            navigationExitOffset = 0
+        }
+    }
+
+    private func resetNavigationAnimation() {
+        withAnimation(.easeOut(duration: 0.16)) {
+            navigationExitOffset = 0
+        }
+    }
+
+    private func startSwipeNavigationGuideIfNeeded() {
+        guard !swipeNavigationGuideDismissed else { return }
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            showSwipeNavigationGuide = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            dismissSwipeNavigationGuide()
+        }
+    }
+
+    private func dismissSwipeNavigationGuide() {
+        guard showSwipeNavigationGuide || !swipeNavigationGuideDismissed else { return }
+
+        withAnimation(.easeOut(duration: 0.25)) {
+            showSwipeNavigationGuide = false
+        }
+        swipeNavigationGuideDismissed = true
     }
 
     @ViewBuilder
@@ -812,20 +904,9 @@ struct ContentView: View {
     }
 
     private func safeHUDRect(for geometry: GeometryProxy) -> CGRect {
-        let insets = geometry.safeAreaInsets
-
-        return CGRect(
-            x: insets.leading,
-            y: insets.top,
-            width: max(
-                1,
-                geometry.size.width - insets.leading - insets.trailing
-            ),
-            height: max(
-                1,
-                geometry.size.height - insets.top - insets.bottom
-            )
-        )
+        // cameraSurface is already laid out inside SwiftUI's safe area.
+        // Re-applying geometry.safeAreaInsets here would double-inset the HUD canvas.
+        CGRect(origin: .zero, size: geometry.size)
     }
 
     @ViewBuilder
@@ -1026,5 +1107,78 @@ struct ContentView: View {
         case .goldenTriangle: settings.grid = .crosshair
         case .crosshair: settings.grid = .none
         }
+    }
+}
+
+
+enum SwipeNavigationDirection {
+    case left
+    case right
+
+    var iconName: String {
+        switch self {
+        case .left: "chevron.left.2"
+        case .right: "chevron.right.2"
+        }
+    }
+}
+
+struct SwipeNavigationHint: View {
+    let direction: SwipeNavigationDirection
+    let progress: CGFloat
+
+    var body: some View {
+        HStack {
+            if direction == .right {
+                hint
+                    .padding(.leading, 10)
+                Spacer()
+            } else {
+                Spacer()
+                hint
+                    .padding(.trailing, 10)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .opacity(min(max(progress, 0), 1))
+        .allowsHitTesting(false)
+    }
+
+    private var hint: some View {
+        Image(systemName: direction.iconName)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 44, height: 72)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            }
+            .scaleEffect(0.88 + progress * 0.12)
+    }
+}
+
+
+private struct SwipeNavigationGuide: View {
+    let text: String
+
+    var body: some View {
+        VStack {
+            Spacer()
+
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.92))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(.black.opacity(0.58), in: Capsule())
+                .overlay {
+                    Capsule()
+                        .stroke(.white.opacity(0.14), lineWidth: 0.7)
+                }
+                .padding(.bottom, 92)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
     }
 }
