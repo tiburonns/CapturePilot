@@ -23,6 +23,8 @@ struct ContentView: View {
     @State private var pendingLUTRecommendationCount = 0
     @GestureState private var horizontalSwipeTranslation: CGFloat = 0
     @State private var navigationExitOffset: CGFloat = 0
+    @AppStorage("capturePilot.swipeNavigationGuideDismissed") private var swipeNavigationGuideDismissed = false
+    @State private var showSwipeNavigationGuide = false
 
     var body: some View {
         presentationLayer
@@ -67,6 +69,7 @@ struct ContentView: View {
                 // User libraries must never delay the first camera frame.
                 lutLibrary.startMonitoring()
                 updateLUTRecommendation()
+                startSwipeNavigationGuideIfNeeded()
             }
             .onDisappear {
                 camera.stop()
@@ -288,6 +291,12 @@ struct ContentView: View {
                     )
                     .zIndex(600)
                 }
+
+                if showSwipeNavigationGuide && !hud.isEditing && horizontalSwipeTranslation == 0 {
+                    SwipeNavigationGuide(text: settings.text(.swipeNavigationGuide))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(550)
+                }
             }
             .offset(x: navigationExitOffset + navigationPreviewOffset)
             .scaleEffect(navigationPreviewScale)
@@ -320,6 +329,8 @@ struct ContentView: View {
                     cancelNavigationAnimation()
                     return
                 }
+
+                dismissSwipeNavigationGuide()
                 guard horizontalDistance > abs(vertical) * 1.25 else {
                     cancelNavigationAnimation()
                     return
@@ -365,6 +376,27 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.16)) {
             navigationExitOffset = 0
         }
+    }
+
+    private func startSwipeNavigationGuideIfNeeded() {
+        guard !swipeNavigationGuideDismissed else { return }
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            showSwipeNavigationGuide = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            dismissSwipeNavigationGuide()
+        }
+    }
+
+    private func dismissSwipeNavigationGuide() {
+        guard showSwipeNavigationGuide || !swipeNavigationGuideDismissed else { return }
+
+        withAnimation(.easeOut(duration: 0.25)) {
+            showSwipeNavigationGuide = false
+        }
+        swipeNavigationGuideDismissed = true
     }
 
     @ViewBuilder
@@ -1123,5 +1155,25 @@ struct SwipeNavigationHint: View {
                     .stroke(.white.opacity(0.18), lineWidth: 1)
             }
             .scaleEffect(0.88 + progress * 0.12)
+    }
+}
+
+
+private struct SwipeNavigationGuide: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.white.opacity(0.92))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(.black.opacity(0.58), in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(.white.opacity(0.14), lineWidth: 0.7)
+            }
+            .padding(.bottom, 18)
+            .allowsHitTesting(false)
     }
 }
