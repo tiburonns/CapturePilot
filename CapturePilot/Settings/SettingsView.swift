@@ -64,6 +64,12 @@ struct SettingsView: View {
                         }
                     }
 
+                    Toggle(settings.text(.showOutsideFrame), isOn: $settings.showOutsideFrame)
+
+                    Text(settings.text(.showOutsideFrameDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
                     Text(settings.text(.frameGuideDetail))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
