@@ -171,17 +171,19 @@ struct ContentView: View {
 
     private var presentationLayer: some View {
         hudObservationLayer
-            .fullScreenCover(isPresented: $showingRankings, onDismiss: resetNavigationAnimation) {
+            .sheet(isPresented: $showingRankings, onDismiss: resetNavigationAnimation) {
                 RankingView()
                     .environmentObject(settings)
                     .environmentObject(rankingStore)
                     .environmentObject(social)
+                    .modifier(SideMenuPresentation(edge: .leading))
             }
             .sheet(isPresented: $showingSettings, onDismiss: resetNavigationAnimation) {
                 SettingsView()
                     .environmentObject(settings)
                     .environmentObject(hud)
                     .environmentObject(lutLibrary)
+                    .modifier(SideMenuPresentation(edge: .trailing))
             }
             .overlay(alignment: .top) {
                 VStack(spacing: 8) {
@@ -234,10 +236,12 @@ struct ContentView: View {
 
                 CompositionOverlay(
                     grid: settings.grid,
+                    coachIntensity: settings.coachIntensity,
                     horizonAngle: camera.coachState.horizonAngleDegrees,
                     saliencyCenter: camera.coachState.saliencyCenter,
+                    subjectRect: camera.coachState.subjectRect,
                     showSubjectMarker:
-                        settings.coachIntensity == .teaching
+                        settings.coachIntensity != .subtle
                         && camera.coachState.hasSubject,
                     leadingLines: camera.coachState.leadingLines,
                     vanishingPoint: camera.coachState.vanishingPoint,
@@ -299,7 +303,6 @@ struct ContentView: View {
                 }
             }
             .offset(x: navigationExitOffset + navigationPreviewOffset)
-            .scaleEffect(navigationPreviewScale)
             .simultaneousGesture(
                 horizontalNavigationGesture,
                 isEnabled: !hud.isEditing
@@ -343,11 +346,11 @@ struct ContentView: View {
                 let openingRankings = horizontal < 0
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-                withAnimation(.easeOut(duration: 0.18)) {
-                    navigationExitOffset = openingRankings ? -96 : 96
+                withAnimation(.snappy(duration: 0.22, extraBounce: 0.02)) {
+                    navigationExitOffset = openingRankings ? -120 : 120
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
                     if openingRankings {
                         showingRankings = true
                     } else {
@@ -358,22 +361,21 @@ struct ContentView: View {
     }
 
     private var navigationPreviewOffset: CGFloat {
-        let damped = horizontalSwipeTranslation * 0.22
-        return min(max(damped, -72), 72)
-    }
-
-    private var navigationPreviewScale: CGFloat {
-        1 - min(abs(horizontalSwipeTranslation) / 9000, 0.018)
+        let distance = abs(horizontalSwipeTranslation)
+        let progress = min(distance / 240, 1)
+        let damping = 0.28 + progress * 0.10
+        let damped = horizontalSwipeTranslation * damping
+        return min(max(damped, -104), 104)
     }
 
     private func cancelNavigationAnimation() {
-        withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.86)) {
+        withAnimation(.interactiveSpring(response: 0.24, dampingFraction: 0.88)) {
             navigationExitOffset = 0
         }
     }
 
     private func resetNavigationAnimation() {
-        withAnimation(.easeOut(duration: 0.16)) {
+        withAnimation(.smooth(duration: 0.24)) {
             navigationExitOffset = 0
         }
     }
@@ -1180,5 +1182,25 @@ private struct SwipeNavigationGuide: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
+    }
+}
+
+
+private struct SideMenuPresentation: ViewModifier {
+    let edge: Edge
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .presentationDetents([.large])
+                .presentationPlacement(edge == .leading ? .leading : .trailing)
+                .presentationCornerRadius(24)
+                .presentationBackground(.black)
+        } else {
+            content
+                .presentationDetents([.large])
+                .presentationCornerRadius(24)
+                .presentationBackground(.black)
+        }
     }
 }
