@@ -15,10 +15,6 @@ struct FrameGuideOverlay: View {
                 )
 
                 Canvas { context, size in
-                    var mask = Path()
-                    mask.addRect(CGRect(origin: .zero, size: size))
-                    mask.addRect(rect)
-
                     if !showOutsideFrame {
                         fillOutsideFrameBlack(
                             context: &context,
