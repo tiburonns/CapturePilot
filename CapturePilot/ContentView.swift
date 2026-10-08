@@ -1163,17 +1163,22 @@ private struct SwipeNavigationGuide: View {
     let text: String
 
     var body: some View {
-        Text(text)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white.opacity(0.92))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(.black.opacity(0.58), in: Capsule())
-            .overlay {
-                Capsule()
-                    .stroke(.white.opacity(0.14), lineWidth: 0.7)
-            }
-            .padding(.bottom, 18)
-            .allowsHitTesting(false)
+        VStack {
+            Spacer()
+
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.92))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(.black.opacity(0.58), in: Capsule())
+                .overlay {
+                    Capsule()
+                        .stroke(.white.opacity(0.14), lineWidth: 0.7)
+                }
+                .padding(.bottom, 92)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
     }
 }
