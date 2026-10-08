@@ -176,14 +176,14 @@ struct ContentView: View {
                     .environmentObject(settings)
                     .environmentObject(rankingStore)
                     .environmentObject(social)
-                    .modifier(SideMenuPresentation(edge: .leading))
+                    .modifier(SideMenuPresentation())
             }
             .sheet(isPresented: $showingSettings, onDismiss: resetNavigationAnimation) {
                 SettingsView()
                     .environmentObject(settings)
                     .environmentObject(hud)
                     .environmentObject(lutLibrary)
-                    .modifier(SideMenuPresentation(edge: .trailing))
+                    .modifier(SideMenuPresentation())
             }
             .overlay(alignment: .top) {
                 VStack(spacing: 8) {
@@ -1187,20 +1187,11 @@ private struct SwipeNavigationGuide: View {
 
 
 private struct SideMenuPresentation: ViewModifier {
-    let edge: Edge
-
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content
-                .presentationDetents([.large])
-                .presentationPlacement(edge == .leading ? .leading : .trailing)
-                .presentationCornerRadius(24)
-                .presentationBackground(.black)
-        } else {
-            content
-                .presentationDetents([.large])
-                .presentationCornerRadius(24)
-                .presentationBackground(.black)
-        }
+        content
+            .presentationDetents([.large])
+            .presentationCornerRadius(24)
+            .presentationBackground(Color.black)
+            .presentationDragIndicator(.visible)
     }
 }
