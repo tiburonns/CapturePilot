@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FrameGuideOverlay: View {
     let guide: AppSettings.FrameGuide
+    let showOutsideFrame: Bool
 
     var body: some View {
         GeometryReader { geometry in
@@ -18,11 +19,13 @@ struct FrameGuideOverlay: View {
                     mask.addRect(CGRect(origin: .zero, size: size))
                     mask.addRect(rect)
 
-                    context.fill(
-                        mask,
-                        with: .color(.black.opacity(0.34)),
-                        style: FillStyle(eoFill: true)
-                    )
+                    if showOutsideFrame {
+                        context.fill(
+                            mask,
+                            with: .color(.black.opacity(0.34)),
+                            style: FillStyle(eoFill: true)
+                        )
+                    }
 
                     var border = Path()
                     border.addRect(rect)
