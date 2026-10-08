@@ -8,11 +8,14 @@ struct RankingView: View {
     @EnvironmentObject private var social: SocialCompetitionService
     @Environment(\.dismiss) private var dismiss
 
-    @State private var topCount = 10
+    @State private var topCount: Int? = 10
     @State private var category: PhotoCategory?
     @State private var searchText = ""
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showingSocial = false
+    @State private var importCompleted = 0
+    @State private var importTotal = 0
+    @State private var isImportingPhotos = false
 
     private var ranked: [PhotoRankingEntry] {
         let query = searchText
@@ -34,16 +37,15 @@ struct RankingView: View {
             return searchable.contains(query)
         }
 
-        return Array(
-            filtered
-                .sorted { lhs, rhs in
-                    if lhs.coachScore == rhs.coachScore {
-                        return lhs.createdAt > rhs.createdAt
-                    }
-                    return lhs.coachScore > rhs.coachScore
-                }
-                .prefix(topCount)
-        )
+        let sorted = filtered.sorted { lhs, rhs in
+            if lhs.coachScore == rhs.coachScore {
+                return lhs.createdAt > rhs.createdAt
+            }
+            return lhs.coachScore > rhs.coachScore
+        }
+
+        guard let topCount else { return sorted }
+        return Array(sorted.prefix(topCount))
     }
 
     var body: some View {
@@ -102,7 +104,7 @@ struct RankingView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     PhotosPicker(
                         selection: $pickerItems,
-                        maxSelectionCount: 50,
+                        selectionBehavior: .ordered,
                         matching: .images
                     ) {
                         Image(systemName: "photo.badge.plus")
@@ -121,16 +123,32 @@ struct RankingView: View {
             }
             .onChange(of: pickerItems) { _, items in
                 guard !items.isEmpty else { return }
+
+                let selectedItems = items
+                pickerItems = []
+                importCompleted = 0
+                importTotal = selectedItems.count
+                isImportingPhotos = true
+
                 Task {
-                    for item in items {
+                    defer {
+                        Task { @MainActor in
+                            isImportingPhotos = false
+                        }
+                    }
+
+                    for item in selectedItems {
                         if let data = try? await item.loadTransferable(type: Data.self) {
                             await rankingStore.ingest(
                                 data: data,
                                 source: .importPhoto
                             )
                         }
+
+                        await MainActor.run {
+                            importCompleted += 1
+                        }
                     }
-                    pickerItems = []
                 }
             }
             .sheet(isPresented: $showingSocial) {
@@ -140,7 +158,29 @@ struct RankingView: View {
                     .environmentObject(social)
             }
             .overlay(alignment: .bottom) {
-                if rankingStore.isAnalyzing {
+                if isImportingPhotos {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(
+                                localized(
+                                    "Importing photos",
+                                    "Importando fotos"
+                                )
+                            )
+                            .font(.caption.weight(.semibold))
+
+                            Text("\(importCompleted) / \(importTotal)")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                } else if rankingStore.isAnalyzing {
                     HStack {
                         ProgressView()
                         Text(localized("Coach is analyzing…", "El Coach está analizando…"))
@@ -157,13 +197,18 @@ struct RankingView: View {
 
     private var controls: some View {
         VStack(spacing: 10) {
-            Picker("Top", selection: $topCount) {
-                Text("Top 5").tag(5)
-                Text("Top 10").tag(10)
-                Text("Top 25").tag(25)
-                Text("Top 50").tag(50)
+            Picker(
+                localized("Show", "Mostrar"),
+                selection: $topCount
+            ) {
+                Text("Top 5").tag(Optional(5))
+                Text("Top 10").tag(Optional(10))
+                Text("Top 25").tag(Optional(25))
+                Text("Top 50").tag(Optional(50))
+                Text(localized("All", "Todas")).tag(Optional<Int>.none)
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack {
                 Text(localized("Category", "Categoría"))
