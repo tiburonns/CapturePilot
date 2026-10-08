@@ -9,8 +9,13 @@ final class CoachEngine {
     private let minimumInterval: CFTimeInterval = 0.28
 
     private var candidateMessage: LocalizedKey = .ready
+    private var candidateSecondaryMessage: LocalizedKey?
+    private var candidateSeverity: CoachSeverity = .neutral
     private var candidateCount = 0
+
     private var publishedMessage: LocalizedKey = .ready
+    private var publishedSecondaryMessage: LocalizedKey?
+    private var publishedSeverity: CoachSeverity = .neutral
 
     var onUpdate: ((CoachState) -> Void)?
 
@@ -140,6 +145,13 @@ final class CoachEngine {
 
         guard intensity != .subtle else {
             state.primaryMessage = .ready
+            state.severity = .neutral
+            return
+        }
+
+        if intensity == .teaching, !state.hasSubject {
+            state.primaryMessage = .tapToFocus
+            state.secondaryMessage = .ready
             state.severity = .neutral
             return
         }
@@ -308,20 +320,30 @@ final class CoachEngine {
     }
 
     private func stabilizeMessage(state: inout CoachState) {
-        if state.primaryMessage == candidateMessage {
+        let sameCandidate =
+            state.primaryMessage == candidateMessage
+            && state.secondaryMessage == candidateSecondaryMessage
+            && state.severity == candidateSeverity
+
+        if sameCandidate {
             candidateCount += 1
         } else {
             candidateMessage = state.primaryMessage
+            candidateSecondaryMessage = state.secondaryMessage
+            candidateSeverity = state.severity
             candidateCount = 1
         }
 
         guard candidateCount >= 2 else {
             state.primaryMessage = publishedMessage
-            state.secondaryMessage = nil
+            state.secondaryMessage = publishedSecondaryMessage
+            state.severity = publishedSeverity
             return
         }
 
         publishedMessage = state.primaryMessage
+        publishedSecondaryMessage = state.secondaryMessage
+        publishedSeverity = state.severity
     }
 
     private func distance(_ a: CGPoint, _ b: CGPoint) -> CGFloat {
