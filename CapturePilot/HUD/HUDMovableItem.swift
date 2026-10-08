@@ -28,11 +28,13 @@ struct HUDMovableItem<Content: View>: View {
 
     var body: some View {
         Group {
-            if store.isEditing {
-                renderedContent
-                    .gesture(dragGesture)
-            } else {
-                renderedContent
+            if store.isVisible(item) {
+                if store.isEditing {
+                    renderedContent
+                        .gesture(dragGesture)
+                } else {
+                    renderedContent
+                }
             }
         }
     }
@@ -40,7 +42,6 @@ struct HUDMovableItem<Content: View>: View {
     private var renderedContent: some View {
         content()
             .allowsHitTesting(!store.isEditing)
-            .opacity(store.isVisible(item) ? 1 : (store.isEditing ? 0.28 : 0))
             .background(
                 GeometryReader { proxy in
                     Color.clear
@@ -52,7 +53,7 @@ struct HUDMovableItem<Content: View>: View {
                 if store.isEditing {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(
-                            store.isVisible(item) ? Color.yellow : Color.secondary,
+                            Color.yellow,
                             style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])
                         )
                         .padding(-5)
