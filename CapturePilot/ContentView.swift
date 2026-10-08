@@ -240,8 +240,11 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
 
-                FrameGuideOverlay(guide: settings.frameGuide)
-                    .ignoresSafeArea()
+                FrameGuideOverlay(
+                    guide: settings.frameGuide,
+                    showOutsideFrame: settings.showOutsideFrame
+                )
+                .ignoresSafeArea()
 
                 ForEach(HUDItem.allCases) { item in
                     if shouldRender(item) {
@@ -276,7 +279,32 @@ struct ContentView: View {
                     .zIndex(500)
                 }
             }
+            .simultaneousGesture(
+                horizontalNavigationGesture,
+                isEnabled: !hud.isEditing
+            )
         }
+    }
+
+    private var horizontalNavigationGesture: some Gesture {
+        DragGesture(minimumDistance: 28, coordinateSpace: .local)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                let horizontalDistance = abs(horizontal)
+
+                guard horizontalDistance >= 64 else { return }
+                guard horizontalDistance > abs(vertical) * 1.25 else { return }
+                guard !showingRankings, !showingSettings else { return }
+
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+                if horizontal < 0 {
+                    showingRankings = true
+                } else {
+                    showingSettings = true
+                }
+            }
     }
 
     @ViewBuilder
@@ -768,8 +796,8 @@ struct ContentView: View {
     }
 
     private func shouldRender(_ item: HUDItem) -> Bool {
-        if hud.isEditing { return true }
         if !hud.isVisible(item) { return false }
+        if hud.isEditing { return true }
 
         switch item {
         case .metrics:
@@ -784,19 +812,18 @@ struct ContentView: View {
     }
 
     private func safeHUDRect(for geometry: GeometryProxy) -> CGRect {
-        let margin: CGFloat = 10
         let insets = geometry.safeAreaInsets
 
         return CGRect(
-            x: insets.leading + margin,
-            y: insets.top + margin,
+            x: insets.leading,
+            y: insets.top,
             width: max(
                 1,
-                geometry.size.width - insets.leading - insets.trailing - margin * 2
+                geometry.size.width - insets.leading - insets.trailing
             ),
             height: max(
                 1,
-                geometry.size.height - insets.top - insets.bottom - margin * 2
+                geometry.size.height - insets.top - insets.bottom
             )
         )
     }
