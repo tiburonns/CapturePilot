@@ -21,6 +21,8 @@ struct ContentView: View {
     @State private var stableLUTRecommendation: LUTRecommendation?
     @State private var pendingLUTRecommendation: LUTRecommendation?
     @State private var pendingLUTRecommendationCount = 0
+    @GestureState private var horizontalSwipeTranslation: CGFloat = 0
+    @State private var navigationExitOffset: CGFloat = 0
 
     var body: some View {
         presentationLayer
@@ -166,13 +168,13 @@ struct ContentView: View {
 
     private var presentationLayer: some View {
         hudObservationLayer
-            .fullScreenCover(isPresented: $showingRankings) {
+            .fullScreenCover(isPresented: $showingRankings, onDismiss: resetNavigationAnimation) {
                 RankingView()
                     .environmentObject(settings)
                     .environmentObject(rankingStore)
                     .environmentObject(social)
             }
-            .sheet(isPresented: $showingSettings) {
+            .sheet(isPresented: $showingSettings, onDismiss: resetNavigationAnimation) {
                 SettingsView()
                     .environmentObject(settings)
                     .environmentObject(hud)
@@ -278,7 +280,17 @@ struct ContentView: View {
                     }
                     .zIndex(500)
                 }
+
+                if abs(horizontalSwipeTranslation) > 12 {
+                    SwipeNavigationHint(
+                        direction: horizontalSwipeTranslation < 0 ? .left : .right,
+                        progress: min(abs(horizontalSwipeTranslation) / 120, 1)
+                    )
+                    .zIndex(600)
+                }
             }
+            .offset(x: navigationExitOffset + navigationPreviewOffset)
+            .scaleEffect(navigationPreviewScale)
             .simultaneousGesture(
                 horizontalNavigationGesture,
                 isEnabled: !hud.isEditing
@@ -287,24 +299,72 @@ struct ContentView: View {
     }
 
     private var horizontalNavigationGesture: some Gesture {
-        DragGesture(minimumDistance: 28, coordinateSpace: .local)
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .updating($horizontalSwipeTranslation) { value, state, _ in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+
+                guard abs(horizontal) > abs(vertical) * 1.15 else {
+                    state = 0
+                    return
+                }
+
+                state = horizontal
+            }
             .onEnded { value in
                 let horizontal = value.translation.width
                 let vertical = value.translation.height
                 let horizontalDistance = abs(horizontal)
 
-                guard horizontalDistance >= 64 else { return }
-                guard horizontalDistance > abs(vertical) * 1.25 else { return }
-                guard !showingRankings, !showingSettings else { return }
+                guard horizontalDistance >= 64 else {
+                    cancelNavigationAnimation()
+                    return
+                }
+                guard horizontalDistance > abs(vertical) * 1.25 else {
+                    cancelNavigationAnimation()
+                    return
+                }
+                guard !showingRankings, !showingSettings else {
+                    cancelNavigationAnimation()
+                    return
+                }
 
+                let openingRankings = horizontal < 0
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-                if horizontal < 0 {
-                    showingRankings = true
-                } else {
-                    showingSettings = true
+                withAnimation(.easeOut(duration: 0.18)) {
+                    navigationExitOffset = openingRankings ? -96 : 96
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    if openingRankings {
+                        showingRankings = true
+                    } else {
+                        showingSettings = true
+                    }
                 }
             }
+    }
+
+    private var navigationPreviewOffset: CGFloat {
+        let damped = horizontalSwipeTranslation * 0.22
+        return min(max(damped, -72), 72)
+    }
+
+    private var navigationPreviewScale: CGFloat {
+        1 - min(abs(horizontalSwipeTranslation) / 9000, 0.018)
+    }
+
+    private func cancelNavigationAnimation() {
+        withAnimation(.interactiveSpring(response: 0.28, dampingFraction: 0.86)) {
+            navigationExitOffset = 0
+        }
+    }
+
+    private func resetNavigationAnimation() {
+        withAnimation(.easeOut(duration: 0.16)) {
+            navigationExitOffset = 0
+        }
     }
 
     @ViewBuilder
@@ -812,20 +872,9 @@ struct ContentView: View {
     }
 
     private func safeHUDRect(for geometry: GeometryProxy) -> CGRect {
-        let insets = geometry.safeAreaInsets
-
-        return CGRect(
-            x: insets.leading,
-            y: insets.top,
-            width: max(
-                1,
-                geometry.size.width - insets.leading - insets.trailing
-            ),
-            height: max(
-                1,
-                geometry.size.height - insets.top - insets.bottom
-            )
-        )
+        // cameraSurface is already laid out inside SwiftUI's safe area.
+        // Re-applying geometry.safeAreaInsets here would double-inset the HUD canvas.
+        CGRect(origin: .zero, size: geometry.size)
     }
 
     @ViewBuilder
