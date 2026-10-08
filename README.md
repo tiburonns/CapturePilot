@@ -11,7 +11,7 @@ CapturePilot is a free, ad-free iOS camera that combines professional capture co
 
 CapturePilot es una cámara gratuita y sin anuncios para iOS que combina controles profesionales con un coach fotográfico local. El Coach en vivo prioriza sugerencias prácticas y no califica la estética; la sección separada Ranking usa un Coach Score relativo para comparar tus propias fotografías.
 
-> **Current main / main actual: 0.9.3 (12).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
+> **Current main / main actual: 0.9.3 (13).** Release compilation is verified in CI for both iOS Simulator and iPhoneOS. Physical-device testing, signed Archive validation, and App Store Connect processing remain release gates.
 
 ## English
 
@@ -38,7 +38,7 @@ CapturePilot can now request RAW/ProRAW plus a processed JPEG from the same AVFo
 
 The RAW remains untouched. The processed companion can be exported as a 12/24/48 MP target JPEG, optionally using an imported 3D `.cube` LUT with adjustable intensity. CapturePilot never upscales the share copy.
 
-The processed JPEG is available directly through the iOS Share Sheet after a successful save. Photos pairing is attempted as JPEG primary + RAW alternate, with a two-asset fallback.
+The processed JPEG is available directly through the iOS Share Sheet after a successful save. Photos pairing follows Apple's RAW workflow: RAW/ProRAW is the primary resource and the processed JPEG is the alternate resource. If optional share processing fails, CapturePilot preserves the original processed JPEG and RAW instead of discarding the capture.
 
 See [RAW + Share JPEG](docs/RAW_SHARE_WORKFLOW.md) for capability rules and validation limits.
 
@@ -213,7 +213,7 @@ Language, guide, coach mode/intensity, orientation settings, and HUD layout pers
 ### Build / release status
 
 - Minimum deployment target: iOS 17.
-- Current version/build: **0.9.3 (12)**.
+- Current version/build: **0.9.3 (13)**.
 - GitHub Actions compiles Release for iOS Simulator and iPhoneOS.
 - Physical camera behavior, 12/24/48 MP availability, RAW/ProRAW output, Dynamic Island/notch geometry, rotation, and real sensor behavior still require device acceptance.
 - TestFlight is not considered validated until a signed Archive passes Xcode validation and App Store Connect processes the upload.
@@ -420,7 +420,7 @@ Idioma, guía, escena/intensidad del coach, orientación y HUD se guardan localm
 ### Build / estado de publicación
 
 - iOS 17 mínimo.
-- Versión/build actual: **0.9.3 (12)**.
+- Versión/build actual: **0.9.3 (13)**.
 - GitHub Actions compila Release para Simulator e iPhoneOS.
 - Cámara física, disponibilidad real 12/24/48 MP, RAW/ProRAW, Dynamic Island/notch, orientación y sensores todavía requieren aceptación en dispositivo.
 - TestFlight sólo se considera validado después de Archive firmado + Validate App + procesamiento correcto en App Store Connect.

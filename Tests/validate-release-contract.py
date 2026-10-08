@@ -22,13 +22,14 @@ with (ROOT / "CapturePilot/CapturePilot.entitlements").open("rb") as f:
     entitlements = plistlib.load(f)
 
 project = read("CapturePilot.xcodeproj/project.pbxproj")
+camera = read("CapturePilot/Camera/CameraService.swift")
 readme = read("README.md")
 testflight = read("docs/TESTFLIGHT.md")
 
 versions = set(re.findall(r"MARKETING_VERSION = ([^;]+);", project))
 builds = set(re.findall(r"CURRENT_PROJECT_VERSION = ([^;]+);", project))
 require(versions == {"0.9.3"}, f"Expected one marketing version 0.9.3, found {sorted(versions)}")
-require(builds == {"12"}, f"Expected one build number 12, found {sorted(builds)}")
+require(builds == {"13"}, f"Expected one build number 13, found {sorted(builds)}")
 
 require(info.get("ITSAppUsesNonExemptEncryption") is False,
         "ITSAppUsesNonExemptEncryption must remain false unless encryption behavior changes.")
@@ -81,6 +82,19 @@ require(
     "Release target must use the AppIcon asset catalog."
 )
 require(
+    'request.addResource(\n                    with: .photo,\n                    data: rawData' in camera,
+    "RAW+Share Photos pairing must store RAW/ProRAW as the primary .photo resource."
+)
+require(
+    'request.addResource(\n                    with: .alternatePhoto,\n                    data: jpegData' in camera,
+    "RAW+Share Photos pairing must store the processed JPEG as the .alternatePhoto resource."
+)
+require(
+    "saveRawShareAsSeparateAssets(" in camera
+    and "rankingHandler?(processedData, sceneHint)" in camera,
+    "RAW+Share must preserve a fallback path when optional share processing fails."
+)
+require(
     (ROOT / "CapturePilot/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png").exists(),
     "1024x1024 App Store icon source is missing."
 )
@@ -106,9 +120,9 @@ require(
     "Privacy manifest must declare UserDefaults reason CA92.1."
 )
 
-for token in ("0.9.3 (12)", "English", "Español"):
+for token in ("0.9.3 (13)", "English", "Español"):
     require(token in readme, f"README missing release/localization token: {token}")
-for token in ("0.9.3 build 12", "## English", "## Español"):
+for token in ("0.9.3 build 13", "## English", "## Español"):
     require(token in testflight, f"TestFlight guide missing token: {token}")
 
 require((ROOT / "LICENSE").exists(), "LICENSE is required for the public repository.")
