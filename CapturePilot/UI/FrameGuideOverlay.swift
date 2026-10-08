@@ -20,10 +20,10 @@ struct FrameGuideOverlay: View {
                     mask.addRect(rect)
 
                     if !showOutsideFrame {
-                        context.fill(
-                            mask,
-                            with: .color(.black),
-                            style: FillStyle(eoFill: true)
+                        fillOutsideFrameBlack(
+                            context: &context,
+                            size: size,
+                            frame: rect
                         )
                     }
 
@@ -46,6 +46,57 @@ struct FrameGuideOverlay: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    private func fillOutsideFrameBlack(
+        context: inout GraphicsContext,
+        size: CGSize,
+        frame: CGRect
+    ) {
+        let black = GraphicsContext.Shading.color(.black)
+
+        if frame.minY > 0 {
+            context.fill(
+                Path(CGRect(x: 0, y: 0, width: size.width, height: frame.minY)),
+                with: black
+            )
+        }
+
+        if frame.maxY < size.height {
+            context.fill(
+                Path(CGRect(
+                    x: 0,
+                    y: frame.maxY,
+                    width: size.width,
+                    height: size.height - frame.maxY
+                )),
+                with: black
+            )
+        }
+
+        if frame.minX > 0 {
+            context.fill(
+                Path(CGRect(
+                    x: 0,
+                    y: frame.minY,
+                    width: frame.minX,
+                    height: frame.height
+                )),
+                with: black
+            )
+        }
+
+        if frame.maxX < size.width {
+            context.fill(
+                Path(CGRect(
+                    x: frame.maxX,
+                    y: frame.minY,
+                    width: size.width - frame.maxX,
+                    height: frame.height
+                )),
+                with: black
+            )
+        }
     }
 
     private var label: String {
