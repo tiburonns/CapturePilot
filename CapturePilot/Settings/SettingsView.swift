@@ -364,6 +364,24 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section(supportText("Support & feedback", "Soporte y feedback")) {
+                    Link(
+                        destination: URL(string: "https://github.com/tiburonns/CapturePilot/issues/new?template=feedback.yml")!
+                    ) {
+                        Label(
+                            supportText("Questions, suggestions, bugs & feedback", "Dudas, sugerencias, errores y feedback"),
+                            systemImage: "questionmark.bubble"
+                        )
+                    }
+
+                    Link(destination: URL(string: "https://www.patreon.com/tiburonns")!) {
+                        Label(
+                            supportText("Support development on Patreon", "Apoyar el desarrollo en Patreon"),
+                            systemImage: "heart.fill"
+                        )
+                    }
+                }
+
                 Section {
                     LabeledContent(
                         settings.text(.version),
@@ -413,6 +431,18 @@ struct SettingsView: View {
             Button("OK", role: .cancel) { lutImportError = nil }
         } message: {
             Text(lutImportError ?? "")
+        }
+    }
+
+    private func supportText(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english:
+            return english
+        case .spanish:
+            return spanish
+        case .system:
+            let preferred = Locale.preferredLanguages.first?.lowercased() ?? "en"
+            return preferred.hasPrefix("es") ? spanish : english
         }
     }
 
