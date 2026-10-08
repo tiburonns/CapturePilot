@@ -10,7 +10,7 @@ The candidate includes capability-driven HEIF/RAW/ProRAW, maximum photo dimensio
 
 The candidate also includes a persistent LUT library, private Top 5/10/25/50 Rankings with post-shot Coach review, and an optional iCloud/CloudKit friends-score layer that does not upload photos.
 
-For Creative Spark 0.9.1, specifically validate frame-within-frame false positives and lower-frame foreground alignment on real hardware.
+For Creative Spark in the 0.9.3 candidate, specifically validate frame-within-frame false positives and lower-frame foreground alignment on real hardware.
 
 Compilation does not prove physical camera behavior, external File Provider persistence, ranking quality, CloudKit production configuration, or App Store acceptance.
 
@@ -157,7 +157,7 @@ Compilar no demuestra comportamiento físico, persistencia de File Providers ext
 
 ### Requisitos actuales de subida
 
-A septiembre de 2026:
+A octubre de 2026:
 
 - App Store Connect requiere Xcode 26 o superior y SDK iOS 26 o superior.
 - CI usa actualmente Xcode 26.6 y SDK iOS 26.5, por encima de ese mínimo.

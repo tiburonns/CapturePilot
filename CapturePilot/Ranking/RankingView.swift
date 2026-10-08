@@ -350,8 +350,8 @@ private struct RankingDetailView: View {
 
                 Text(
                     localized(
-                        "Coach Score is a relative ranking aid. It combines explainable CapturePilot metrics and, on supported OS versions, Apple's Vision aesthetics signal. It is not an objective measure of artistic value.",
-                        "Coach Score es una ayuda de ranking relativa. Combina métricas explicables de CapturePilot y, en sistemas compatibles, la señal estética de Vision de Apple. No es una medida objetiva del valor artístico."
+                        "Coach Score is a relative ranking aid. The primary score uses the same explainable CapturePilot exposure/composition/detail formula across supported iOS versions. On iOS 18+, Apple's Vision aesthetics score is supplemental and does not change the primary score. It is not an objective measure of artistic value.",
+                        "Coach Score es una ayuda de ranking relativa. La puntuación principal usa la misma fórmula explicable de exposición/composición/detalle en las versiones compatibles de iOS. En iOS 18+, la estética de Vision es suplementaria y no cambia la puntuación principal. No es una medida objetiva del valor artístico."
                     )
                 )
                 .font(.footnote)
