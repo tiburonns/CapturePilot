@@ -271,7 +271,23 @@ struct ContentView: View {
                 if showingProControls && !hud.isEditing {
                     VStack {
                         Spacer()
-                        ManualControlsView(camera: camera)
+                        ManualControlsView(
+                            camera: camera,
+                            onOpenRankings: {
+                                showingProControls = false
+                                showingRankings = true
+                            },
+                            onOpenSettings: {
+                                showingProControls = false
+                                showingSettings = true
+                            },
+                            onClose: {
+                                withAnimation(.snappy(duration: 0.22)) {
+                                    showingProControls = false
+                                }
+                            }
+                        )
+                            .padding(.horizontal, 8)
                             .padding(.bottom, max(82, geometry.safeAreaInsets.bottom + 72))
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -305,7 +321,7 @@ struct ContentView: View {
             .offset(x: navigationExitOffset + navigationPreviewOffset)
             .simultaneousGesture(
                 horizontalNavigationGesture,
-                isEnabled: !hud.isEditing
+                isEnabled: !hud.isEditing && !showingProControls
             )
         }
     }
