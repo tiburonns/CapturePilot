@@ -764,6 +764,32 @@ private struct PhotoImportView: View {
     }
 }
 
+private actor PhotoThumbnailLoadLimiter {
+    static let shared = PhotoThumbnailLoadLimiter()
+
+    private var activeLoads = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquire() async {
+        if activeLoads < 2 {
+            activeLoads += 1
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func release() {
+        if waiters.isEmpty {
+            activeLoads = max(0, activeLoads - 1)
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
 private struct PhotoImportThumbnail: View {
     @EnvironmentObject private var settings: AppSettings
 
@@ -814,8 +840,11 @@ private struct PhotoImportThumbnail: View {
     }
 
     private func loadThumbnail() async {
+        await PhotoThumbnailLoadLimiter.shared.acquire()
+
         do {
             guard let data = try await photo.item.loadTransferable(type: Data.self) else {
+                await PhotoThumbnailLoadLimiter.shared.release()
                 failedToLoad = true
                 return
             }
@@ -824,13 +853,16 @@ private struct PhotoImportThumbnail: View {
                 Self.makeThumbnailData(from: data)
             }.value
 
+            await PhotoThumbnailLoadLimiter.shared.release()
             guard !Task.isCancelled else { return }
+
             if let preview {
                 thumbnailData = preview
             } else {
                 failedToLoad = true
             }
         } catch {
+            await PhotoThumbnailLoadLimiter.shared.release()
             failedToLoad = true
         }
     }
