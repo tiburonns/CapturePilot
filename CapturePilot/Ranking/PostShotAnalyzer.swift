@@ -25,11 +25,16 @@ final class PostShotAnalyzer {
         let horizonAngle = detectHorizon(image)
         let pixelMetrics = samplePixels(image)
 
-        let category = resolveCategory(
-            sceneHint: sceneHint,
-            classifications: classifications,
-            faceRect: faceAnalysis?.rect,
-            metrics: pixelMetrics
+        let category = PhotoCategoryClassifier.classify(
+            observations: classifications.map {
+                PhotoCategoryEvidence(
+                    label: $0.identifier,
+                    confidence: Double($0.confidence)
+                )
+            },
+            faceArea: faceAnalysis.map { $0.rect.width * $0.rect.height },
+            averageLuma: pixelMetrics.averageLuma,
+            sceneHint: sceneHint
         )
 
         let aesthetics: Double?
@@ -372,107 +377,6 @@ final class PostShotAnalyzer {
                 placement * 0.80 + horizonComponent * 0.20
             )
         )
-    }
-
-    private func resolveCategory(
-        sceneHint: PhotoCategory?,
-        classifications: [VNClassificationObservation],
-        faceRect: CGRect?,
-        metrics: PixelMetrics
-    ) -> PhotoCategory {
-        let keywords: [PhotoCategory: [String]] = [
-            .portrait: [
-                "portrait", "selfie", "human face", "person", "people",
-                "man", "woman", "child", "baby", "headshot"
-            ],
-            .architecture: [
-                "architecture", "building", "skyscraper", "bridge", "church",
-                "house", "tower", "facade", "castle", "lighthouse", "interior"
-            ],
-            .automotive: [
-                "sports car", "race car", "car", "automobile", "vehicle",
-                "motorcycle", "truck", "bus", "bicycle", "car wheel"
-            ],
-            .macro: [
-                "macro", "close up", "flower", "petal", "insect", "butterfly",
-                "spider", "bee", "mushroom", "plant", "leaf"
-            ],
-            .street: [
-                "street photography", "city street", "street", "sidewalk",
-                "pedestrian", "crosswalk", "traffic", "urban scene", "market"
-            ],
-            .landscape: [
-                "landscape", "mountain", "valley", "seashore", "beach",
-                "lake", "waterfall", "forest", "desert", "meadow", "waterfront"
-            ],
-            .night: [
-                "night sky", "city at night", "night", "stars", "moon",
-                "fireworks", "star trail", "nightscape", "aurora"
-            ],
-            .general: []
-        ]
-
-        var evidence: [PhotoCategory: Double] = [:]
-        for observation in classifications.prefix(12) {
-            let label = observation.identifier
-                .lowercased()
-                .replacingOccurrences(of: "_", with: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let confidence = Double(observation.confidence)
-
-            for (category, categoryKeywords) in keywords {
-                guard let matched = categoryKeywords.first(where: { keyword in
-                    label == keyword
-                        || label.hasPrefix(keyword + " ")
-                        || label.contains(" " + keyword + " ")
-                }) else {
-                    continue
-                }
-
-                let tokenCount = matched.split(separator: " ").count
-                let specificity = tokenCount > 1 ? 1.08 : 1.0
-                evidence[category] = max(
-                    evidence[category, default: 0],
-                    confidence * specificity
-                )
-            }
-        }
-
-        // A large, close face is useful portrait evidence; a tiny face in a
-        // street or landscape image should not dominate the scene category.
-        if let faceRect, faceRect.width * faceRect.height >= 0.045 {
-            evidence[.portrait] = max(evidence[.portrait, default: 0], 0.72)
-        }
-
-        // Darkness alone is not enough to label an image as night: underexposed
-        // portraits, cars, and interiors are common and should keep their scene.
-        if metrics.averageLuma < 0.18, evidence[.night, default: 0] >= 0.20 {
-            evidence[.night, default: 0] *= 1.12
-        }
-
-        let ranked = evidence
-            .filter { $0.key != .general }
-            .sorted { lhs, rhs in lhs.value > rhs.value }
-
-        if let best = ranked.first {
-            let second = ranked.dropFirst().first?.value ?? 0
-            let margin = best.value - second
-            if best.value >= 0.24 && margin >= 0.035 {
-                return best.key
-            }
-        }
-
-        // A user-selected scene is a useful fallback, but it does not override
-        // strong visual evidence from the image classifier.
-        if let sceneHint, sceneHint != .general {
-            let hintScore = evidence[sceneHint, default: 0]
-            let bestScore = ranked.first?.value ?? 0
-            if bestScore < 0.34 || hintScore >= bestScore - 0.05 {
-                return sceneHint
-            }
-        }
-
-        return .general
     }
 
     private func buildRecommendations(
