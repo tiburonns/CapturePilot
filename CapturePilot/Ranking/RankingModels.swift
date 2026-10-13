@@ -24,7 +24,7 @@ enum PhotoIngestResult: Equatable {
     case failed
 }
 
-struct PhotoVisualSignature: Hashable {
+struct PhotoVisualSignature: Hashable, Sendable {
     let hash: String
     let aspectRatio: Double
 }
