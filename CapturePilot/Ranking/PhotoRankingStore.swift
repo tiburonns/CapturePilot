@@ -32,6 +32,7 @@ final class PhotoRankingStore: ObservableObject {
             guard let self, let loaded else { return }
             self.entries = loaded.sorted { $0.coachScore > $1.coachScore }
             self.rebuildDuplicateIndexes()
+            self.save()
         }
     }
 
@@ -315,7 +316,30 @@ final class PhotoRankingStore: ObservableObject {
 
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try? decoder.decode([PhotoRankingEntry].self, from: data)
+        guard let decoded = try? decoder.decode([PhotoRankingEntry].self, from: data) else {
+            return nil
+        }
+
+        // Older rankings predate visual fingerprints. Their stored thumbnails
+        // are enough to backfill a conservative signature without needing the
+        // original full-resolution files.
+        return decoded.map { original in
+            var entry = original
+            guard entry.perceptualFingerprint == nil || entry.aspectRatio == nil else {
+                return entry
+            }
+
+            let thumbnailURL = Self.thumbnailDirectory
+                .appendingPathComponent(entry.thumbnailFilename)
+            guard let thumbnailData = try? Data(contentsOf: thumbnailURL),
+                  let signature = PostShotAnalyzer.visualSignature(thumbnailData) else {
+                return entry
+            }
+
+            entry.perceptualFingerprint = signature.hash
+            entry.aspectRatio = signature.aspectRatio
+            return entry
+        }
     }
 
     nonisolated private static var rootDirectory: URL {
