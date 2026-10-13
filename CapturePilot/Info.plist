@@ -30,6 +30,8 @@
     <string>CapturePilot uses the camera for the live viewfinder, on-device composition analysis, and photo capture.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>CapturePilot saves photos you capture to your Photo Library.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>CapturePilot uses Photo Library access to let you browse and select images for photo ranking. You can choose full or limited access in iOS.</string>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

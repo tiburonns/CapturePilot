@@ -47,9 +47,13 @@ final class PhotoRankingStore: ObservableObject {
             await loadTask.value
         }
 
-        let fingerprint = PostShotAnalyzer.fingerprint(data)
-        let visualSignature = await Task.detached(priority: .utility) {
-            PostShotAnalyzer.visualSignature(data)
+        let (fingerprint, visualSignature) = await Task.detached(priority: .utility) {
+            autoreleasepool {
+                (
+                    PostShotAnalyzer.fingerprint(data),
+                    PostShotAnalyzer.visualSignature(data)
+                )
+            }
         }.value
 
         guard !isDuplicate(
@@ -83,8 +87,11 @@ final class PhotoRankingStore: ObservableObject {
         }
 
         do {
-            let result = try await Task.detached(priority: .userInitiated) {
-                try PostShotAnalyzer().analyze(data: data, sceneHint: sceneHint)
+            let analysisPriority: TaskPriority = source == .capture ? .userInitiated : .utility
+            let result = try await Task.detached(priority: analysisPriority) {
+                try autoreleasepool {
+                    try PostShotAnalyzer().analyze(data: data, sceneHint: sceneHint)
+                }
             }.value
 
             let id = UUID()

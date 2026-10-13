@@ -1,5 +1,4 @@
-import ImageIO
-import PhotosUI
+import Photos
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -135,9 +134,14 @@ struct RankingView: View {
                         .environmentObject(rankingStore)
                         .environmentObject(social)
                 case .photoImport:
-                    PhotoImportView { items in
-                        startImport(items)
-                    }
+                    PhotoImportView(
+                        onImportAssets: { assets in
+                            startImport(assets)
+                        },
+                        onImportFiles: { urls in
+                            startImportFiles(urls)
+                        }
+                    )
                     .environmentObject(settings)
                 }
             }
@@ -190,45 +194,33 @@ struct RankingView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func startImport(_ items: [PhotosPickerItem]) {
-        guard !items.isEmpty else { return }
-
-        importCompleted = 0
-        importTotal = items.count
-        importImported = 0
-        importDuplicates = 0
-        importFailed = 0
-        importWasCancelled = false
-        isImportingPhotos = true
+    private func startImport(_ assets: [PHAsset]) {
+        guard !assets.isEmpty else { return }
+        beginImport(total: assets.count)
 
         importTask = Task { @MainActor in
-            for item in items {
+            for asset in assets {
                 guard !Task.isCancelled else {
                     importWasCancelled = true
                     break
                 }
 
                 do {
-                    guard let data = try await item.loadTransferable(type: Data.self) else {
-                        importFailed += 1
-                        importCompleted += 1
-                        continue
+                    let data = try await loadAnalysisData(for: asset)
+                    guard !Task.isCancelled else {
+                        importWasCancelled = true
+                        break
                     }
 
                     let result = await rankingStore.ingest(
                         data: data,
                         source: .importPhoto,
-                        assetIdentifier: item.itemIdentifier
+                        assetIdentifier: asset.localIdentifier
                     )
-
-                    switch result {
-                    case .imported:
-                        importImported += 1
-                    case .duplicate:
-                        importDuplicates += 1
-                    case .failed:
-                        importFailed += 1
-                    }
+                    recordImportResult(result)
+                } catch is CancellationError {
+                    importWasCancelled = true
+                    break
                 } catch {
                     importFailed += 1
                 }
@@ -236,22 +228,94 @@ struct RankingView: View {
                 importCompleted += 1
             }
 
-            if Task.isCancelled {
-                importWasCancelled = true
+            finishImport()
+        }
+    }
+
+    private func startImportFiles(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        beginImport(total: urls.count)
+
+        importTask = Task { @MainActor in
+            for url in urls {
+                guard !Task.isCancelled else {
+                    importWasCancelled = true
+                    break
+                }
+
+                let hasSecurityScope = url.startAccessingSecurityScopedResource()
+                defer {
+                    if hasSecurityScope {
+                        url.stopAccessingSecurityScopedResource()
+                    }
+                }
+
+                do {
+                    let data = try await Task.detached(priority: .utility) {
+                        try Data(contentsOf: url, options: .mappedIfSafe)
+                    }.value
+
+                    guard !Task.isCancelled else {
+                        importWasCancelled = true
+                        break
+                    }
+
+                    let result = await rankingStore.ingest(
+                        data: data,
+                        source: .importPhoto
+                    )
+                    recordImportResult(result)
+                } catch is CancellationError {
+                    importWasCancelled = true
+                    break
+                } catch {
+                    importFailed += 1
+                }
+
+                importCompleted += 1
             }
 
-            isImportingPhotos = false
-            importTask = nil
-
-            let cancelled = importWasCancelled
-                ? localized(" · cancelled", " · cancelada")
-                : ""
-            importSummary = localized(
-                "Imported: \(importImported) · duplicates skipped: \(importDuplicates) · failed: \(importFailed)\(cancelled)",
-                "Importadas: \(importImported) · duplicadas omitidas: \(importDuplicates) · errores: \(importFailed)\(cancelled)"
-            )
-            showingImportSummary = true
+            finishImport()
         }
+    }
+
+    private func beginImport(total: Int) {
+        importCompleted = 0
+        importTotal = total
+        importImported = 0
+        importDuplicates = 0
+        importFailed = 0
+        importWasCancelled = false
+        isImportingPhotos = true
+    }
+
+    private func recordImportResult(_ result: PhotoIngestResult) {
+        switch result {
+        case .imported:
+            importImported += 1
+        case .duplicate:
+            importDuplicates += 1
+        case .failed:
+            importFailed += 1
+        }
+    }
+
+    private func finishImport() {
+        if Task.isCancelled {
+            importWasCancelled = true
+        }
+
+        isImportingPhotos = false
+        importTask = nil
+
+        let cancelled = importWasCancelled
+            ? localized(" · cancelled", " · cancelada")
+            : ""
+        importSummary = localized(
+            "Imported: \(importImported) · duplicates skipped: \(importDuplicates) · failed: \(importFailed)\(cancelled)",
+            "Importadas: \(importImported) · duplicadas omitidas: \(importDuplicates) · errores: \(importFailed)\(cancelled)"
+        )
+        showingImportSummary = true
     }
 
     private var controls: some View {
@@ -633,123 +697,436 @@ private enum RankingSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
-private struct PendingPhoto: Identifiable {
-    let id: UUID
-    let item: PhotosPickerItem
-
-    init(item: PhotosPickerItem) {
-        id = UUID()
-        self.item = item
-    }
+private enum PhotoLibraryThumbnailManager {
+    static let shared = PHCachingImageManager()
 }
 
 private struct PhotoImportView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.displayScale) private var displayScale
     @EnvironmentObject private var settings: AppSettings
 
-    let onImport: ([PhotosPickerItem]) -> Void
+    let onImportAssets: ([PHAsset]) -> Void
+    let onImportFiles: ([URL]) -> Void
 
-    @State private var selection: [PhotosPickerItem] = []
-    @State private var pendingPhotos: [PendingPhoto] = []
+    @State private var authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    @State private var assets: PHFetchResult<PHAsset>?
+    @State private var selectedIdentifiers = Set<String>()
+    @State private var isLoadingAssets = false
+    @State private var showingFileImporter = false
+    @State private var fileImportError: String?
+    @State private var showingFileImportError = false
 
     private let columns = [
-        GridItem(.adaptive(minimum: 88, maximum: 140), spacing: 8)
+        GridItem(.adaptive(minimum: 94, maximum: 144), spacing: 4)
     ]
+
+    private var canBrowsePhotos: Bool {
+        authorizationStatus == .authorized || authorizationStatus == .limited
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                PhotosPicker(
-                    selection: $selection,
-                    selectionBehavior: .ordered,
-                    matching: .images
-                ) {
+            VStack(spacing: 0) {
+                accessHeader
+
+                if canBrowsePhotos {
+                    selectionToolbar
+
+                    if isLoadingAssets {
+                        ProgressView(localized("Loading photo library…", "Cargando fototeca…"))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let assets, assets.count > 0 {
+                        photoGrid(assets)
+                    } else {
+                        ContentUnavailableView(
+                            localized("No photos found", "No se encontraron fotos"),
+                            systemImage: "photo.on.rectangle.angled",
+                            description: Text(
+                                localized(
+                                    "No images are available in the current photo-library access scope.",
+                                    "No hay imágenes disponibles dentro del acceso actual a la fototeca."
+                                )
+                            )
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                } else {
+                    noPhotoAccessContent
+                }
+
+                importActions
+            }
+            .background(Color.black.ignoresSafeArea())
+            .navigationTitle(localized("Import photos", "Importar fotos"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(localized("Done", "Listo")) { dismiss() }
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $showingFileImporter,
+            allowedContentTypes: [.image, .rawImage],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard !urls.isEmpty else { return }
+                dismiss()
+                onImportFiles(urls)
+            case .failure(let error):
+                fileImportError = error.localizedDescription
+                showingFileImportError = true
+            }
+        }
+        .alert(
+            localized("Could not open files", "No se pudieron abrir los archivos"),
+            isPresented: $showingFileImportError
+        ) {
+            Button(localized("OK", "Aceptar"), role: .cancel) {
+                fileImportError = nil
+            }
+        } message: {
+            Text(fileImportError ?? "")
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            refreshAuthorization()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                refreshAuthorization()
+            }
+        }
+    }
+
+    private var accessHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Label(
+                    accessTitle,
+                    systemImage: canBrowsePhotos ? "checkmark.shield.fill" : "photo.badge.exclamationmark"
+                )
+                .font(.subheadline.weight(.semibold))
+
+                Spacer()
+
+                if authorizationStatus != .notDetermined {
+                    Button(localized("Manage access", "Administrar acceso")) {
+                        openSettings()
+                    }
+                    .font(.caption.weight(.medium))
+                }
+            }
+
+            Text(accessDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if authorizationStatus == .limited {
+                Text(
+                    localized(
+                        "Only approved photos appear below. To add or remove allowed photos, use Manage access.",
+                        "Abajo solo aparecen las fotos autorizadas. Para añadir o quitar fotos permitidas, usa Administrar acceso."
+                    )
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    private var selectionToolbar: some View {
+        HStack(spacing: 12) {
+            Text(localized(
+                "\(selectedIdentifiers.count) selected",
+                "\(selectedIdentifiers.count) seleccionadas"
+            ))
+            .font(.subheadline.weight(.semibold).monospacedDigit())
+
+            Spacer()
+
+            Button(
+                selectedIdentifiers.count == (assets?.count ?? 0)
+                    ? localized("Clear", "Limpiar")
+                    : localized("Select all", "Seleccionar todas")
+            ) {
+                toggleSelectAll()
+            }
+            .font(.caption.weight(.medium))
+            .disabled((assets?.count ?? 0) == 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(.white.opacity(0.04))
+    }
+
+    private func photoGrid(_ fetchResult: PHFetchResult<PHAsset>) -> some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(0..<fetchResult.count, id: \.self) { index in
+                    let asset = fetchResult.object(at: index)
+                    let isSelected = selectedIdentifiers.contains(asset.localIdentifier)
+
+                    Button {
+                        toggleSelection(for: asset)
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            PhotoLibraryThumbnail(
+                                asset: asset,
+                                targetSize: CGSize(
+                                    width: 144 * displayScale,
+                                    height: 144 * displayScale
+                                )
+                            )
+                            .frame(maxWidth: .infinity)
+                            .aspectRatio(1, contentMode: .fit)
+                            .clipped()
+
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .font(.title3)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, isSelected ? Color.accentColor : Color.black.opacity(0.65))
+                                .padding(6)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        localized("Photo", "Foto")
+                        + (isSelected ? localized(", selected", ", seleccionada") : localized(", not selected", ", no seleccionada"))
+                    )
+                    .id(asset.localIdentifier)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private var noPhotoAccessContent: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 38))
+                .foregroundStyle(.secondary)
+
+            Text(localized("Choose how CapturePilot can access photos", "Elige cómo puede acceder CapturePilot a tus fotos"))
+                .font(.headline)
+                .multilineTextAlignment(.center)
+
+            Text(
+                localized(
+                    "iOS will ask whether to allow full access or only selected photos. CapturePilot cannot change that permission without your approval.",
+                    "iOS te preguntará si permites acceso completo o solo a las fotos seleccionadas. CapturePilot no puede cambiar ese permiso sin tu autorización."
+                )
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+
+            if authorizationStatus == .notDetermined {
+                Button {
+                    requestPhotoAccess()
+                } label: {
                     Label(
-                        localized("Choose photos from Library", "Elegir fotos de la fototeca"),
+                        localized("Browse Photo Library", "Explorar fototeca"),
                         systemImage: "photo.on.rectangle.angled"
                     )
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .padding(.horizontal)
-
-                HStack {
-                    Text(localized(
-                        "\(pendingPhotos.count) selected",
-                        "\(pendingPhotos.count) seleccionadas"
-                    ))
-                    .font(.subheadline.weight(.semibold))
-
-                    Spacer()
-
-                    if !pendingPhotos.isEmpty {
-                        Button(localized("Clear", "Limpiar"), role: .destructive) {
-                            selection = []
-                            pendingPhotos = []
-                        }
-                        .font(.caption)
-                    }
-                }
-                .padding(.horizontal)
-
-                if pendingPhotos.isEmpty {
-                    ContentUnavailableView(
-                        localized("No photos selected", "No hay fotos seleccionadas"),
-                        systemImage: "photo.stack",
-                        description: Text(localized(
-                            "Choose any number of images, review the selection, then import. No artificial 50-photo cap is applied.",
-                            "Elige tantas imágenes como necesites, revisa la selección e impórtalas. No se impone un límite artificial de 50 fotos."
-                        ))
-                    )
-                    .frame(maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 8) {
-                            ForEach(pendingPhotos) { photo in
-                                PhotoImportThumbnail(photo: photo) {
-                                    pendingPhotos.removeAll { $0.id == photo.id }
-                                    selection = pendingPhotos.map(\.item)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom, 12)
-                    }
-                }
-
+            } else {
                 Button {
-                    let selected = pendingPhotos.map(\.item)
-                    dismiss()
-                    onImport(selected)
+                    openSettings()
                 } label: {
                     Label(
-                        localized("Import \(pendingPhotos.count) photos", "Importar \(pendingPhotos.count) fotos"),
+                        localized("Open iOS Settings", "Abrir Ajustes de iOS"),
+                        systemImage: "gear"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+
+            Text(
+                localized(
+                    "You can import from Files without granting Photo Library access.",
+                    "Puedes importar desde Archivos sin conceder acceso a la fototeca."
+                )
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var importActions: some View {
+        VStack(spacing: 8) {
+            Button {
+                showingFileImporter = true
+            } label: {
+                Label(
+                    localized("Import from Files", "Importar desde Archivos"),
+                    systemImage: "folder"
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            if canBrowsePhotos {
+                Button {
+                    let selected = selectedAssets()
+                    guard !selected.isEmpty else { return }
+                    dismiss()
+                    onImportAssets(selected)
+                } label: {
+                    Label(
+                        localized("Import \(selectedIdentifiers.count) photos", "Importar \(selectedIdentifiers.count) fotos"),
                         systemImage: "square.and.arrow.down"
                     )
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(pendingPhotos.isEmpty)
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-            }
-            .navigationTitle(localized("Review import", "Revisar importación"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(localized("Cancel", "Cancelar")) { dismiss() }
-                }
+                .disabled(selectedIdentifiers.isEmpty)
             }
         }
-        .preferredColorScheme(.dark)
-        .onChange(of: selection) { _, items in
-            let previousByItem = Dictionary(
-                uniqueKeysWithValues: pendingPhotos.map { ($0.item, $0) }
+        .padding(.horizontal, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(.black)
+    }
+
+    private var accessTitle: String {
+        switch authorizationStatus {
+        case .authorized:
+            localized("Full Photo Library Access", "Acceso completo a Fotos")
+        case .limited:
+            localized("Limited Photo Library Access", "Acceso limitado a Fotos")
+        case .notDetermined:
+            localized("Photo Library Access Not Set", "Acceso a Fotos sin configurar")
+        case .denied:
+            localized("Photo Library Access Denied", "Acceso a Fotos denegado")
+        case .restricted:
+            localized("Photo Library Access Restricted", "Acceso a Fotos restringido")
+        @unknown default:
+            localized("Photo Library Access", "Acceso a Fotos")
+        }
+    }
+
+    private var accessDescription: String {
+        switch authorizationStatus {
+        case .authorized:
+            localized(
+                "The custom CapturePilot grid can browse your full photo library.",
+                "La cuadrícula propia de CapturePilot puede explorar toda tu fototeca."
             )
-            pendingPhotos = items.map { item in
-                previousByItem[item] ?? PendingPhoto(item: item)
+        case .limited:
+            localized(
+                "The custom CapturePilot grid shows only photos approved in iOS.",
+                "La cuadrícula propia de CapturePilot muestra solo las fotos autorizadas en iOS."
+            )
+        case .notDetermined:
+            localized(
+                "Choose Photo Library to let iOS show the available permission options.",
+                "Elige Fototeca para que iOS muestre las opciones de permiso disponibles."
+            )
+        case .denied, .restricted:
+            localized(
+                "Photo Library access is off. Open Settings to change it, or import from Files.",
+                "El acceso a Fotos está desactivado. Cámbialo en Ajustes o importa desde Archivos."
+            )
+        @unknown default:
+            localized(
+                "Review CapturePilot's Photo Library permission in iOS Settings.",
+                "Revisa el permiso de Fotos de CapturePilot en Ajustes de iOS."
+            )
+        }
+    }
+
+    private func refreshAuthorization() {
+        let currentStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        let accessChanged = currentStatus != authorizationStatus
+        authorizationStatus = currentStatus
+
+        guard currentStatus == .authorized || currentStatus == .limited else {
+            assets = nil
+            selectedIdentifiers.removeAll()
+            return
+        }
+
+        if accessChanged {
+            selectedIdentifiers.removeAll()
+        }
+
+        isLoadingAssets = true
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.includeHiddenAssets = false
+        assets = PHAsset.fetchAssets(with: .image, options: options)
+        isLoadingAssets = false
+    }
+
+    private func requestPhotoAccess() {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            DispatchQueue.main.async {
+                authorizationStatus = status
+                refreshAuthorization()
             }
         }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func toggleSelection(for asset: PHAsset) {
+        if selectedIdentifiers.contains(asset.localIdentifier) {
+            selectedIdentifiers.remove(asset.localIdentifier)
+        } else {
+            selectedIdentifiers.insert(asset.localIdentifier)
+        }
+    }
+
+    private func toggleSelectAll() {
+        guard let assets else { return }
+
+        if selectedIdentifiers.count == assets.count {
+            selectedIdentifiers.removeAll()
+            return
+        }
+
+        var identifiers = Set<String>()
+        identifiers.reserveCapacity(assets.count)
+        assets.enumerateObjects { asset, _, _ in
+            identifiers.insert(asset.localIdentifier)
+        }
+        selectedIdentifiers = identifiers
+    }
+
+    private func selectedAssets() -> [PHAsset] {
+        guard let assets, !selectedIdentifiers.isEmpty else { return [] }
+
+        var selected: [PHAsset] = []
+        selected.reserveCapacity(selectedIdentifiers.count)
+        assets.enumerateObjects { asset, _, _ in
+            if selectedIdentifiers.contains(asset.localIdentifier) {
+                selected.append(asset)
+            }
+        }
+        return selected
     }
 
     private func localized(_ english: String, _ spanish: String) -> String {
@@ -764,165 +1141,196 @@ private struct PhotoImportView: View {
     }
 }
 
-private actor PhotoThumbnailLoadLimiter {
-    static let shared = PhotoThumbnailLoadLimiter()
+private struct PhotoLibraryThumbnail: View {
+    let asset: PHAsset
+    let targetSize: CGSize
 
-    private var activeLoads = 0
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    @StateObject private var loader: PhotoLibraryThumbnailLoader
 
-    func acquire() async {
-        if activeLoads < 2 {
-            activeLoads += 1
-            return
-        }
-
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
-        }
+    init(asset: PHAsset, targetSize: CGSize) {
+        self.asset = asset
+        self.targetSize = targetSize
+        _loader = StateObject(
+            wrappedValue: PhotoLibraryThumbnailLoader(
+                asset: asset,
+                targetSize: targetSize
+            )
+        )
     }
-
-    func release() {
-        if waiters.isEmpty {
-            activeLoads = max(0, activeLoads - 1)
-        } else {
-            waiters.removeFirst().resume()
-        }
-    }
-}
-
-private struct PhotoImportThumbnail: View {
-    @EnvironmentObject private var settings: AppSettings
-
-    let photo: PendingPhoto
-    let onRemove: () -> Void
-
-    @State private var thumbnailData: Data?
-    @State private var failedToLoad = false
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Group {
-                if let thumbnailData, let image = UIImage(data: thumbnailData) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else if failedToLoad {
-                    Image(systemName: "photo")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+        Group {
+            if let image = loader.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else if loader.failed {
+                Image(systemName: "icloud.slash")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.white.opacity(0.06))
+            } else {
+                Rectangle()
+                    .fill(.white.opacity(0.06))
+                    .overlay {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
             }
-            .frame(height: 104)
-            .frame(maxWidth: .infinity)
-            .background(.white.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, .black.opacity(0.75))
-                    .padding(3)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(localized("Remove selected photo", "Quitar foto seleccionada"))
         }
-        .task(id: photo.id) {
-            await loadThumbnail()
+        .onAppear {
+            loader.load()
         }
         .onDisappear {
-            thumbnailData = nil
+            loader.cancel()
+        }
+    }
+}
+
+@MainActor
+private final class PhotoLibraryThumbnailLoader: ObservableObject {
+    @Published private(set) var image: UIImage?
+    @Published private(set) var failed = false
+
+    private let asset: PHAsset
+    private let targetSize: CGSize
+    private let manager = PhotoLibraryThumbnailManager.shared
+    private var requestID: PHImageRequestID?
+
+    init(asset: PHAsset, targetSize: CGSize) {
+        self.asset = asset
+        self.targetSize = targetSize
+    }
+
+    func load() {
+        guard image == nil, requestID == nil else { return }
+
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .opportunistic
+        options.resizeMode = .fast
+        options.isNetworkAccessAllowed = false
+        options.version = .current
+
+        requestID = manager.requestImage(
+            for: asset,
+            targetSize: targetSize,
+            contentMode: .aspectFill,
+            options: options
+        ) { [weak self] image, info in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                if info?[PHImageCancelledKey] as? Bool == true {
+                    self.requestID = nil
+                    return
+                }
+
+                let isDegraded = info?[PHImageResultIsDegradedKey] as? Bool == true
+                if let image {
+                    self.image = image
+                    if !isDegraded {
+                        self.requestID = nil
+                        self.failed = false
+                    }
+                } else if !isDegraded {
+                    self.failed = true
+                    self.requestID = nil
+                }
+            }
         }
     }
 
-    private func loadThumbnail() async {
-        await PhotoThumbnailLoadLimiter.shared.acquire()
-        guard !Task.isCancelled else {
-            await PhotoThumbnailLoadLimiter.shared.release()
-            return
+    func cancel() {
+        if let requestID {
+            manager.cancelImageRequest(requestID)
+            self.requestID = nil
         }
+        image = nil
+        failed = false
+    }
+}
 
-        do {
-            guard let data = try await photo.item.loadTransferable(type: Data.self) else {
-                await PhotoThumbnailLoadLimiter.shared.release()
-                failedToLoad = true
-                return
-            }
+private enum PhotoAssetImportError: LocalizedError {
+    case unavailable
 
-            if Task.isCancelled {
-                await PhotoThumbnailLoadLimiter.shared.release()
-                return
-            }
+    var errorDescription: String? {
+        switch self {
+        case .unavailable:
+            return "The photo could not be loaded. If it is stored in iCloud, check your connection and try again."
+        }
+    }
+}
 
-            let preview = await Task.detached(priority: .utility) {
-                Self.makeThumbnailData(from: data)
-            }.value
+private final class PhotoAssetRequestCancellation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var requestID: PHImageRequestID?
+    private var cancelled = false
 
-            await PhotoThumbnailLoadLimiter.shared.release()
-            guard !Task.isCancelled else { return }
+    func setRequestID(_ requestID: PHImageRequestID, manager: PHImageManager) {
+        lock.lock()
+        self.requestID = requestID
+        let shouldCancel = cancelled
+        lock.unlock()
 
-            if let preview {
-                thumbnailData = preview
-            } else {
-                failedToLoad = true
-            }
-        } catch {
-            await PhotoThumbnailLoadLimiter.shared.release()
-            failedToLoad = true
+        if shouldCancel, requestID != PHInvalidImageRequestID {
+            manager.cancelImageRequest(requestID)
         }
     }
 
-    private func localized(_ english: String, _ spanish: String) -> String {
-        switch settings.language {
-        case .english: english
-        case .spanish: spanish
-        case .system:
-            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
-                ? spanish
-                : english
+    func cancel(manager: PHImageManager) {
+        lock.lock()
+        cancelled = true
+        let requestID = self.requestID
+        lock.unlock()
+
+        if let requestID, requestID != PHInvalidImageRequestID {
+            manager.cancelImageRequest(requestID)
         }
     }
+}
 
-    nonisolated private static func makeThumbnailData(from data: Data) -> Data? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
-            return nil
+private func loadAnalysisData(for asset: PHAsset) async throws -> Data {
+    let manager = PHImageManager.default()
+    let options = PHImageRequestOptions()
+    options.deliveryMode = .highQualityFormat
+    options.resizeMode = .exact
+    options.isNetworkAccessAllowed = true
+    options.version = .current
+
+    let cancellation = PhotoAssetRequestCancellation()
+    return try await withTaskCancellationHandler {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+            let requestID = manager.requestImage(
+                for: asset,
+                targetSize: CGSize(width: 2048, height: 2048),
+                contentMode: .aspectFit,
+                options: options
+            ) { image, info in
+                if info?[PHImageCancelledKey] as? Bool == true {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+
+                if let error = info?[PHImageErrorKey] as? Error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                if info?[PHImageResultIsDegradedKey] as? Bool == true {
+                    return
+                }
+
+                guard let image, let data = image.jpegData(compressionQuality: 0.9) else {
+                    continuation.resume(throwing: PhotoAssetImportError.unavailable)
+                    return
+                }
+
+                continuation.resume(returning: data)
+            }
+            cancellation.setRequestID(requestID, manager: manager)
         }
-
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 160
-        ]
-
-        guard let image = CGImageSourceCreateThumbnailAtIndex(
-            source,
-            0,
-            options as CFDictionary
-        ) else {
-            return nil
-        }
-
-        let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(
-            output,
-            UTType.jpeg.identifier as CFString,
-            1,
-            nil
-        ) else {
-            return nil
-        }
-
-        CGImageDestinationAddImage(
-            destination,
-            image,
-            [kCGImageDestinationLossyCompressionQuality: 0.65] as CFDictionary
-        )
-
-        guard CGImageDestinationFinalize(destination) else { return nil }
-        return output as Data
+    } onCancel: {
+        cancellation.cancel(manager: manager)
     }
 }

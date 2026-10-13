@@ -1,2 +1,4 @@
 "NSCameraUsageDescription" = "CapturePilot usa la cámara para el visor en vivo, el análisis de composición en el dispositivo y la captura de fotografías.";
 "NSPhotoLibraryAddUsageDescription" = "CapturePilot guarda en tu fototeca las fotografías que captures.";
+
+"NSPhotoLibraryUsageDescription" = "CapturePilot usa el acceso a Fotos para explorar y seleccionar imágenes para el ranking. Puedes elegir acceso completo o limitado en iOS.";
