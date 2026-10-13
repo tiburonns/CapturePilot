@@ -1,6 +1,8 @@
+import ImageIO
 import PhotosUI
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct RankingView: View {
     @EnvironmentObject private var settings: AppSettings
@@ -11,11 +13,17 @@ struct RankingView: View {
     @State private var topCount: Int? = 10
     @State private var category: PhotoCategory?
     @State private var searchText = ""
-    @State private var pickerItems: [PhotosPickerItem] = []
-    @State private var showingSocial = false
+    @State private var activeSheet: RankingSheet?
+    @State private var importTask: Task<Void, Never>?
     @State private var importCompleted = 0
     @State private var importTotal = 0
+    @State private var importImported = 0
+    @State private var importDuplicates = 0
+    @State private var importFailed = 0
+    @State private var importWasCancelled = false
     @State private var isImportingPhotos = false
+    @State private var importSummary: String?
+    @State private var showingImportSummary = false
 
     private var ranked: [PhotoRankingEntry] {
         let query = searchText
@@ -102,18 +110,16 @@ struct RankingView: View {
                 }
 
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    PhotosPicker(
-                        selection: $pickerItems,
-                        selectionBehavior: .ordered,
-                        matching: .images
-                    ) {
+                    Button {
+                        activeSheet = .photoImport
+                    } label: {
                         Image(systemName: "photo.badge.plus")
                     }
                     .accessibilityLabel(localized("Import photos", "Importar fotos"))
 
                     if social.isAvailable {
                         Button {
-                            showingSocial = true
+                            activeSheet = .social
                         } label: {
                             Image(systemName: "person.2.fill")
                         }
@@ -121,59 +127,39 @@ struct RankingView: View {
                     }
                 }
             }
-            .onChange(of: pickerItems) { _, items in
-                guard !items.isEmpty else { return }
-
-                let selectedItems = items
-                pickerItems = []
-                importCompleted = 0
-                importTotal = selectedItems.count
-                isImportingPhotos = true
-
-                Task {
-                    defer {
-                        Task { @MainActor in
-                            isImportingPhotos = false
-                        }
-                    }
-
-                    for item in selectedItems {
-                        if let data = try? await item.loadTransferable(type: Data.self) {
-                            await rankingStore.ingest(
-                                data: data,
-                                source: .importPhoto
-                            )
-                        }
-
-                        await MainActor.run {
-                            importCompleted += 1
-                        }
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .social:
+                    SocialCompetitionView()
+                        .environmentObject(settings)
+                        .environmentObject(rankingStore)
+                        .environmentObject(social)
+                case .photoImport:
+                    PhotoImportView { items in
+                        startImport(items)
                     }
                 }
-            }
-            .sheet(isPresented: $showingSocial) {
-                SocialCompetitionView()
-                    .environmentObject(settings)
-                    .environmentObject(rankingStore)
-                    .environmentObject(social)
             }
             .overlay(alignment: .bottom) {
                 if isImportingPhotos {
                     HStack(spacing: 10) {
                         ProgressView()
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(
-                                localized(
-                                    "Importing photos",
-                                    "Importando fotos"
-                                )
-                            )
-                            .font(.caption.weight(.semibold))
+                            Text(localized("Importing photos", "Importando fotos"))
+                                .font(.caption.weight(.semibold))
 
-                            Text("\(importCompleted) / \(importTotal)")
+                            Text("\(importCompleted) / \(importTotal) · \(importDuplicates) \(localized("duplicates skipped", "duplicadas omitidas"))")
                                 .font(.caption2.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
+
+                        Button {
+                            importTask?.cancel()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                        }
+                        .accessibilityLabel(localized("Cancel import", "Cancelar importación"))
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -192,7 +178,79 @@ struct RankingView: View {
                 }
             }
         }
+        .alert(
+            localized("Import summary", "Resumen de importación"),
+            isPresented: $showingImportSummary
+        ) {
+            Button("OK", role: .cancel) { importSummary = nil }
+        } message: {
+            Text(importSummary ?? "")
+        }
         .preferredColorScheme(.dark)
+    }
+
+    private func startImport(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
+
+        importCompleted = 0
+        importTotal = items.count
+        importImported = 0
+        importDuplicates = 0
+        importFailed = 0
+        importWasCancelled = false
+        isImportingPhotos = true
+
+        importTask = Task { @MainActor in
+            for item in items {
+                guard !Task.isCancelled else {
+                    importWasCancelled = true
+                    break
+                }
+
+                do {
+                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                        importFailed += 1
+                        importCompleted += 1
+                        continue
+                    }
+
+                    let result = await rankingStore.ingest(
+                        data: data,
+                        source: .importPhoto,
+                        assetIdentifier: item.itemIdentifier
+                    )
+
+                    switch result {
+                    case .imported:
+                        importImported += 1
+                    case .duplicate:
+                        importDuplicates += 1
+                    case .failed:
+                        importFailed += 1
+                    }
+                } catch {
+                    importFailed += 1
+                }
+
+                importCompleted += 1
+            }
+
+            if Task.isCancelled {
+                importWasCancelled = true
+            }
+
+            isImportingPhotos = false
+            importTask = nil
+
+            let cancelled = importWasCancelled
+                ? localized(" · cancelled", " · cancelada")
+                : ""
+            importSummary = localized(
+                "Imported: \(importImported) · duplicates skipped: \(importDuplicates) · failed: \(importFailed)\(cancelled)",
+                "Importadas: \(importImported) · duplicadas omitidas: \(importDuplicates) · errores: \(importFailed)\(cancelled)"
+            )
+            showingImportSummary = true
+        }
     }
 
     private var controls: some View {
@@ -468,5 +526,251 @@ private struct RankingDetailView: View {
 
     private func localized(_ english: String, _ spanish: String) -> String {
         isSpanish ? spanish : english
+    }
+}
+
+
+private enum RankingSheet: String, Identifiable {
+    case social
+    case photoImport
+
+    var id: String { rawValue }
+}
+
+private struct PendingPhoto: Identifiable {
+    let id: UUID
+    let item: PhotosPickerItem
+
+    init(item: PhotosPickerItem) {
+        id = UUID()
+        self.item = item
+    }
+}
+
+private struct PhotoImportView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var settings: AppSettings
+
+    let onImport: ([PhotosPickerItem]) -> Void
+
+    @State private var selection: [PhotosPickerItem] = []
+    @State private var pendingPhotos: [PendingPhoto] = []
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 88, maximum: 140), spacing: 8)
+    ]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 12) {
+                PhotosPicker(
+                    selection: $selection,
+                    selectionBehavior: .ordered,
+                    matching: .images
+                ) {
+                    Label(
+                        localized("Choose photos from Library", "Elegir fotos de la fototeca"),
+                        systemImage: "photo.on.rectangle.angled"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+
+                HStack {
+                    Text(localized(
+                        "\(pendingPhotos.count) selected",
+                        "\(pendingPhotos.count) seleccionadas"
+                    ))
+                    .font(.subheadline.weight(.semibold))
+
+                    Spacer()
+
+                    if !pendingPhotos.isEmpty {
+                        Button(localized("Clear", "Limpiar"), role: .destructive) {
+                            selection = []
+                            pendingPhotos = []
+                        }
+                        .font(.caption)
+                    }
+                }
+                .padding(.horizontal)
+
+                if pendingPhotos.isEmpty {
+                    ContentUnavailableView(
+                        localized("No photos selected", "No hay fotos seleccionadas"),
+                        systemImage: "photo.stack",
+                        description: Text(localized(
+                            "Choose any number of images, review the selection, then import. No artificial 50-photo cap is applied.",
+                            "Elige tantas imágenes como necesites, revisa la selección e impórtalas. No se impone un límite artificial de 50 fotos."
+                        ))
+                    )
+                    .frame(maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 8) {
+                            ForEach(pendingPhotos) { photo in
+                                PhotoImportThumbnail(photo: photo) {
+                                    pendingPhotos.removeAll { $0.id == photo.id }
+                                    selection = pendingPhotos.map(\.item)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                    }
+                }
+
+                Button {
+                    let selected = pendingPhotos.map(\.item)
+                    dismiss()
+                    onImport(selected)
+                } label: {
+                    Label(
+                        localized("Import \(pendingPhotos.count) photos", "Importar \(pendingPhotos.count) fotos"),
+                        systemImage: "square.and.arrow.down"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(pendingPhotos.isEmpty)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }
+            .navigationTitle(localized("Review import", "Revisar importación"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(localized("Cancel", "Cancelar")) { dismiss() }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onChange(of: selection) { _, items in
+            let previous = pendingPhotos
+            pendingPhotos = items.map { item in
+                previous.first(where: { $0.item == item }) ?? PendingPhoto(item: item)
+            }
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english: english
+        case .spanish: spanish
+        case .system:
+            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
+        }
+    }
+}
+
+private struct PhotoImportThumbnail: View {
+    let photo: PendingPhoto
+    let onRemove: () -> Void
+
+    @State private var thumbnailData: Data?
+    @State private var failedToLoad = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Group {
+                if let thumbnailData, let image = UIImage(data: thumbnailData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else if failedToLoad {
+                    Image(systemName: "photo")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(height: 104)
+            .frame(maxWidth: .infinity)
+            .background(.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .black.opacity(0.75))
+                    .padding(3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Remove selected photo")
+        }
+        .task(id: photo.id) {
+            await loadThumbnail()
+        }
+        .onDisappear {
+            thumbnailData = nil
+        }
+    }
+
+    private func loadThumbnail() async {
+        do {
+            guard let data = try await photo.item.loadTransferable(type: Data.self) else {
+                failedToLoad = true
+                return
+            }
+
+            let preview = await Task.detached(priority: .utility) {
+                Self.makeThumbnailData(from: data)
+            }.value
+
+            guard !Task.isCancelled else { return }
+            if let preview {
+                thumbnailData = preview
+            } else {
+                failedToLoad = true
+            }
+        } catch {
+            failedToLoad = true
+        }
+    }
+
+    private static func makeThumbnailData(from data: Data) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 160
+        ]
+
+        guard let image = CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            options as CFDictionary
+        ) else {
+            return nil
+        }
+
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            output,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(
+            destination,
+            image,
+            [kCGImageDestinationLossyCompressionQuality: 0.65] as CFDictionary
+        )
+
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
     }
 }
