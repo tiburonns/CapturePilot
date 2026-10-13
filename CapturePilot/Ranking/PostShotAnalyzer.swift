@@ -9,8 +9,27 @@ final class PostShotAnalyzer {
         data: Data,
         sceneHint: PhotoCategory?
     ) throws -> PostShotAnalysisResult {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            throw NSError(
+                domain: "CapturePilot.PostShotAnalyzer",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "The image could not be decoded."]
+            )
+        }
+
+        // Analyze a bounded preview instead of decoding the full 12–48 MP original.
+        // This substantially lowers peak memory and CPU load during batch imports.
+        let analysisOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 2048,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            analysisOptions as CFDictionary
+        ) else {
             throw NSError(
                 domain: "CapturePilot.PostShotAnalyzer",
                 code: 1,
