@@ -66,6 +66,9 @@ jobs:
       - name: Run photo category tests
         run: bash Tests/run-photo-category-tests.sh
 
+      - name: Validate photo import and image-processing performance
+        run: python3 Tests/validate-photo-import.py
+
       - name: Build Release for iOS Simulator
         run: |
           set -o pipefail
