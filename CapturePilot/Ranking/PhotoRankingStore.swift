@@ -277,7 +277,7 @@ final class PhotoRankingStore: ObservableObject {
         storedSignatures: [PhotoVisualSignature]
     ) -> Bool {
         storedSignatures.contains { stored in
-            let scale = max(abs(candidate.aspectRatio), abs(stored.aspectRatio), 1)
+            let scale = max(max(abs(candidate.aspectRatio), abs(stored.aspectRatio)), 1)
             let ratioDifference = abs(candidate.aspectRatio - stored.aspectRatio) / scale
             guard ratioDifference <= 0.015 else { return false }
 
