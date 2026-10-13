@@ -9,6 +9,10 @@ final class PhotoRankingStore: ObservableObject {
     private let encoder: JSONEncoder
     private var loadTask: Task<Void, Never>?
     private var activeAnalysisCount = 0
+    private var knownFingerprints = Set<String>()
+    private var knownAssetIdentifiers = Set<String>()
+    private var visualSignaturesByFingerprint: [String: PhotoVisualSignature] = [:]
+    private var visualHashBuckets: [String: Set<String>] = [:]
     private var inFlightFingerprints = Set<String>()
     private var inFlightAssetIdentifiers = Set<String>()
     private var inFlightVisualSignatures: [String: PhotoVisualSignature] = [:]
@@ -27,6 +31,7 @@ final class PhotoRankingStore: ObservableObject {
 
             guard let self, let loaded else { return }
             self.entries = loaded.sorted { $0.coachScore > $1.coachScore }
+            self.rebuildDuplicateIndexes()
         }
     }
 
@@ -109,6 +114,13 @@ final class PhotoRankingStore: ObservableObject {
 
             entries.append(entry)
             entries.sort { $0.coachScore > $1.coachScore }
+            knownFingerprints.insert(fingerprint)
+            if let assetIdentifier {
+                knownAssetIdentifiers.insert(assetIdentifier)
+            }
+            if let visualSignature {
+                registerVisualSignature(visualSignature, fingerprint: fingerprint)
+            }
             save()
             lastError = nil
             return .imported
@@ -132,6 +144,7 @@ final class PhotoRankingStore: ObservableObject {
     func delete(_ entry: PhotoRankingEntry) {
         entries.removeAll { $0.id == entry.id }
         try? FileManager.default.removeItem(at: thumbnailURL(for: entry))
+        rebuildDuplicateIndexes()
         save()
     }
 
@@ -175,41 +188,88 @@ final class PhotoRankingStore: ObservableObject {
         assetIdentifier: String?,
         visualSignature: PhotoVisualSignature?
     ) -> Bool {
-        if inFlightFingerprints.contains(fingerprint) {
+        if inFlightFingerprints.contains(fingerprint) || knownFingerprints.contains(fingerprint) {
             return true
         }
 
         if let assetIdentifier,
            inFlightAssetIdentifiers.contains(assetIdentifier)
-            || entries.contains(where: { $0.assetIdentifier == assetIdentifier }) {
-            return true
-        }
-
-        if entries.contains(where: { $0.fingerprint == fingerprint }) {
+            || knownAssetIdentifiers.contains(assetIdentifier) {
             return true
         }
 
         if let visualSignature {
+            let indexedCandidates = visualCandidateSignatures(for: visualSignature)
             if matchesVisualDuplicate(
                 visualSignature,
-                storedSignatures: entries.compactMap { entry in
-                    guard let hash = entry.perceptualFingerprint,
-                          let ratio = entry.aspectRatio else {
-                        return nil
-                    }
-                    return PhotoVisualSignature(hash: hash, aspectRatio: ratio)
-                }
+                storedSignatures: indexedCandidates
             ) {
                 return true
             }
 
-            let inFlight = Array(inFlightVisualSignatures.values)
-            if matchesVisualDuplicate(visualSignature, storedSignatures: inFlight) {
+            if matchesVisualDuplicate(
+                visualSignature,
+                storedSignatures: Array(inFlightVisualSignatures.values)
+            ) {
                 return true
             }
         }
 
         return false
+    }
+
+    private func visualCandidateSignatures(
+        for candidate: PhotoVisualSignature
+    ) -> [PhotoVisualSignature] {
+        guard let value = UInt64(candidate.hash, radix: 16) else { return [] }
+
+        var fingerprints = Set<String>()
+        for chunkIndex in 0..<4 {
+            let shift = chunkIndex * 16
+            let component = UInt16((value >> shift) & 0xFFFF)
+            fingerprints.formUnion(
+                visualHashBuckets["\(chunkIndex):\(component)"] ?? []
+            )
+        }
+
+        return fingerprints.compactMap { visualSignaturesByFingerprint[$0] }
+    }
+
+    private func registerVisualSignature(
+        _ signature: PhotoVisualSignature,
+        fingerprint: String
+    ) {
+        guard let value = UInt64(signature.hash, radix: 16) else { return }
+        visualSignaturesByFingerprint[fingerprint] = signature
+
+        // With a 64-bit hash split into four 16-bit chunks, any pair of hashes
+        // at Hamming distance <= 2 shares at least one unchanged chunk. These
+        // buckets avoid a full-library linear scan for every imported photo.
+        for chunkIndex in 0..<4 {
+            let shift = chunkIndex * 16
+            let component = UInt16((value >> shift) & 0xFFFF)
+            visualHashBuckets["\(chunkIndex):\(component)", default: []]
+                .insert(fingerprint)
+        }
+    }
+
+    private func rebuildDuplicateIndexes() {
+        knownFingerprints = Set(entries.map(\.fingerprint))
+        knownAssetIdentifiers = Set(entries.compactMap(\.assetIdentifier))
+        visualSignaturesByFingerprint.removeAll(keepingCapacity: true)
+        visualHashBuckets.removeAll(keepingCapacity: true)
+
+        for entry in entries {
+            guard let hash = entry.perceptualFingerprint,
+                  let aspectRatio = entry.aspectRatio else {
+                continue
+            }
+
+            registerVisualSignature(
+                PhotoVisualSignature(hash: hash, aspectRatio: aspectRatio),
+                fingerprint: entry.fingerprint
+            )
+        }
     }
 
     private func matchesVisualDuplicate(
