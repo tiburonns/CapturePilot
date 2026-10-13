@@ -138,6 +138,7 @@ struct RankingView: View {
                     PhotoImportView { items in
                         startImport(items)
                     }
+                    .environmentObject(settings)
                 }
             }
             .overlay(alignment: .bottom) {
@@ -319,6 +320,8 @@ struct RankingView: View {
 }
 
 private struct RankingRow: View {
+    @EnvironmentObject private var settings: AppSettings
+
     let entry: PhotoRankingEntry
     let rank: Int
     let thumbnailURL: URL
@@ -348,7 +351,7 @@ private struct RankingRow: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.category.rawValue.capitalized)
+                Text(categoryName(entry.category))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(String(format: "%.1f", entry.coachScore))
@@ -365,6 +368,28 @@ private struct RankingRow: View {
         }
         .padding(.vertical, 3)
     }
+
+    private func categoryName(_ category: PhotoCategory) -> String {
+        switch category {
+        case .general: localized("General", "General")
+        case .portrait: localized("Portrait", "Retrato")
+        case .architecture: localized("Architecture", "Arquitectura")
+        case .automotive: localized("Automotive", "Automotriz")
+        case .macro: localized("Macro", "Macro")
+        case .street: localized("Street", "Calle")
+        case .landscape: localized("Landscape", "Paisaje")
+        case .night: localized("Night", "Noche")
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        let useSpanish = settings.language == .spanish
+            || (
+                settings.language == .system
+                && Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+            )
+        return useSpanish ? spanish : english
+    }
 }
 
 private struct RankingDetailView: View {
@@ -373,6 +398,16 @@ private struct RankingDetailView: View {
 
     let entry: PhotoRankingEntry
     let rank: Int
+
+    @State private var selectedCategory: PhotoCategory
+    @State private var categoryWasManuallyChanged: Bool
+
+    init(entry: PhotoRankingEntry, rank: Int) {
+        self.entry = entry
+        self.rank = rank
+        _selectedCategory = State(initialValue: entry.category)
+        _categoryWasManuallyChanged = State(initialValue: entry.hasManualCategory)
+    }
 
     var body: some View {
         ScrollView {
@@ -397,6 +432,54 @@ private struct RankingDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localized("Photo category", "Categoría de la foto"))
+                        .font(.headline)
+
+                    Menu {
+                        ForEach(PhotoCategory.allCases) { option in
+                            Button {
+                                selectedCategory = option
+                                categoryWasManuallyChanged = true
+                                rankingStore.updateCategory(for: entry.id, to: option)
+                            } label: {
+                                if selectedCategory == option {
+                                    Label(categoryName(option), systemImage: "checkmark")
+                                } else {
+                                    Text(categoryName(option))
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Label(categoryName(selectedCategory), systemImage: "tag")
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                    }
+
+                    Text(
+                        categoryWasManuallyChanged
+                            ? localized(
+                                "Manual category. Your choice is saved and takes precedence over automatic categorization.",
+                                "Categoría manual. Tu elección se guarda y prevalece sobre la clasificación automática."
+                            )
+                            : localized(
+                                "Suggested automatically. Change it here if the photo was categorized incorrectly.",
+                                "Sugerida automáticamente. Cámbiala aquí si la foto se clasificó incorrectamente."
+                            )
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
 
                 scoreCard(
                     localized("Exposure", "Exposición"),
@@ -463,6 +546,19 @@ private struct RankingDetailView: View {
             .padding()
         }
         .navigationTitle(localized("Photo review", "Revisión de foto"))
+    }
+
+    private func categoryName(_ category: PhotoCategory) -> String {
+        switch category {
+        case .general: localized("General", "General")
+        case .portrait: localized("Portrait", "Retrato")
+        case .architecture: localized("Architecture", "Arquitectura")
+        case .automotive: localized("Automotive", "Automotriz")
+        case .macro: localized("Macro", "Macro")
+        case .street: localized("Street", "Calle")
+        case .landscape: localized("Landscape", "Paisaje")
+        case .night: localized("Night", "Noche")
+        }
     }
 
     private func scoreCard(_ title: String, _ value: Double) -> some View {
