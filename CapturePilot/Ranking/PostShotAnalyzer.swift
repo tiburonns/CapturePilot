@@ -25,11 +25,16 @@ final class PostShotAnalyzer {
         let horizonAngle = detectHorizon(image)
         let pixelMetrics = samplePixels(image)
 
-        let category = resolveCategory(
-            sceneHint: sceneHint,
-            classifications: classifications,
-            hasFace: faceAnalysis != nil,
-            metrics: pixelMetrics
+        let category = PhotoCategoryClassifier.classify(
+            observations: classifications.map {
+                PhotoCategoryEvidence(
+                    label: $0.identifier,
+                    confidence: Double($0.confidence)
+                )
+            },
+            faceArea: faceAnalysis.map { $0.rect.width * $0.rect.height },
+            averageLuma: pixelMetrics.averageLuma,
+            sceneHint: sceneHint
         )
 
         let aesthetics: Double?
@@ -106,6 +111,73 @@ final class PostShotAnalyzer {
 
     static func fingerprint(_ data: Data) -> String {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    static func visualSignature(_ data: Data) -> PhotoVisualSignature? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 256
+        ]
+
+        guard let image = CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            options as CFDictionary
+        ), image.width > 0, image.height > 0 else {
+            return nil
+        }
+
+        var pixels = [UInt8](repeating: 0, count: 9 * 8)
+        let rendered = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress,
+                width: 9,
+                height: 8,
+                bitsPerComponent: 8,
+                bytesPerRow: 9,
+                space: CGColorSpaceCreateDeviceGray(),
+                bitmapInfo: CGImageAlphaInfo.none.rawValue
+            ) else {
+                return false
+            }
+
+            context.interpolationQuality = .high
+            context.draw(
+                image,
+                in: CGRect(x: 0, y: 0, width: 9, height: 8)
+            )
+            return true
+        }
+
+        guard rendered else { return nil }
+
+        var hash: UInt64 = 0
+        for y in 0..<8 {
+            for x in 0..<8 {
+                hash <<= 1
+                if pixels[y * 9 + x] > pixels[y * 9 + x + 1] {
+                    hash |= 1
+                }
+            }
+        }
+
+        return PhotoVisualSignature(
+            hash: String(format: "%016llx", hash),
+            aspectRatio: Double(image.width) / Double(image.height)
+        )
+    }
+
+    static func visualDistance(_ lhs: String, _ rhs: String) -> Int? {
+        guard let left = UInt64(lhs, radix: 16),
+              let right = UInt64(rhs, radix: 16) else {
+            return nil
+        }
+        return (left ^ right).nonzeroBitCount
     }
 
     private func classify(_ image: CGImage) -> [VNClassificationObservation] {
@@ -305,61 +377,6 @@ final class PostShotAnalyzer {
                 placement * 0.80 + horizonComponent * 0.20
             )
         )
-    }
-
-    private func resolveCategory(
-        sceneHint: PhotoCategory?,
-        classifications: [VNClassificationObservation],
-        hasFace: Bool,
-        metrics: PixelMetrics
-    ) -> PhotoCategory {
-        if hasFace {
-            return .portrait
-        }
-
-        if metrics.averageLuma < 0.18 {
-            return .night
-        }
-
-        let identifiers = classifications.prefix(8)
-            .map { $0.identifier.lowercased() }
-            .joined(separator: " ")
-
-        func contains(_ words: [String]) -> Bool {
-            words.contains { identifiers.contains($0) }
-        }
-
-        if contains(["car", "vehicle", "automobile", "truck", "motorcycle"]) {
-            return .automotive
-        }
-
-        if contains([
-            "building", "architecture", "tower", "bridge", "church", "house"
-        ]) {
-            return .architecture
-        }
-
-        if contains([
-            "mountain", "landscape", "seashore", "valley", "lake", "forest"
-        ]) {
-            return .landscape
-        }
-
-        if contains([
-            "insect", "flower", "plant", "spider", "butterfly", "macro"
-        ]) {
-            return .macro
-        }
-
-        if contains(["street", "traffic", "sidewalk", "pedestrian"]) {
-            return .street
-        }
-
-        if let sceneHint, sceneHint != .general {
-            return sceneHint
-        }
-
-        return .general
     }
 
     private func buildRecommendations(

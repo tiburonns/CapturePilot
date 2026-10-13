@@ -1,6 +1,8 @@
+import ImageIO
 import PhotosUI
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct RankingView: View {
     @EnvironmentObject private var settings: AppSettings
@@ -11,11 +13,17 @@ struct RankingView: View {
     @State private var topCount: Int? = 10
     @State private var category: PhotoCategory?
     @State private var searchText = ""
-    @State private var pickerItems: [PhotosPickerItem] = []
-    @State private var showingSocial = false
+    @State private var activeSheet: RankingSheet?
+    @State private var importTask: Task<Void, Never>?
     @State private var importCompleted = 0
     @State private var importTotal = 0
+    @State private var importImported = 0
+    @State private var importDuplicates = 0
+    @State private var importFailed = 0
+    @State private var importWasCancelled = false
     @State private var isImportingPhotos = false
+    @State private var importSummary: String?
+    @State private var showingImportSummary = false
 
     private var ranked: [PhotoRankingEntry] {
         let query = searchText
@@ -102,18 +110,16 @@ struct RankingView: View {
                 }
 
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    PhotosPicker(
-                        selection: $pickerItems,
-                        selectionBehavior: .ordered,
-                        matching: .images
-                    ) {
+                    Button {
+                        activeSheet = .photoImport
+                    } label: {
                         Image(systemName: "photo.badge.plus")
                     }
                     .accessibilityLabel(localized("Import photos", "Importar fotos"))
 
                     if social.isAvailable {
                         Button {
-                            showingSocial = true
+                            activeSheet = .social
                         } label: {
                             Image(systemName: "person.2.fill")
                         }
@@ -121,59 +127,40 @@ struct RankingView: View {
                     }
                 }
             }
-            .onChange(of: pickerItems) { _, items in
-                guard !items.isEmpty else { return }
-
-                let selectedItems = items
-                pickerItems = []
-                importCompleted = 0
-                importTotal = selectedItems.count
-                isImportingPhotos = true
-
-                Task {
-                    defer {
-                        Task { @MainActor in
-                            isImportingPhotos = false
-                        }
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .social:
+                    SocialCompetitionView()
+                        .environmentObject(settings)
+                        .environmentObject(rankingStore)
+                        .environmentObject(social)
+                case .photoImport:
+                    PhotoImportView { items in
+                        startImport(items)
                     }
-
-                    for item in selectedItems {
-                        if let data = try? await item.loadTransferable(type: Data.self) {
-                            await rankingStore.ingest(
-                                data: data,
-                                source: .importPhoto
-                            )
-                        }
-
-                        await MainActor.run {
-                            importCompleted += 1
-                        }
-                    }
-                }
-            }
-            .sheet(isPresented: $showingSocial) {
-                SocialCompetitionView()
                     .environmentObject(settings)
-                    .environmentObject(rankingStore)
-                    .environmentObject(social)
+                }
             }
             .overlay(alignment: .bottom) {
                 if isImportingPhotos {
                     HStack(spacing: 10) {
                         ProgressView()
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(
-                                localized(
-                                    "Importing photos",
-                                    "Importando fotos"
-                                )
-                            )
-                            .font(.caption.weight(.semibold))
+                            Text(localized("Importing photos", "Importando fotos"))
+                                .font(.caption.weight(.semibold))
 
-                            Text("\(importCompleted) / \(importTotal)")
+                            Text("\(importCompleted) / \(importTotal) · \(importDuplicates) \(localized("duplicates skipped", "duplicadas omitidas"))")
                                 .font(.caption2.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
+
+                        Button {
+                            importTask?.cancel()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                        }
+                        .accessibilityLabel(localized("Cancel import", "Cancelar importación"))
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -192,7 +179,79 @@ struct RankingView: View {
                 }
             }
         }
+        .alert(
+            localized("Import summary", "Resumen de importación"),
+            isPresented: $showingImportSummary
+        ) {
+            Button("OK", role: .cancel) { importSummary = nil }
+        } message: {
+            Text(importSummary ?? "")
+        }
         .preferredColorScheme(.dark)
+    }
+
+    private func startImport(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
+
+        importCompleted = 0
+        importTotal = items.count
+        importImported = 0
+        importDuplicates = 0
+        importFailed = 0
+        importWasCancelled = false
+        isImportingPhotos = true
+
+        importTask = Task { @MainActor in
+            for item in items {
+                guard !Task.isCancelled else {
+                    importWasCancelled = true
+                    break
+                }
+
+                do {
+                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                        importFailed += 1
+                        importCompleted += 1
+                        continue
+                    }
+
+                    let result = await rankingStore.ingest(
+                        data: data,
+                        source: .importPhoto,
+                        assetIdentifier: item.itemIdentifier
+                    )
+
+                    switch result {
+                    case .imported:
+                        importImported += 1
+                    case .duplicate:
+                        importDuplicates += 1
+                    case .failed:
+                        importFailed += 1
+                    }
+                } catch {
+                    importFailed += 1
+                }
+
+                importCompleted += 1
+            }
+
+            if Task.isCancelled {
+                importWasCancelled = true
+            }
+
+            isImportingPhotos = false
+            importTask = nil
+
+            let cancelled = importWasCancelled
+                ? localized(" · cancelled", " · cancelada")
+                : ""
+            importSummary = localized(
+                "Imported: \(importImported) · duplicates skipped: \(importDuplicates) · failed: \(importFailed)\(cancelled)",
+                "Importadas: \(importImported) · duplicadas omitidas: \(importDuplicates) · errores: \(importFailed)\(cancelled)"
+            )
+            showingImportSummary = true
+        }
     }
 
     private var controls: some View {
@@ -261,6 +320,8 @@ struct RankingView: View {
 }
 
 private struct RankingRow: View {
+    @EnvironmentObject private var settings: AppSettings
+
     let entry: PhotoRankingEntry
     let rank: Int
     let thumbnailURL: URL
@@ -290,7 +351,7 @@ private struct RankingRow: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.category.rawValue.capitalized)
+                Text(categoryName(entry.category))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(String(format: "%.1f", entry.coachScore))
@@ -307,6 +368,28 @@ private struct RankingRow: View {
         }
         .padding(.vertical, 3)
     }
+
+    private func categoryName(_ category: PhotoCategory) -> String {
+        switch category {
+        case .general: localized("General", "General")
+        case .portrait: localized("Portrait", "Retrato")
+        case .architecture: localized("Architecture", "Arquitectura")
+        case .automotive: localized("Automotive", "Automotriz")
+        case .macro: localized("Macro", "Macro")
+        case .street: localized("Street", "Calle")
+        case .landscape: localized("Landscape", "Paisaje")
+        case .night: localized("Night", "Noche")
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        let useSpanish = settings.language == .spanish
+            || (
+                settings.language == .system
+                && Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+            )
+        return useSpanish ? spanish : english
+    }
 }
 
 private struct RankingDetailView: View {
@@ -315,6 +398,16 @@ private struct RankingDetailView: View {
 
     let entry: PhotoRankingEntry
     let rank: Int
+
+    @State private var selectedCategory: PhotoCategory
+    @State private var categoryWasManuallyChanged: Bool
+
+    init(entry: PhotoRankingEntry, rank: Int) {
+        self.entry = entry
+        self.rank = rank
+        _selectedCategory = State(initialValue: entry.category)
+        _categoryWasManuallyChanged = State(initialValue: entry.hasManualCategory)
+    }
 
     var body: some View {
         ScrollView {
@@ -339,6 +432,54 @@ private struct RankingDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localized("Photo category", "Categoría de la foto"))
+                        .font(.headline)
+
+                    Menu {
+                        ForEach(PhotoCategory.allCases) { option in
+                            Button {
+                                selectedCategory = option
+                                categoryWasManuallyChanged = true
+                                rankingStore.updateCategory(for: entry.id, to: option)
+                            } label: {
+                                if selectedCategory == option {
+                                    Label(categoryName(option), systemImage: "checkmark")
+                                } else {
+                                    Text(categoryName(option))
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Label(categoryName(selectedCategory), systemImage: "tag")
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                    }
+
+                    Text(
+                        categoryWasManuallyChanged
+                            ? localized(
+                                "Manual category. Your choice is saved and takes precedence over automatic categorization.",
+                                "Categoría manual. Tu elección se guarda y prevalece sobre la clasificación automática."
+                            )
+                            : localized(
+                                "Suggested automatically. Change it here if the photo was categorized incorrectly.",
+                                "Sugerida automáticamente. Cámbiala aquí si la foto se clasificó incorrectamente."
+                            )
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
 
                 scoreCard(
                     localized("Exposure", "Exposición"),
@@ -407,6 +548,19 @@ private struct RankingDetailView: View {
         .navigationTitle(localized("Photo review", "Revisión de foto"))
     }
 
+    private func categoryName(_ category: PhotoCategory) -> String {
+        switch category {
+        case .general: localized("General", "General")
+        case .portrait: localized("Portrait", "Retrato")
+        case .architecture: localized("Architecture", "Arquitectura")
+        case .automotive: localized("Automotive", "Automotriz")
+        case .macro: localized("Macro", "Macro")
+        case .street: localized("Street", "Calle")
+        case .landscape: localized("Landscape", "Paisaje")
+        case .night: localized("Night", "Noche")
+        }
+    }
+
     private func scoreCard(_ title: String, _ value: Double) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -468,5 +622,307 @@ private struct RankingDetailView: View {
 
     private func localized(_ english: String, _ spanish: String) -> String {
         isSpanish ? spanish : english
+    }
+}
+
+
+private enum RankingSheet: String, Identifiable {
+    case social
+    case photoImport
+
+    var id: String { rawValue }
+}
+
+private struct PendingPhoto: Identifiable {
+    let id: UUID
+    let item: PhotosPickerItem
+
+    init(item: PhotosPickerItem) {
+        id = UUID()
+        self.item = item
+    }
+}
+
+private struct PhotoImportView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var settings: AppSettings
+
+    let onImport: ([PhotosPickerItem]) -> Void
+
+    @State private var selection: [PhotosPickerItem] = []
+    @State private var pendingPhotos: [PendingPhoto] = []
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 88, maximum: 140), spacing: 8)
+    ]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 12) {
+                PhotosPicker(
+                    selection: $selection,
+                    selectionBehavior: .ordered,
+                    matching: .images
+                ) {
+                    Label(
+                        localized("Choose photos from Library", "Elegir fotos de la fototeca"),
+                        systemImage: "photo.on.rectangle.angled"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+
+                HStack {
+                    Text(localized(
+                        "\(pendingPhotos.count) selected",
+                        "\(pendingPhotos.count) seleccionadas"
+                    ))
+                    .font(.subheadline.weight(.semibold))
+
+                    Spacer()
+
+                    if !pendingPhotos.isEmpty {
+                        Button(localized("Clear", "Limpiar"), role: .destructive) {
+                            selection = []
+                            pendingPhotos = []
+                        }
+                        .font(.caption)
+                    }
+                }
+                .padding(.horizontal)
+
+                if pendingPhotos.isEmpty {
+                    ContentUnavailableView(
+                        localized("No photos selected", "No hay fotos seleccionadas"),
+                        systemImage: "photo.stack",
+                        description: Text(localized(
+                            "Choose any number of images, review the selection, then import. No artificial 50-photo cap is applied.",
+                            "Elige tantas imágenes como necesites, revisa la selección e impórtalas. No se impone un límite artificial de 50 fotos."
+                        ))
+                    )
+                    .frame(maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 8) {
+                            ForEach(pendingPhotos) { photo in
+                                PhotoImportThumbnail(photo: photo) {
+                                    pendingPhotos.removeAll { $0.id == photo.id }
+                                    selection = pendingPhotos.map(\.item)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
+                    }
+                }
+
+                Button {
+                    let selected = pendingPhotos.map(\.item)
+                    dismiss()
+                    onImport(selected)
+                } label: {
+                    Label(
+                        localized("Import \(pendingPhotos.count) photos", "Importar \(pendingPhotos.count) fotos"),
+                        systemImage: "square.and.arrow.down"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(pendingPhotos.isEmpty)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }
+            .navigationTitle(localized("Review import", "Revisar importación"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(localized("Cancel", "Cancelar")) { dismiss() }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onChange(of: selection) { _, items in
+            let previousByItem = Dictionary(
+                uniqueKeysWithValues: pendingPhotos.map { ($0.item, $0) }
+            )
+            pendingPhotos = items.map { item in
+                previousByItem[item] ?? PendingPhoto(item: item)
+            }
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english: english
+        case .spanish: spanish
+        case .system:
+            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
+        }
+    }
+}
+
+private actor PhotoThumbnailLoadLimiter {
+    static let shared = PhotoThumbnailLoadLimiter()
+
+    private var activeLoads = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquire() async {
+        if activeLoads < 2 {
+            activeLoads += 1
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func release() {
+        if waiters.isEmpty {
+            activeLoads = max(0, activeLoads - 1)
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
+private struct PhotoImportThumbnail: View {
+    @EnvironmentObject private var settings: AppSettings
+
+    let photo: PendingPhoto
+    let onRemove: () -> Void
+
+    @State private var thumbnailData: Data?
+    @State private var failedToLoad = false
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Group {
+                if let thumbnailData, let image = UIImage(data: thumbnailData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else if failedToLoad {
+                    Image(systemName: "photo")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(height: 104)
+            .frame(maxWidth: .infinity)
+            .background(.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .black.opacity(0.75))
+                    .padding(3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(localized("Remove selected photo", "Quitar foto seleccionada"))
+        }
+        .task(id: photo.id) {
+            await loadThumbnail()
+        }
+        .onDisappear {
+            thumbnailData = nil
+        }
+    }
+
+    private func loadThumbnail() async {
+        await PhotoThumbnailLoadLimiter.shared.acquire()
+        guard !Task.isCancelled else {
+            await PhotoThumbnailLoadLimiter.shared.release()
+            return
+        }
+
+        do {
+            guard let data = try await photo.item.loadTransferable(type: Data.self) else {
+                await PhotoThumbnailLoadLimiter.shared.release()
+                failedToLoad = true
+                return
+            }
+
+            if Task.isCancelled {
+                await PhotoThumbnailLoadLimiter.shared.release()
+                return
+            }
+
+            let preview = await Task.detached(priority: .utility) {
+                Self.makeThumbnailData(from: data)
+            }.value
+
+            await PhotoThumbnailLoadLimiter.shared.release()
+            guard !Task.isCancelled else { return }
+
+            if let preview {
+                thumbnailData = preview
+            } else {
+                failedToLoad = true
+            }
+        } catch {
+            await PhotoThumbnailLoadLimiter.shared.release()
+            failedToLoad = true
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english: english
+        case .spanish: spanish
+        case .system:
+            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
+        }
+    }
+
+    nonisolated private static func makeThumbnailData(from data: Data) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 160
+        ]
+
+        guard let image = CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            options as CFDictionary
+        ) else {
+            return nil
+        }
+
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            output,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(
+            destination,
+            image,
+            [kCGImageDestinationLossyCompressionQuality: 0.65] as CFDictionary
+        )
+
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
     }
 }
