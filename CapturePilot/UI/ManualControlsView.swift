@@ -205,7 +205,7 @@ struct ManualControlsView: View {
 
             Button(action: savePreset) {
                 Label(
-                    presetStatus == nil ? localized("Save", "Guardar") : localized("Saved", "Guardado"),
+                    localized("Save", "Guardar"),
                     systemImage: "bookmark.fill"
                 )
             }
