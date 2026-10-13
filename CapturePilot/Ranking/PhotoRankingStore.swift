@@ -11,7 +11,7 @@ final class PhotoRankingStore: ObservableObject {
     private var activeAnalysisCount = 0
     private var inFlightFingerprints = Set<String>()
     private var inFlightAssetIdentifiers = Set<String>()
-    private var inFlightVisualSignatures: [String: Double] = [:]
+    private var inFlightVisualSignatures: [String: PhotoVisualSignature] = [:]
 
     init() {
         encoder = JSONEncoder()
@@ -59,7 +59,7 @@ final class PhotoRankingStore: ObservableObject {
             inFlightAssetIdentifiers.insert(assetIdentifier)
         }
         if let visualSignature {
-            inFlightVisualSignatures[visualSignature.hash] = visualSignature.aspectRatio
+            inFlightVisualSignatures[fingerprint] = visualSignature
         }
 
         activeAnalysisCount += 1
@@ -70,7 +70,7 @@ final class PhotoRankingStore: ObservableObject {
                 inFlightAssetIdentifiers.remove(assetIdentifier)
             }
             if let visualSignature {
-                inFlightVisualSignatures.removeValue(forKey: visualSignature.hash)
+                inFlightVisualSignatures.removeValue(forKey: fingerprint)
             }
             activeAnalysisCount = max(0, activeAnalysisCount - 1)
             isAnalyzing = activeAnalysisCount > 0
@@ -203,9 +203,7 @@ final class PhotoRankingStore: ObservableObject {
                 return true
             }
 
-            let inFlight = inFlightVisualSignatures.map {
-                PhotoVisualSignature(hash: $0.key, aspectRatio: $0.value)
-            }
+            let inFlight = Array(inFlightVisualSignatures.values)
             if matchesVisualDuplicate(visualSignature, storedSignatures: inFlight) {
                 return true
             }
