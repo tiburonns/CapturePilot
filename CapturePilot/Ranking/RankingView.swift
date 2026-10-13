@@ -743,9 +743,11 @@ private struct PhotoImportView: View {
         }
         .preferredColorScheme(.dark)
         .onChange(of: selection) { _, items in
-            let previous = pendingPhotos
+            let previousByItem = Dictionary(
+                uniqueKeysWithValues: pendingPhotos.map { ($0.item, $0) }
+            )
             pendingPhotos = items.map { item in
-                previous.first(where: { $0.item == item }) ?? PendingPhoto(item: item)
+                previousByItem[item] ?? PendingPhoto(item: item)
             }
         }
     }
@@ -763,6 +765,8 @@ private struct PhotoImportView: View {
 }
 
 private struct PhotoImportThumbnail: View {
+    @EnvironmentObject private var settings: AppSettings
+
     let photo: PendingPhoto
     let onRemove: () -> Void
 
@@ -799,7 +803,7 @@ private struct PhotoImportThumbnail: View {
                     .padding(3)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Remove selected photo")
+            .accessibilityLabel(localized("Remove selected photo", "Quitar foto seleccionada"))
         }
         .task(id: photo.id) {
             await loadThumbnail()
@@ -828,6 +832,17 @@ private struct PhotoImportThumbnail: View {
             }
         } catch {
             failedToLoad = true
+        }
+    }
+
+    private func localized(_ english: String, _ spanish: String) -> String {
+        switch settings.language {
+        case .english: english
+        case .spanish: spanish
+        case .system:
+            Locale.preferredLanguages.first?.lowercased().hasPrefix("es") == true
+                ? spanish
+                : english
         }
     }
 
