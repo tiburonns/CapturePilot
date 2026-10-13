@@ -63,6 +63,9 @@ jobs:
       - name: Run LUT recommendation tests
         run: Tests/run-lut-recommendation-tests.sh
 
+      - name: Run photo category tests
+        run: bash Tests/run-photo-category-tests.sh
+
       - name: Build Release for iOS Simulator
         run: |
           set -o pipefail
