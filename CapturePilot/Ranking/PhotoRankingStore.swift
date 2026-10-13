@@ -8,6 +8,10 @@ final class PhotoRankingStore: ObservableObject {
 
     private let encoder: JSONEncoder
     private var loadTask: Task<Void, Never>?
+    private var activeAnalysisCount = 0
+    private var inFlightFingerprints = Set<String>()
+    private var inFlightAssetIdentifiers = Set<String>()
+    private var inFlightVisualSignatures: [String: Double] = [:]
 
     init() {
         encoder = JSONEncoder()
@@ -26,16 +30,51 @@ final class PhotoRankingStore: ObservableObject {
         }
     }
 
+    @discardableResult
     func ingest(
         data: Data,
         source: RankingSource,
-        sceneHint: PhotoCategory? = nil
-    ) async {
-        let fingerprint = PostShotAnalyzer.fingerprint(data)
-        guard !entries.contains(where: { $0.fingerprint == fingerprint }) else { return }
+        sceneHint: PhotoCategory? = nil,
+        assetIdentifier: String? = nil
+    ) async -> PhotoIngestResult {
+        if let loadTask {
+            await loadTask.value
+        }
 
+        let fingerprint = PostShotAnalyzer.fingerprint(data)
+        let visualSignature = await Task.detached(priority: .utility) {
+            PostShotAnalyzer.visualSignature(data)
+        }.value
+
+        guard !isDuplicate(
+            fingerprint: fingerprint,
+            assetIdentifier: assetIdentifier,
+            visualSignature: visualSignature
+        ) else {
+            return .duplicate
+        }
+
+        inFlightFingerprints.insert(fingerprint)
+        if let assetIdentifier {
+            inFlightAssetIdentifiers.insert(assetIdentifier)
+        }
+        if let visualSignature {
+            inFlightVisualSignatures[visualSignature.hash] = visualSignature.aspectRatio
+        }
+
+        activeAnalysisCount += 1
         isAnalyzing = true
-        defer { isAnalyzing = false }
+        defer {
+            inFlightFingerprints.remove(fingerprint)
+            if let assetIdentifier {
+                inFlightAssetIdentifiers.remove(assetIdentifier)
+            }
+            if let visualSignature {
+                inFlightVisualSignatures.removeValue(forKey: visualSignature.hash)
+            }
+            activeAnalysisCount = max(0, activeAnalysisCount - 1)
+            isAnalyzing = activeAnalysisCount > 0
+        }
 
         do {
             let result = try await Task.detached(priority: .userInitiated) {
@@ -61,6 +100,9 @@ final class PhotoRankingStore: ObservableObject {
                 tags: result.tags,
                 thumbnailFilename: filename,
                 fingerprint: fingerprint,
+                assetIdentifier: assetIdentifier,
+                perceptualFingerprint: visualSignature?.hash,
+                aspectRatio: visualSignature?.aspectRatio,
                 usedVisionAesthetics: result.usedVisionAesthetics,
                 scoreVersion: PhotoRankingEntry.currentScoreVersion
             )
@@ -69,9 +111,22 @@ final class PhotoRankingStore: ObservableObject {
             entries.sort { $0.coachScore > $1.coachScore }
             save()
             lastError = nil
+            return .imported
         } catch {
             lastError = error.localizedDescription
+            return .failed
         }
+    }
+
+    func updateCategory(for entryID: UUID, to category: PhotoCategory) {
+        guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
+            return
+        }
+
+        entries[index].category = category
+        entries[index].categoryOverride = category
+        entries.sort { $0.coachScore > $1.coachScore }
+        save()
     }
 
     func delete(_ entry: PhotoRankingEntry) {
@@ -113,6 +168,72 @@ final class PhotoRankingStore: ObservableObject {
 
     func thumbnailURL(for entry: PhotoRankingEntry) -> URL {
         Self.thumbnailDirectory.appendingPathComponent(entry.thumbnailFilename)
+    }
+
+    private func isDuplicate(
+        fingerprint: String,
+        assetIdentifier: String?,
+        visualSignature: PhotoVisualSignature?
+    ) -> Bool {
+        if inFlightFingerprints.contains(fingerprint) {
+            return true
+        }
+
+        if let assetIdentifier,
+           inFlightAssetIdentifiers.contains(assetIdentifier)
+            || entries.contains(where: { $0.assetIdentifier == assetIdentifier }) {
+            return true
+        }
+
+        if entries.contains(where: { $0.fingerprint == fingerprint }) {
+            return true
+        }
+
+        if let visualSignature {
+            if matchesVisualDuplicate(
+                visualSignature,
+                storedSignatures: entries.compactMap { entry in
+                    guard let hash = entry.perceptualFingerprint,
+                          let ratio = entry.aspectRatio else {
+                        return nil
+                    }
+                    return PhotoVisualSignature(hash: hash, aspectRatio: ratio)
+                }
+            ) {
+                return true
+            }
+
+            let inFlight = inFlightVisualSignatures.map {
+                PhotoVisualSignature(hash: $0.key, aspectRatio: $0.value)
+            }
+            if matchesVisualDuplicate(visualSignature, storedSignatures: inFlight) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func matchesVisualDuplicate(
+        _ candidate: PhotoVisualSignature,
+        storedSignatures: [PhotoVisualSignature]
+    ) -> Bool {
+        storedSignatures.contains { stored in
+            let scale = max(abs(candidate.aspectRatio), abs(stored.aspectRatio), 1)
+            let ratioDifference = abs(candidate.aspectRatio - stored.aspectRatio) / scale
+            guard ratioDifference <= 0.015 else { return false }
+
+            guard let distance = PostShotAnalyzer.visualDistance(
+                candidate.hash,
+                stored.hash
+            ) else {
+                return false
+            }
+
+            // Conservative threshold avoids discarding distinct burst frames
+            // that happen to share a broadly similar composition.
+            return distance <= 2
+        }
     }
 
     private func save() {
