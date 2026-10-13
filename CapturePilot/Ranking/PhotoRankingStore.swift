@@ -74,7 +74,7 @@ final class PhotoRankingStore: ObservableObject {
             if let assetIdentifier {
                 inFlightAssetIdentifiers.remove(assetIdentifier)
             }
-            if let visualSignature {
+            if visualSignature != nil {
                 inFlightVisualSignatures.removeValue(forKey: fingerprint)
             }
             activeAnalysisCount = max(0, activeAnalysisCount - 1)
