@@ -841,11 +841,20 @@ private struct PhotoImportThumbnail: View {
 
     private func loadThumbnail() async {
         await PhotoThumbnailLoadLimiter.shared.acquire()
+        guard !Task.isCancelled else {
+            await PhotoThumbnailLoadLimiter.shared.release()
+            return
+        }
 
         do {
             guard let data = try await photo.item.loadTransferable(type: Data.self) else {
                 await PhotoThumbnailLoadLimiter.shared.release()
                 failedToLoad = true
+                return
+            }
+
+            if Task.isCancelled {
+                await PhotoThumbnailLoadLimiter.shared.release()
                 return
             }
 
