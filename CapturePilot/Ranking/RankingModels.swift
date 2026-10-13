@@ -128,8 +128,9 @@ enum PhotoCategoryClassifier {
                 "lake", "waterfall", "forest", "desert", "meadow", "waterfront"
             ],
             .night: [
-                "night sky", "city at night", "night", "stars", "moon",
-                "fireworks", "star trail", "nightscape", "aurora"
+                "night sky", "city at night", "night scene", "night photography",
+                "nighttime", "stars", "moon", "fireworks", "star trail",
+                "nightscape", "aurora"
             ],
             .general: []
         ]
