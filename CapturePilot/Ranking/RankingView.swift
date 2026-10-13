@@ -846,7 +846,7 @@ private struct PhotoImportThumbnail: View {
         }
     }
 
-    private static func makeThumbnailData(from data: Data) -> Data? {
+    nonisolated private static func makeThumbnailData(from data: Data) -> Data? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
