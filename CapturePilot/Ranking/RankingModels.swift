@@ -18,6 +18,17 @@ enum RankingSource: String, Codable {
     case importPhoto
 }
 
+enum PhotoIngestResult: Equatable {
+    case imported
+    case duplicate
+    case failed
+}
+
+struct PhotoVisualSignature: Hashable {
+    let hash: String
+    let aspectRatio: Double
+}
+
 enum RankingRecommendation: String, Codable, CaseIterable {
     case levelHorizon
     case lowerHighlights
@@ -48,19 +59,25 @@ struct CoachScoreBreakdown: Codable, Hashable {
 
 struct PhotoRankingEntry: Identifiable, Codable, Hashable {
     static let currentScoreVersion = 1
+
     let id: UUID
     let createdAt: Date
     let source: RankingSource
-    let category: PhotoCategory
+    var category: PhotoCategory
+    var categoryOverride: PhotoCategory? = nil
     let score: CoachScoreBreakdown
     let recommendations: [RankingRecommendation]
     let tags: [String]
     let thumbnailFilename: String
     let fingerprint: String
+    var assetIdentifier: String? = nil
+    var perceptualFingerprint: String? = nil
+    var aspectRatio: Double? = nil
     let usedVisionAesthetics: Bool
     let scoreVersion: Int
 
     var coachScore: Double { score.overall }
+    var hasManualCategory: Bool { categoryOverride != nil }
 }
 
 struct PostShotAnalysisResult {
