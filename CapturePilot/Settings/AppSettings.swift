@@ -230,6 +230,11 @@ final class AppSettings: ObservableObject {
             defaultValue: true
         )
 
+        burstCaptureEnabled = Self.boolValue(
+            defaults,
+            key: Key.burstCaptureEnabled,
+            defaultValue: true
+        )
         allowLandscape = Self.boolValue(
             defaults,
             key: OrientationPolicy.landscapeKey,

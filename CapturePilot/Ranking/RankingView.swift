@@ -738,7 +738,7 @@ private struct PhotoImportView: View {
         case .all:
             assets
         case .favorites:
-            assets.filter(\.isFavorite)
+            assets.filter { $0.isFavorite }
         case .screenshots:
             assets.filter { $0.mediaSubtypes.contains(.photoScreenshot) }
         }
@@ -1131,6 +1131,7 @@ private struct PhotoImportView: View {
         all.reserveCapacity(fetchedAssets.count)
         fetchedAssets.enumerateObjects { asset, _, _ in all.append(asset) }
         assets = all
+        selectedIdentifiers.formIntersection(Set(all.map(\.localIdentifier)))
         isLoadingAssets = false
     }
 
