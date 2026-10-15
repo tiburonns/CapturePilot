@@ -9,6 +9,9 @@ struct SettingsView: View {
     @State private var lutImportError: String?
     @EnvironmentObject private var hud: HUDLayoutStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var feedbackCategory = "Bug"
+    @State private var feedbackMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -377,6 +380,19 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section(settings.text(.feedbackTitle)) {
+                    Picker(settings.text(.feedbackCategory), selection: $feedbackCategory) {
+                        ForEach(["Bug", "Comment", "Suggestion", "Other"], id: \.self) { Text($0) }
+                    }
+                    TextField(settings.text(.feedbackMessage), text: $feedbackMessage, axis: .vertical)
+                        .lineLimit(5...10)
+                    Button(settings.text(.feedbackSend), action: sendFeedback)
+                        .disabled(feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Text(settings.text(.feedbackEmailDraft))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section {
                     LabeledContent(
                         settings.text(.version),
@@ -433,5 +449,16 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.9.3"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "12"
         return "\(version) (\(build))"
+    }
+
+    private func sendFeedback() {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = "adrianbarcenasm37@gmail.com"
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "[CapturePilot] [\(feedbackCategory)]"),
+            URLQueryItem(name: "body", value: "\(feedbackMessage)\n\nCapturePilot \(versionAndBuild)")
+        ]
+        if let url = components.url { openURL(url) }
     }
 }

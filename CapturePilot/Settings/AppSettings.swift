@@ -386,6 +386,7 @@ final class AppSettings: ObservableObject {
 enum LocalizedKey: Hashable {
     case coach, pro, capture, settings, grid, language, system, english, spanish, done, off
     case subtle, balanced, teaching, privacy, privacyDetail, version
+    case feedbackTitle, feedbackCategory, feedbackMessage, feedbackSend, feedbackEmailDraft
     case auto, heif, jpeg, raw, proRAW, exposure, iso, shutter, whiteBalance, focus
     case resolution, scene
     case cameraPermission, openSettings, noCamera, saved, saveFailed, rawUnavailable
@@ -431,6 +432,7 @@ enum LocalizedKey: Hashable {
             .subtle: "Sutil", .balanced: "Equilibrado", .teaching: "Didáctico",
             .privacy: "Privacidad",
             .privacyDetail: "La cámara, el Coach y el Ranking privado funcionan sin cuenta. Amigos es opcional y usa iCloud/CloudKit. Sin anuncios, analítica ni rastreadores.",
+            .feedbackTitle: "Errores, comentarios y sugerencias", .feedbackCategory: "Categoría", .feedbackMessage: "Mensaje", .feedbackSend: "Continuar en correo", .feedbackEmailDraft: "Se abrirá un borrador de correo; revísalo y envíalo desde tu app de correo.",
             .version: "Versión", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG",
             .raw: "RAW", .proRAW: "ProRAW", .exposure: "Exposición", .iso: "ISO",
             .shutter: "Obturación", .whiteBalance: "Balance de blancos", .focus: "Enfoque",
@@ -548,6 +550,7 @@ enum LocalizedKey: Hashable {
             .subtle: "Subtle", .balanced: "Balanced", .teaching: "Teaching",
             .privacy: "Privacy",
             .privacyDetail: "Camera, Coach, and private Rankings work without an account. Friends is optional and uses iCloud/CloudKit. No ads, analytics, or trackers.",
+            .feedbackTitle: "Bugs, comments & suggestions", .feedbackCategory: "Category", .feedbackMessage: "Message", .feedbackSend: "Continue in email", .feedbackEmailDraft: "An email draft will open; review and send it from your email app.",
             .version: "Version", .auto: "Auto", .heif: "HEIF", .jpeg: "JPEG",
             .raw: "RAW", .proRAW: "ProRAW", .exposure: "Exposure", .iso: "ISO",
             .shutter: "Shutter", .whiteBalance: "White balance", .focus: "Focus",

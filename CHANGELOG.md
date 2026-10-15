@@ -1,5 +1,13 @@
 # Changelog / Registro de cambios
 
+## Unreleased
+
+### English
+- Add a bilingual bug, comment, and suggestion form in Settings. It opens a pre-addressed email draft and requires the user to review and send it.
+
+### Español
+- Agrega en Ajustes un formulario bilingüe para errores, comentarios y sugerencias. Abre un borrador de correo dirigido al desarrollador y requiere que la persona lo revise y lo envíe.
+
 ## 0.9.3 — Non-blocking launch hotfix / Hotfix de arranque no bloqueante
 
 ### English
