@@ -23,6 +23,9 @@ struct ContentView: View {
     @State private var pendingLUTRecommendationCount = 0
     @GestureState private var horizontalSwipeTranslation: CGFloat = 0
     @State private var navigationExitOffset: CGFloat = 0
+    @State private var burstTriggered = false
+    @State private var isBursting = false
+    @State private var burstTask: Task<Void, Never>?
     @AppStorage("capturePilot.swipeNavigationGuideDismissed") private var swipeNavigationGuideDismissed = false
     @State private var showSwipeNavigationGuide = false
 
@@ -72,6 +75,7 @@ struct ContentView: View {
                 startSwipeNavigationGuideIfNeeded()
             }
             .onDisappear {
+                endBurst()
                 camera.stop()
                 lutLibrary.stopMonitoring()
             }
@@ -362,11 +366,11 @@ struct ContentView: View {
                 let openingRankings = horizontal < 0
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-                withAnimation(.snappy(duration: 0.22, extraBounce: 0.02)) {
+                withAnimation(.snappy(duration: 0.12, extraBounce: 0)) {
                     navigationExitOffset = openingRankings ? -120 : 120
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                     if openingRankings {
                         showingRankings = true
                     } else {
@@ -391,7 +395,9 @@ struct ContentView: View {
     }
 
     private func resetNavigationAnimation() {
-        withAnimation(.smooth(duration: 0.24)) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
             navigationExitOffset = 0
         }
     }
@@ -879,30 +885,93 @@ struct ContentView: View {
     }
 
     private var shutterButton: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            camera.capturePhoto(
-                rawShareConfiguration: settings.rawShareConfiguration(
-                    libraryLUTURL: lutLibrary.activeLUTURL
-                ),
-                rankingScene: settings.sceneCoach
-            )
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(.white)
-                    .frame(width: 72, height: 72)
-                Circle()
-                    .stroke(.black.opacity(0.55), lineWidth: 2)
-                    .frame(width: 62, height: 62)
+        ZStack {
+            Circle()
+                .fill(.white)
+                .frame(width: 72, height: 72)
+            Circle()
+                .stroke(.black.opacity(0.55), lineWidth: 2)
+                .frame(width: 62, height: 62)
+            if settings.burstCaptureEnabled && !settings.rawShareEnabled {
+                Image(systemName: "square.stack.3d.up")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.black.opacity(0.72))
+                    .offset(y: -25)
             }
         }
-        .disabled(
-            !camera.isConfigured
-            || camera.sessionInterrupted
-            || (settings.rawShareEnabled && !camera.supportsRawShareWorkflow)
+        .contentShape(Circle())
+        .onTapGesture {
+            guard !burstTriggered else {
+                burstTriggered = false
+                return
+            }
+            guard camera.isConfigured, !camera.sessionInterrupted,
+                  !(settings.rawShareEnabled && !camera.supportsRawShareWorkflow) else { return }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            captureCurrentPhoto()
+        }
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.35)
+                .onChanged { pressed in
+                    guard pressed else { return }
+                    beginBurstIfAllowed()
+                }
+                .onEnded { _ in
+                    endBurst()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        if !isBursting { burstTriggered = false }
+                    }
+                }
         )
         .accessibilityLabel(settings.text(.capture))
+        .accessibilityHint(settings.text(.burstCaptureDetail))
+        .opacity(
+            !camera.isConfigured
+                || camera.sessionInterrupted
+                || (settings.rawShareEnabled && !camera.supportsRawShareWorkflow)
+                ? 0.45 : 1
+        )
+    }
+
+    private func captureCurrentPhoto() {
+        camera.capturePhoto(
+            rawShareConfiguration: settings.rawShareConfiguration(
+                libraryLUTURL: lutLibrary.activeLUTURL
+            ),
+            rankingScene: settings.sceneCoach
+        )
+    }
+
+    private func beginBurstIfAllowed() {
+        guard settings.burstCaptureEnabled,
+              !settings.rawShareEnabled,
+              camera.isConfigured,
+              !camera.sessionInterrupted,
+              !isBursting else { return }
+
+        burstTriggered = true
+        isBursting = true
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        captureCurrentPhoto()
+
+        burstTask = Task { @MainActor in
+            while isBursting && !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .milliseconds(260))
+                } catch {
+                    break
+                }
+                guard isBursting, !Task.isCancelled,
+                      settings.burstCaptureEnabled, !settings.rawShareEnabled else { break }
+                captureCurrentPhoto()
+            }
+        }
+    }
+
+    private func endBurst() {
+        isBursting = false
+        burstTask?.cancel()
+        burstTask = nil
     }
 
     private func shouldRender(_ item: HUDItem) -> Bool {

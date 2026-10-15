@@ -22,6 +22,13 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                 }
 
+                Section(settings.text(.capture)) {
+                    Toggle(settings.text(.burstCapture), isOn: $settings.burstCaptureEnabled)
+                    Text(settings.text(.burstCaptureDetail))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section {
                     Toggle(settings.text(.landscape), isOn: $settings.allowLandscape)
                     Toggle(settings.text(.upsideDown), isOn: $settings.allowUpsideDown)
