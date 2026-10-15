@@ -711,8 +711,9 @@ private struct PhotoImportView: View {
     let onImportFiles: ([URL]) -> Void
 
     @State private var authorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-    @State private var assets: PHFetchResult<PHAsset>?
+    @State private var assets: [PHAsset] = []
     @State private var selectedIdentifiers = Set<String>()
+    @State private var photoFilter: PhotoFilter = .all
     @State private var isLoadingAssets = false
     @State private var showingFileImporter = false
     @State private var fileImportError: String?
@@ -726,6 +727,28 @@ private struct PhotoImportView: View {
         authorizationStatus == .authorized || authorizationStatus == .limited
     }
 
+    private enum PhotoFilter: String, CaseIterable, Identifiable {
+        case all, favorites, screenshots
+        var id: String { rawValue }
+    }
+
+    private var displayedAssets: [PHAsset] {
+        switch photoFilter {
+        case .all:
+            assets
+        case .favorites:
+            assets.filter(\.isFavorite)
+        case .screenshots:
+            assets.filter { $0.mediaSubtypes.contains(.photoScreenshot) }
+        }
+    }
+
+    private var visibleSelectedCount: Int {
+        displayedAssets.reduce(into: 0) { count, asset in
+            if selectedIdentifiers.contains(asset.localIdentifier) { count += 1 }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -737,8 +760,8 @@ private struct PhotoImportView: View {
                     if isLoadingAssets {
                         ProgressView(localized("Loading photo library…", "Cargando fototeca…"))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let assets, assets.count > 0 {
-                        photoGrid(assets)
+                    } else if !displayedAssets.isEmpty {
+                        photoGrid(displayedAssets)
                     } else {
                         ContentUnavailableView(
                             localized("No photos found", "No se encontraron fotos"),
@@ -829,12 +852,22 @@ private struct PhotoImportView: View {
             if authorizationStatus == .limited {
                 Text(
                     localized(
-                        "Only approved photos appear below. To add or remove allowed photos, use Manage access.",
-                        "Abajo solo aparecen las fotos autorizadas. Para añadir o quitar fotos permitidas, usa Administrar acceso."
+                        "Only approved photos appear below. Add more directly with iOS's limited-library picker or review access in Settings.",
+                        "Abajo solo aparecen las fotos autorizadas. Añade más directamente con el selector limitado de iOS o revisa el acceso en Ajustes."
                     )
                 )
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+                Button {
+                    presentLimitedLibraryPicker()
+                } label: {
+                    Label(
+                        localized("Add or remove allowed photos", "Añadir o quitar fotos permitidas"),
+                        systemImage: "photo.badge.plus"
+                    )
+                }
+                .font(.caption.weight(.medium))
             }
         }
         .padding(.horizontal, 14)
@@ -843,35 +876,43 @@ private struct PhotoImportView: View {
     }
 
     private var selectionToolbar: some View {
-        HStack(spacing: 12) {
-            Text(localized(
-                "\(selectedIdentifiers.count) selected",
-                "\(selectedIdentifiers.count) seleccionadas"
-            ))
-            .font(.subheadline.weight(.semibold).monospacedDigit())
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Text(localized(
+                    "\(selectedIdentifiers.count) selected",
+                    "\(selectedIdentifiers.count) seleccionadas"
+                ))
+                .font(.subheadline.weight(.semibold).monospacedDigit())
 
-            Spacer()
+                Spacer()
 
-            Button(
-                selectedIdentifiers.count == (assets?.count ?? 0)
-                    ? localized("Clear", "Limpiar")
-                    : localized("Select all", "Seleccionar todas")
-            ) {
-                toggleSelectAll()
+                Button(
+                    visibleSelectedCount == displayedAssets.count
+                        ? localized("Clear visible", "Limpiar visibles")
+                        : localized("Select all visible", "Seleccionar visibles")
+                ) {
+                    toggleSelectAll()
+                }
+                .font(.caption.weight(.medium))
+                .disabled(displayedAssets.isEmpty)
             }
-            .font(.caption.weight(.medium))
-            .disabled((assets?.count ?? 0) == 0)
+
+            Picker(localized("Show", "Mostrar"), selection: $photoFilter) {
+                Text(localized("All", "Todas")).tag(PhotoFilter.all)
+                Text(localized("Favorites", "Favoritas")).tag(PhotoFilter.favorites)
+                Text(localized("Screenshots", "Capturas de pantalla")).tag(PhotoFilter.screenshots)
+            }
+            .pickerStyle(.segmented)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
         .background(.white.opacity(0.04))
     }
 
-    private func photoGrid(_ fetchResult: PHFetchResult<PHAsset>) -> some View {
+    private func photoGrid(_ visibleAssets: [PHAsset]) -> some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(0..<fetchResult.count, id: \.self) { index in
-                    let asset = fetchResult.object(at: index)
+                ForEach(visibleAssets, id: \.localIdentifier) { asset in
                     let isSelected = selectedIdentifiers.contains(asset.localIdentifier)
 
                     Button {
@@ -985,6 +1026,16 @@ private struct PhotoImportView: View {
             }
             .buttonStyle(.bordered)
 
+            Text(
+                localized(
+                    "Choose multiple supported images or RAW files from On My iPhone, iCloud Drive, or connected file providers.",
+                    "Selecciona varias imágenes o archivos RAW compatibles desde En mi iPhone, iCloud Drive u otros proveedores conectados."
+                )
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             if canBrowsePhotos {
                 Button {
                     let selected = selectedAssets()
@@ -1061,7 +1112,7 @@ private struct PhotoImportView: View {
         authorizationStatus = currentStatus
 
         guard currentStatus == .authorized || currentStatus == .limited else {
-            assets = nil
+            assets = []
             selectedIdentifiers.removeAll()
             return
         }
@@ -1074,7 +1125,11 @@ private struct PhotoImportView: View {
         let options = PHFetchOptions()
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         options.includeHiddenAssets = false
-        assets = PHAsset.fetchAssets(with: .image, options: options)
+        let fetchedAssets = PHAsset.fetchAssets(with: .image, options: options)
+        var all: [PHAsset] = []
+        all.reserveCapacity(fetchedAssets.count)
+        fetchedAssets.enumerateObjects { asset, _, _ in all.append(asset) }
+        assets = all
         isLoadingAssets = false
     }
 
@@ -1092,6 +1147,25 @@ private struct PhotoImportView: View {
         UIApplication.shared.open(url)
     }
 
+    private func presentLimitedLibraryPicker() {
+        guard authorizationStatus == .limited,
+              let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController else {
+            openSettings()
+            return
+        }
+
+        var presenter = root
+        while let presented = presenter.presentedViewController {
+            presenter = presented
+        }
+        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: presenter) { _ in
+            DispatchQueue.main.async { refreshAuthorization() }
+        }
+    }
+
     private func toggleSelection(for asset: PHAsset) {
         if selectedIdentifiers.contains(asset.localIdentifier) {
             selectedIdentifiers.remove(asset.localIdentifier)
@@ -1101,32 +1175,19 @@ private struct PhotoImportView: View {
     }
 
     private func toggleSelectAll() {
-        guard let assets else { return }
+        let visibleIDs = Set(displayedAssets.map(\.localIdentifier))
+        guard !visibleIDs.isEmpty else { return }
 
-        if selectedIdentifiers.count == assets.count {
-            selectedIdentifiers.removeAll()
-            return
+        if visibleIDs.isSubset(of: selectedIdentifiers) {
+            selectedIdentifiers.subtract(visibleIDs)
+        } else {
+            selectedIdentifiers.formUnion(visibleIDs)
         }
-
-        var identifiers = Set<String>()
-        identifiers.reserveCapacity(assets.count)
-        assets.enumerateObjects { asset, _, _ in
-            identifiers.insert(asset.localIdentifier)
-        }
-        selectedIdentifiers = identifiers
     }
 
     private func selectedAssets() -> [PHAsset] {
-        guard let assets, !selectedIdentifiers.isEmpty else { return [] }
-
-        var selected: [PHAsset] = []
-        selected.reserveCapacity(selectedIdentifiers.count)
-        assets.enumerateObjects { asset, _, _ in
-            if selectedIdentifiers.contains(asset.localIdentifier) {
-                selected.append(asset)
-            }
-        }
-        return selected
+        guard !selectedIdentifiers.isEmpty else { return [] }
+        return assets.filter { selectedIdentifiers.contains($0.localIdentifier) }
     }
 
     private func localized(_ english: String, _ spanish: String) -> String {

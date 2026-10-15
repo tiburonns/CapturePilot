@@ -71,6 +71,7 @@ final class AppSettings: ObservableObject {
         static let lutIntensity = "settings.rawShare.lutIntensity"
         static let lutDisplayName = "settings.rawShare.lutDisplayName"
         static let lutCoachRecommendations = "settings.rawShare.lutCoachRecommendations"
+        static let burstCaptureEnabled = "settings.capture.burstEnabled"
     }
 
     @Published var language: Language {
@@ -149,6 +150,10 @@ final class AppSettings: ObservableObject {
                 forKey: Key.lutCoachRecommendations
             )
         }
+    }
+
+    @Published var burstCaptureEnabled: Bool {
+        didSet { UserDefaults.standard.set(burstCaptureEnabled, forKey: Key.burstCaptureEnabled) }
     }
 
     @Published var allowLandscape: Bool {
@@ -411,6 +416,7 @@ enum LocalizedKey: Hashable {
     case lutReasonStreet, lutReasonMacro, lutReasonGeneral
     case rankings, swipeNavigationGuide
     case creativeSpark, creativeSparkDetail, creativeSparkOnDemand
+    case burstCapture, burstCaptureDetail
 
     func value(in language: AppSettings.Language) -> String {
         let es: [LocalizedKey: String] = [
@@ -525,7 +531,9 @@ enum LocalizedKey: Hashable {
             .rankings: "Ranking", .swipeNavigationGuide: "Desliza ← para Ranking · Ajustes →",
             .creativeSpark: "Chispa creativa",
             .creativeSparkDetail: "Escaneo opcional para desbloqueo creativo. Marca puntos potencialmente interesantes y propone caminos alternativos sin cambiar exposición, lente, foco ni encuadre por ti.",
-            .creativeSparkOnDemand: "Sólo se ejecuta cuando tocas el botón ✦. Puedes ocultarlo desde Personalizar HUD."
+            .creativeSparkOnDemand: "Sólo se ejecuta cuando tocas el botón ✦. Puedes ocultarlo desde Personalizar HUD.",
+            .burstCapture: "Ráfaga al mantener presionado",
+            .burstCaptureDetail: "Mantén presionado el disparador para tomar varias fotos. Cada imagen se guarda individualmente en orden. La ráfaga no se usa en modo RAW + JPEG para compartir."
         ]
 
         let en: [LocalizedKey: String] = [
@@ -640,7 +648,9 @@ enum LocalizedKey: Hashable {
             .rankings: "Rankings", .swipeNavigationGuide: "Swipe ← for Rankings · Settings →",
             .creativeSpark: "Creative Spark",
             .creativeSparkDetail: "Optional creative-unblock scan. It marks potentially interesting points and proposes alternative directions without changing exposure, lens, focus, or framing for you.",
-            .creativeSparkOnDemand: "It runs only when you tap the ✦ button. You can hide it from Customize HUD."
+            .creativeSparkOnDemand: "It runs only when you tap the ✦ button. You can hide it from Customize HUD.",
+            .burstCapture: "Burst while holding shutter",
+            .burstCaptureDetail: "Hold the shutter to take multiple photos. Each image is saved individually in capture order. Burst is unavailable in RAW + Share JPEG mode."
         ]
 
         return (language == .spanish ? es : en)[self] ?? String(describing: self)

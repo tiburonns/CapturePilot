@@ -108,6 +108,17 @@ final class CameraService: NSObject, ObservableObject {
 
     private var pendingRawShareCaptures: [Int64: PendingRawShareCapture] = [:]
     private var rankingSceneByCaptureID: [Int64: PhotoCategory] = [:]
+    private var normalCaptureSequenceByID: [Int64: UInt64] = [:]
+    private var completedCapturesBySequence: [UInt64: CompletedCapture] = [:]
+    private var nextCaptureSequence: UInt64 = 0
+    private var nextSequenceToDeliver: UInt64 = 0
+    private var pendingPhotoSaves: [Data] = []
+    private var isSavingPhoto = false
+
+    private struct CompletedCapture {
+        let data: Data?
+        let sceneHint: PhotoCategory?
+    }
     private var rankingHandler: ((Data, PhotoCategory?) -> Void)?
 
     private var captureRotationCoordinator: AVCaptureDevice.RotationCoordinator?
@@ -1012,6 +1023,8 @@ final class CameraService: NSObject, ObservableObject {
 
             self.photoProcessingQueue.sync {
                 self.rankingSceneByCaptureID[settings.uniqueID] = rankingCategory
+                self.normalCaptureSequenceByID[settings.uniqueID] = self.nextCaptureSequence
+                self.nextCaptureSequence += 1
             }
 
             self.photoOutput.capturePhoto(with: settings, delegate: self)
@@ -1148,9 +1161,26 @@ final class CameraService: NSObject, ObservableObject {
     }
 
     private func savePhotoData(_ data: Data) {
+        photoProcessingQueue.async { [weak self] in
+            guard let self else { return }
+            self.pendingPhotoSaves.append(data)
+            self.processNextPhotoSave()
+        }
+    }
+
+    private func processNextPhotoSave() {
+        guard !isSavingPhoto, !pendingPhotoSaves.isEmpty else { return }
+        isSavingPhoto = true
+        let data = pendingPhotoSaves.removeFirst()
+
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
+            guard let self else { return }
             guard status == .authorized || status == .limited else {
-                DispatchQueue.main.async { self?.lastSaveSucceeded = false }
+                DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                self.photoProcessingQueue.async {
+                    self.isSavingPhoto = false
+                    self.processNextPhotoSave()
+                }
                 return
             }
 
@@ -1158,7 +1188,40 @@ final class CameraService: NSObject, ObservableObject {
                 let request = PHAssetCreationRequest.forAsset()
                 request.addResource(with: .photo, data: data, options: nil)
             } completionHandler: { success, _ in
-                DispatchQueue.main.async { self?.lastSaveSucceeded = success }
+                DispatchQueue.main.async { self.lastSaveSucceeded = success }
+                self.photoProcessingQueue.async {
+                    self.isSavingPhoto = false
+                    self.processNextPhotoSave()
+                }
+            }
+        }
+    }
+
+    private func completeNormalCapture(
+        uniqueID: Int64,
+        data: Data?,
+        sceneHint: PhotoCategory?
+    ) {
+        photoProcessingQueue.async { [weak self] in
+            guard let self,
+                  let sequence = self.normalCaptureSequenceByID.removeValue(forKey: uniqueID) else {
+                return
+            }
+            self.completedCapturesBySequence[sequence] = CompletedCapture(
+                data: data,
+                sceneHint: sceneHint
+            )
+
+            while let completed = self.completedCapturesBySequence.removeValue(
+                forKey: self.nextSequenceToDeliver
+            ) {
+                self.nextSequenceToDeliver += 1
+                guard let completedData = completed.data else {
+                    DispatchQueue.main.async { self.lastSaveSucceeded = false }
+                    continue
+                }
+                self.rankingHandler?(completedData, completed.sceneHint)
+                self.savePhotoData(completedData)
             }
         }
     }
@@ -1295,16 +1358,32 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
         let uniqueID = photo.resolvedSettings.uniqueID
 
         if error != nil {
-            photoProcessingQueue.async { [weak self] in
-                self?.pendingRawShareCaptures.removeValue(forKey: uniqueID)
-                self?.rankingSceneByCaptureID.removeValue(forKey: uniqueID)
+            let isRawShare = photoProcessingQueue.sync {
+                pendingRawShareCaptures.removeValue(forKey: uniqueID) != nil
             }
-            DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            if isRawShare {
+                DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            } else {
+                let sceneHint = photoProcessingQueue.sync {
+                    rankingSceneByCaptureID.removeValue(forKey: uniqueID)
+                }
+                completeNormalCapture(uniqueID: uniqueID, data: nil, sceneHint: sceneHint)
+            }
             return
         }
 
         guard let data = photo.fileDataRepresentation() else {
-            DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            let isRawShare = photoProcessingQueue.sync {
+                pendingRawShareCaptures.removeValue(forKey: uniqueID) != nil
+            }
+            if isRawShare {
+                DispatchQueue.main.async { self.lastSaveSucceeded = false }
+            } else {
+                let sceneHint = photoProcessingQueue.sync {
+                    rankingSceneByCaptureID.removeValue(forKey: uniqueID)
+                }
+                completeNormalCapture(uniqueID: uniqueID, data: nil, sceneHint: sceneHint)
+            }
             return
         }
 
@@ -1316,8 +1395,7 @@ extension CameraService: AVCapturePhotoCaptureDelegate {
             let sceneHint = photoProcessingQueue.sync {
                 rankingSceneByCaptureID.removeValue(forKey: uniqueID)
             }
-            rankingHandler?(data, sceneHint)
-            savePhotoData(data)
+            completeNormalCapture(uniqueID: uniqueID, data: data, sceneHint: sceneHint)
             return
         }
 
