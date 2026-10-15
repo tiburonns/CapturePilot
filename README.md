@@ -4,6 +4,10 @@
 
 # CapturePilot
 
+## Feedback
+
+Open **Settings → Bugs, comments & suggestions** to prepare a report. CapturePilot opens an addressed email draft; review and send it in your email app. The draft includes your message and app version/build. No report is sent until you send the email.
+
 **Professional photography, guided — not automated.**  
 **Fotografía profesional, guiada — no automatizada.**
 
