@@ -240,8 +240,8 @@ final class RawShareProcessor {
             throw RawShareProcessingError.jpegEncodingFailed
         }
 
-        let metadataNote = lutName.map {
-            "LUT applied: \\($0) (\\(Int((min(max(configuration.lutIntensity, 0), 1) * 100).rounded()))%)"
+        let metadataNote = lutName.map { name in
+            "LUT applied: \(name) (\(Int((min(max(configuration.lutIntensity, 0), 1) * 100).rounded()))%)"
         } ?? "LUT applied: None"
         let data = try addingLUTMetadata(metadataNote, to: renderedData)
 
