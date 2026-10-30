@@ -232,7 +232,7 @@ final class RawShareProcessor {
             rawValue: kCGImageDestinationLossyCompressionQuality as String
         )
 
-        guard let data = context.jpegRepresentation(
+        guard let renderedData = context.jpegRepresentation(
             of: translated,
             colorSpace: colorSpace,
             options: [qualityKey: 0.94]
@@ -240,12 +240,48 @@ final class RawShareProcessor {
             throw RawShareProcessingError.jpegEncodingFailed
         }
 
+        let metadataNote = lutName.map { name in
+            "LUT applied: \(name) (\(Int((min(max(configuration.lutIntensity, 0), 1) * 100).rounded()))%)"
+        } ?? "LUT applied: None"
+        let data = try addingLUTMetadata(metadataNote, to: renderedData)
+
         return RawShareJPEGResult(
             data: data,
             width: Int(translated.extent.width.rounded()),
             height: Int(translated.extent.height.rounded()),
             appliedLUTName: lutName
         )
+    }
+
+    /// Embeds the applied LUT in standard image metadata without changing JPEG pixels.
+    private func addingLUTMetadata(_ note: String, to imageData: Data) throws -> Data {
+        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+              let sourceType = CGImageSourceGetType(source) else {
+            throw RawShareProcessingError.jpegEncodingFailed
+        }
+
+        var properties = (CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any]) ?? [:]
+        var exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any] ?? [:]
+        exif[kCGImagePropertyExifUserComment as String] = note
+        properties[kCGImagePropertyExifDictionary as String] = exif
+
+        var iptc = properties[kCGImagePropertyIPTCDictionary as String] as? [String: Any] ?? [:]
+        iptc[kCGImagePropertyIPTCCaptionAbstract as String] = note
+        properties[kCGImagePropertyIPTCDictionary as String] = iptc
+
+        var tiff = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] ?? [:]
+        tiff[kCGImagePropertyTIFFImageDescription as String] = note
+        properties[kCGImagePropertyTIFFDictionary as String] = tiff
+
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, sourceType, 1, nil) else {
+            throw RawShareProcessingError.jpegEncodingFailed
+        }
+        CGImageDestinationAddImageFromSource(destination, source, 0, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else {
+            throw RawShareProcessingError.jpegEncodingFailed
+        }
+        return output as Data
     }
 
     private func apply(
